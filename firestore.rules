@@ -2,22 +2,16 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Orders collection
     match /orders/{orderId} {
-      // Anyone can read orders (for public queue)
+      // Anyone can read orders from any cart (for public queue)
       allow read: if true;
       
-      // Only authenticated users (workers) can create and update orders
-      allow create, update: if request.auth != null;
+      // Workers can only create/update orders for their own cart
+      allow create: if request.auth != null && 
+                      request.resource.data.cartId == request.auth.token.cartId;
       
-      // Only authenticated users can delete
-      allow delete: if request.auth != null;
-    }
-    
-    // Default: deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+      allow update: if request.auth != null && 
+                      resource.data.cartId == request.auth.token.cartId;
     }
   }
 }

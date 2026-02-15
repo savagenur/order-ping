@@ -1,73 +1,88 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import type { Order } from '../types/order';
 
 export default function Queue() {
+  const [searchParams] = useSearchParams();
+  const cartId = searchParams.get('cart');
+
+  // STATE
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
-  const [searchPhone, setSearchPhone] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [myOrder, setMyOrder] = useState<Order | null>(null);
+  const [cartName, setCartName] = useState<string>('');
+  
+  // FIX: Initialize loading based on whether we even have a cartId to fetch
+  const [loading, setLoading] = useState(!!cartId);
 
   useEffect(() => {
-    // Listen to pending orders
-    const pendingQuery = query(
+    // 1. Guard: If no cartId, we do nothing. 
+    // Since 'loading' started as !!cartId, it's already false if cartId is null.
+    if (!cartId) return;
+
+    const ordersQuery = query(
       collection(db, 'orders'),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'asc')
+      where('cartId', '==', cartId),
+      orderBy('createdAt', 'desc')
     );
 
-    const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
-      const orders: Order[] = [];
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const allOrders: Order[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        orders.push({
+        allOrders.push({
           id: doc.id,
           customerName: data.customerName,
           phoneNumber: data.phoneNumber,
           orderDetails: data.orderDetails,
           status: data.status,
+          cartId: data.cartId,
+          cartName: data.cartName,
           createdAt: data.createdAt?.toDate(),
           readyAt: data.readyAt?.toDate(),
         });
       });
-      setPendingOrders(orders);
+
+      // 2. Optimization: Only update cartName if it's currently empty
+      if (allOrders.length > 0) {
+        setCartName((prev) => prev || allOrders[0].cartName);
+      }
+
+      const pending = allOrders
+        .filter((o) => o.status === 'pending')
+        .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+      
+      const ready = allOrders
+        .filter((o) => o.status === 'ready')
+        .sort((a, b) => (b.readyAt?.getTime() || 0) - (a.readyAt?.getTime() || 0));
+
+      setPendingOrders(pending);
+      setReadyOrders(ready);
+      
+      // 3. This setLoading is safe because it is inside an ASYNC callback
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching orders:', error);
+      setLoading(false);
     });
 
-    // Listen to ready orders
-    const readyQuery = query(
-      collection(db, 'orders'),
-      where('status', '==', 'ready'),
-      orderBy('readyAt', 'desc')
-    );
-
-    const unsubscribeReady = onSnapshot(readyQuery, (snapshot) => {
-      const orders: Order[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        orders.push({
-          id: doc.id,
-          customerName: data.customerName,
-          phoneNumber: data.phoneNumber,
-          orderDetails: data.orderDetails,
-          status: data.status,
-          createdAt: data.createdAt?.toDate(),
-          readyAt: data.readyAt?.toDate(),
-        });
-      });
-      setReadyOrders(orders);
-    });
-
-    return () => {
-      unsubscribePending();
-      unsubscribeReady();
-    };
-  }, []);
+    return () => unsubscribe();
+    // 4. Removed cartName from dependencies to prevent infinite loops 
+    // when setting the name inside the effect.
+  }, [cartId]); 
 
   const handleSearch = () => {
+    if (!searchName.trim()) {
+      setMyOrder(null);
+      return;
+    }
+
     const allOrders = [...pendingOrders, ...readyOrders];
     const found = allOrders.find(
-      (order) => order.phoneNumber.replace(/\D/g, '').includes(searchPhone.replace(/\D/g, ''))
+      (order) => order.customerName.toLowerCase().includes(searchName.toLowerCase().trim())
     );
     setMyOrder(found || null);
   };
@@ -76,12 +91,38 @@ export default function Queue() {
     return pendingOrders.findIndex((order) => order.id === orderId) + 1;
   };
 
+  // RENDER LOGIC
+  if (!cartId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-md p-8 bg-white rounded-lg shadow-xl text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid QR Code</h2>
+          <p className="text-gray-700">
+            This QR code is not valid. Please scan a valid OrderPing QR code from a food cart.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-lg text-gray-600">Loading orders...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen min-w-screen #f2f3f4">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
+        
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">OrderPing</h1>
+          {cartName && (
+            <p className="text-lg text-gray-700 font-medium">{cartName}</p>
+          )}
           <p className="text-gray-600">Live Order Queue</p>
         </div>
 
@@ -90,11 +131,12 @@ export default function Queue() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Check Your Order</h2>
           <div className="flex gap-3">
             <input
-              type="tel"
-              value={searchPhone}
-              onChange={(e) => setSearchPhone(e.target.value)}
-              placeholder="Enter your phone number"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="text"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Enter your name"
+              className="flex-1 px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={handleSearch}
@@ -132,9 +174,9 @@ export default function Queue() {
             </div>
           )}
 
-          {searchPhone && !myOrder && (
+          {searchName && !myOrder && (
             <p className="mt-4 text-sm text-gray-500 text-center">
-              No order found with this phone number
+              No order found with this name
             </p>
           )}
         </div>

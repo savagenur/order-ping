@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, Timestamp, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
 import type { Order, OrderInput } from '../types/order';
+import { useUserCart } from '../hooks/useUserCart';
 
 export default function Dashboard() {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [formData, setFormData] = useState<OrderInput>({
     customerName: '',
@@ -13,10 +15,18 @@ export default function Dashboard() {
     orderDetails: '',
   });
   const [loading, setLoading] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const navigate = useNavigate();
+  const { cartId, cartName, loading: cartLoading } = useUserCart();
 
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    if (!cartId) return;
+
+    const q = query(
+      collection(db, 'orders'),
+      where('cartId', '==', cartId),
+      orderBy('createdAt', 'desc')
+    );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData: Order[] = [];
@@ -28,6 +38,8 @@ export default function Dashboard() {
           phoneNumber: data.phoneNumber,
           orderDetails: data.orderDetails,
           status: data.status,
+          cartId: data.cartId,
+          cartName: data.cartName,
           createdAt: data.createdAt?.toDate(),
           readyAt: data.readyAt?.toDate(),
           completedAt: data.completedAt?.toDate(),
@@ -37,11 +49,17 @@ export default function Dashboard() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [cartId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!cartId || !cartName) {
+      alert('Cart information not found. Please contact administrator.');
+      setLoading(false);
+      return;
+    }
 
     try {
       await addDoc(collection(db, 'orders'), {
@@ -49,6 +67,8 @@ export default function Dashboard() {
         phoneNumber: formData.phoneNumber,
         orderDetails: formData.orderDetails || '',
         status: 'pending',
+        cartId: cartId,
+        cartName: cartName,
         createdAt: Timestamp.now(),
       });
 
@@ -68,7 +88,6 @@ export default function Dashboard() {
         status: 'ready',
         readyAt: Timestamp.now(),
       });
-      // Note: SMS will be sent via Firebase Function (to be implemented)
     } catch (error) {
       console.error('Error updating order:', error);
       alert('Failed to update order');
@@ -97,22 +116,75 @@ export default function Dashboard() {
     }
   };
 
+  const getQRCodeUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/queue?cart=${cartId}`;
+  };
+
+  const downloadQRCode = () => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(getQRCodeUrl())}`;
+    const link = document.createElement('a');
+    link.href = qrUrl;
+    link.download = `${cartId}-qr-code.png`;
+    link.click();
+  };
+
+  if (cartLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!cartId || !cartName) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md p-8 bg-white rounded-lg shadow text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Cart Not Configured</h2>
+          <p className="text-gray-700 mb-4">
+            Your account is not associated with a cart. Please contact your administrator to set up your cart ID.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const pendingOrders = orders.filter((o) => o.status === 'pending');
   const readyOrders = orders.filter((o) => o.status === 'ready');
   const completedOrders = orders.filter((o) => o.status === 'completed');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen min-w-[80vw] bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">OrderPing Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
-          >
-            Logout
-          </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">OrderPing</h1>
+              <p className="text-sm text-gray-600">{cartName}</p>
+            </div>
+            <div className="flex max-md:flex-col-reverse gap-3">
+              <button
+                onClick={() => setShowQR(true)}
+                className=" px-4 py-2 text-sm bg-gray-700 text-white rounded-md hover:bg-blue-700 transition"
+              >
+                View QR Code
+              </button>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="px-4 py-2 text-sm text-red-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -132,7 +204,7 @@ export default function Dashboard() {
                   required
                   value={formData.customerName}
                   onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="John Doe"
                 />
               </div>
@@ -146,7 +218,7 @@ export default function Dashboard() {
                   required
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="+1234567890"
                 />
               </div>
@@ -159,7 +231,7 @@ export default function Dashboard() {
                   id="orderDetails"
                   value={formData.orderDetails}
                   onChange={(e) => setFormData({ ...formData, orderDetails: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="2x Burger, 1x Fries"
                 />
               </div>
@@ -273,6 +345,73 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+{/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50  flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 z-60">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Logout</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Are you sure you want to log out of <strong>{cartName}</strong>? You will need to sign in again to manage orders.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* QR Code Modal */}
+      {showQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Your QR Code</h3>
+              <button
+                onClick={() => setShowQR(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">{cartName}</p>
+              <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(getQRCodeUrl())}`}
+                  alt="QR Code"
+                  className="w-64 h-64"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-4 mb-4">
+                {getQRCodeUrl()}
+              </p>
+              <button
+                onClick={downloadQRCode}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              >
+                Download QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

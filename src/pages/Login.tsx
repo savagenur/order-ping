@@ -27,14 +27,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+    <div className='h-screen w-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4'>
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
+       
+        <div className="bg-white rounded-lg shadow-xl p-8">
+           <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">OrderPing</h1>
           <p className="text-gray-600">Worker Dashboard Login</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -46,7 +47,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="worker@example.com"
               />
             </div>
@@ -61,7 +62,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="••••••••"
               />
             </div>
