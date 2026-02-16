@@ -20,22 +20,25 @@ export default function Queue() {
   const [loading, setLoading] = useState(!!cartId);
 
   useEffect(() => {
-    // 1. Guard: If no cartId, we do nothing. 
-    // Since 'loading' started as !!cartId, it's already false if cartId is null.
-    if (!cartId) return;
+  // Guard: If no cartId, do nothing
+  if (!cartId) return;
 
-    const ordersQuery = query(
-      collection(db, 'orders'),
-      where('cartId', '==', cartId),
-      orderBy('createdAt', 'desc')
-    );
+  // Optimized query: Let Firestore do the heavy lifting
+  const ordersQuery = query(
+    collection(db, 'orders'),
+    where('cartId', '==', cartId),
+    orderBy('createdAt', 'asc')  // Ascending for pending orders (oldest first)
+  );
 
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+  const unsubscribe = onSnapshot(
+    ordersQuery,
+    (snapshot) => {
       const allOrders: Order[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
         allOrders.push({
           id: doc.id,
+          orderNumber: data.orderNumber || 0,
           customerName: data.customerName,
           phoneNumber: data.phoneNumber,
           orderDetails: data.orderDetails,
@@ -47,33 +50,31 @@ export default function Queue() {
         });
       });
 
-      // 2. Optimization: Only update cartName if it's currently empty
-      if (allOrders.length > 0) {
-        setCartName((prev) => prev || allOrders[0].cartName);
+      // Set cart name from first order (if available)
+      if (allOrders.length > 0 && !cartName) {
+        setCartName(allOrders[0].cartName);
       }
 
-      const pending = allOrders
-        .filter((o) => o.status === 'pending')
-        .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+      // Filter by status (already sorted by createdAt ascending from Firestore)
+      const pending = allOrders.filter((o) => o.status === 'pending');
       
+      // Ready orders need to be sorted by readyAt (most recent first)
       const ready = allOrders
         .filter((o) => o.status === 'ready')
         .sort((a, b) => (b.readyAt?.getTime() || 0) - (a.readyAt?.getTime() || 0));
 
       setPendingOrders(pending);
       setReadyOrders(ready);
-      
-      // 3. This setLoading is safe because it is inside an ASYNC callback
       setLoading(false);
-    }, (error) => {
+    },
+    (error) => {
       console.error('Error fetching orders:', error);
       setLoading(false);
-    });
+    }
+  );
 
-    return () => unsubscribe();
-    // 4. Removed cartName from dependencies to prevent infinite loops 
-    // when setting the name inside the effect.
-  }, [cartId]); 
+  return () => unsubscribe();
+}, [cartId, cartName]);
 
   const handleSearch = () => {
     if (!searchName.trim()) {
@@ -141,9 +142,14 @@ export default function Queue() {
           {myOrder && (
             <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">{myOrder.customerName}</p>
-                  <p className="text-sm text-gray-600">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-block px-3 py-1 bg-blue-600 text-white rounded-md text-lg font-bold">
+                      #{myOrder.orderNumber}
+                    </span>
+                    <p className="font-semibold text-gray-900 text-lg">{myOrder.customerName}</p>
+                  </div>
+                  <p className="text-sm text-gray-600 ml-1">
                     {myOrder.orderDetails || 'Your order'}
                   </p>
                 </div>
@@ -189,13 +195,18 @@ export default function Queue() {
                   className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500 animate-pulse"
                 >
                   <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold text-gray-900">{order.customerName}</p>
-                      {order.orderDetails && (
-                        <p className="text-sm text-gray-600">{order.orderDetails}</p>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                        #{order.orderNumber}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-lg">{order.customerName}</p>
+                        {order.orderDetails && (
+                          <p className="text-sm text-gray-600">{order.orderDetails}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-green-700 font-bold">✓ READY</div>
+                    <div className="text-green-700 font-bold text-xl">✓ READY</div>
                   </div>
                 </div>
               ))}
@@ -236,11 +247,16 @@ export default function Queue() {
                   key={order.id}
                   className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                 >
-                  <div className="shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                    {index + 1}
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                    #{order.orderNumber}
                   </div>
                   <div className="ml-4 flex-1">
-                    <p className="font-semibold text-gray-900">{order.customerName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 text-lg">{order.customerName}</p>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                        {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} in line
+                      </span>
+                    </div>
                     {order.orderDetails && (
                       <p className="text-sm text-gray-600">{order.orderDetails}</p>
                     )}
