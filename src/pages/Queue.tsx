@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestor
 import { useSearchParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import type { Order } from '../types/order';
+import InvalidQRCode from '../components/InvalidQrCode';
 
 export default function Queue() {
   const [searchParams] = useSearchParams();
@@ -93,16 +94,7 @@ export default function Queue() {
 
   // RENDER LOGIC
   if (!cartId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-md p-8 bg-white rounded-lg shadow-xl text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid QR Code</h2>
-          <p className="text-gray-700">
-            This QR code is not valid. Please scan a valid OrderPing QR code from a food cart.
-          </p>
-        </div>
-      </div>
-    );
+    return <InvalidQRCode />;
   }
 
   if (loading) {
@@ -244,7 +236,7 @@ export default function Queue() {
                   key={order.id}
                   className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                  <div className="shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
                     {index + 1}
                   </div>
                   <div className="ml-4 flex-1">

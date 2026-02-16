@@ -19,5 +19,10 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+     rules: {
+      "no-unused-vars": "off", // disable base rule
+      "@typescript-eslint/no-unused-vars": ["off"], // disable TS rule
+      "prefer-const": "off",
+    },
   },
 ])

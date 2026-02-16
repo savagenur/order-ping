@@ -1,12 +1,17 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import  { onAuthStateChanged } from 'firebase/auth';
-import  type {  User } from 'firebase/auth';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import type { User } from "firebase/auth";
 
-import { auth } from './lib/firebase';
-import Dashboard from './pages/Dashboard';
-import Queue from './pages/Queue';
-import Login from './pages/Login';
+import { auth } from "./lib/firebase";
+import Dashboard from "./pages/Dashboard";
+import Queue from "./pages/Queue";
+import Login from "./pages/Login";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

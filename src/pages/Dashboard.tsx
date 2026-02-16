@@ -51,7 +51,7 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [cartId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.ChangeEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -173,13 +173,13 @@ export default function Dashboard() {
             <div className="flex max-md:flex-col-reverse gap-3">
               <button
                 onClick={() => setShowQR(true)}
-                className=" px-4 py-2 text-sm bg-gray-700 text-white rounded-md hover:bg-blue-700 transition"
+                className="border border-blue-600 text-blue-600 hover:bg-blue-600/10 px-4 py-2 text-sm  rounded-md  transition"
               >
                 View QR Code
               </button>
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="px-4 py-2 text-sm text-red-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
+                className="px-4 py-2 text-sm border border-red-700 text-red-700 hover:bg-red-700/5  rounded-md transition"
               >
                 Logout
               </button>
