@@ -10,6 +10,7 @@ export interface Order {
   createdAt: Date;
   readyAt?: Date;
   completedAt?: Date;
+  completedBy?: string;
 }
 
 export interface OrderInput {

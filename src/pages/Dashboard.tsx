@@ -153,6 +153,7 @@ export default function Dashboard() {
       await updateDoc(orderRef, {
         status: "completed",
         completedAt: Timestamp.now(),
+        completedBy: auth.currentUser?.uid || '',
       });
     } catch (error) {
       console.error("Error completing order:", error);
@@ -216,6 +217,7 @@ export default function Dashboard() {
                 cartName={cartName}
                 onLogout={() => setShowLogoutModal(true)}
                 onShowQR={() => setShowQR(true)}
+                onWorkerStats={() => navigate("/worker-stats")}
               />
             </div>
           </div>
