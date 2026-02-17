@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
 import Login from './pages/Login';
 import WorkerStats from './pages/WorkerStats';
+import Analytics from './pages/Analytics';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCarts from './pages/AdminCarts';
@@ -64,6 +65,14 @@ function App() {
           element={
             <ProtectedRoute>
               <WorkerStats />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Analytics />
             </ProtectedRoute>
           }
         />

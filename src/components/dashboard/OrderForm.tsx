@@ -19,7 +19,6 @@ export default function OrderForm({
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-8">
       <div className="flex items-center mb-6">
-        <PlusCircle className="w-6 h-6 text-blue-600 mr-2" />
         <h2 className="text-xl font-semibold text-gray-900">
           Add New Order
         </h2>

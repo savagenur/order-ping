@@ -3,6 +3,7 @@ import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import type { Order } from "../../types/order";
 import OrderCard from "./OrderCard";
 import AllReadyConfirmModal from "./AllReadyConfirmModal";
+import Pagination from "../Pagination";
 
 interface OrdersGridProps {
   orders: Order[];
@@ -11,32 +12,50 @@ interface OrdersGridProps {
   onMarkAllReady: () => void;
 }
 
-export default function OrdersGrid({ 
-  orders, 
-  onMarkReady, 
+export default function OrdersGrid({
+  orders,
+  onMarkReady,
   onMarkCompleted,
-  onMarkAllReady
+  onMarkAllReady,
 }: OrdersGridProps) {
-  const [showOnlyToday, setShowOnlyToday] = useState(true);
   const [showAllReadyConfirm, setShowAllReadyConfirm] = useState(false);
+  const [completedPage, setCompletedPage] = useState(1);
   
+  const ORDERS_PER_PAGE = 10;
+
   const pendingOrders = orders.filter((o) => o.status === "pending");
   const readyOrders = orders.filter((o) => o.status === "ready");
-  
-  // Filter completed orders based on toggle settings
+
+  // Filter completed orders for today only
   const allCompletedOrders = orders.filter((o) => o.status === "completed");
-  
-  // Filter by today if the toggle is on
-  const completedOrders = showOnlyToday 
-    ? allCompletedOrders.filter(order => {
-        if (!order.completedAt) return false;
-        const today = new Date();
-        const orderDate = order.completedAt;
-        return orderDate.getDate() === today.getDate() &&
-               orderDate.getMonth() === today.getMonth() &&
-               orderDate.getFullYear() === today.getFullYear();
-      })
-    : allCompletedOrders;
+  const todaysCompletedOrders = allCompletedOrders.filter((order) => {
+    if (!order.completedAt) return false;
+    const today = new Date();
+    const orderDate = order.completedAt;
+    return (
+      orderDate.getDate() === today.getDate() &&
+      orderDate.getMonth() === today.getMonth() &&
+      orderDate.getFullYear() === today.getFullYear()
+    );
+  });
+
+  // Sort today's completed orders by completedAt date in descending order (latest first)
+  const sortedTodaysCompletedOrders = [...todaysCompletedOrders].sort((a, b) => {
+    const dateA = a.completedAt ? a.completedAt.getTime() : 0;
+    const dateB = b.completedAt ? b.completedAt.getTime() : 0;
+    return dateB - dateA; // Descending order
+  });
+
+  // Paginate completed orders
+  const totalPages = Math.ceil(sortedTodaysCompletedOrders.length / ORDERS_PER_PAGE);
+  const startIndex = (completedPage - 1) * ORDERS_PER_PAGE;
+  const endIndex = startIndex + ORDERS_PER_PAGE;
+  const currentCompletedOrders = sortedTodaysCompletedOrders.slice(startIndex, endIndex);
+
+  // Handle page change for completed orders
+  const handleCompletedPageChange = (page: number) => {
+    setCompletedPage(page);
+  };
 
   const handleConfirmAllReady = () => {
     onMarkAllReady();
@@ -63,11 +82,7 @@ export default function OrdersGrid({
         </div>
         <div className="space-y-3">
           {pendingOrders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onMarkReady={onMarkReady}
-            />
+            <OrderCard key={order.id} order={order} onMarkReady={onMarkReady} />
           ))}
           {pendingOrders.length === 0 && (
             <p className="text-gray-500 text-sm text-center py-8">
@@ -100,36 +115,34 @@ export default function OrdersGrid({
 
       {/* Completed Orders */}
       <div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Completed ({completedOrders.length})
+            Completed Today ({todaysCompletedOrders.length})
           </h2>
-          <div className="flex items-center space-x-2">
-            <label className="inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={showOnlyToday}
-                onChange={() => setShowOnlyToday(!showOnlyToday)}
-              />
-              <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-              <span className="ml-2 text-sm font-medium text-gray-500">Today only</span>
-            </label>
-          </div>
         </div>
         <div className="space-y-3">
-          {completedOrders.slice(0, 10).map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-            />
+          {currentCompletedOrders.map((order) => (
+            <OrderCard key={order.id} order={order} />
           ))}
-          {completedOrders.length === 0 && (
+          {sortedTodaysCompletedOrders.length === 0 && (
             <p className="text-gray-500 text-sm text-center py-8">
-              No completed orders
+              No completed orders today
             </p>
           )}
         </div>
+        
+        {/* Pagination for completed orders */}
+        {sortedTodaysCompletedOrders.length > ORDERS_PER_PAGE && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={completedPage}
+              totalPages={totalPages}
+              onPageChange={handleCompletedPageChange}
+              totalItems={sortedTodaysCompletedOrders.length}
+              itemsPerPage={ORDERS_PER_PAGE}
+            />
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}

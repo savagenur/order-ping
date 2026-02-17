@@ -245,6 +245,7 @@ export default function Dashboard() {
                 onLogout={() => setShowLogoutModal(true)}
                 onShowQR={() => setShowQR(true)}
                 onWorkerStats={() => navigate("/worker-stats")}
+                onAnalytics={() => navigate("/analytics")}
               />
             </div>
           </div>
