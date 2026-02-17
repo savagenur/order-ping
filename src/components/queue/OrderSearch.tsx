@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Order } from "../../types/order";
+import { Search } from "lucide-react";
 
 interface OrderSearchProps {
   orders: Order[];
@@ -40,8 +41,9 @@ export default function OrderSearch({ orders, getPosition }: OrderSearchProps) {
         />
         <button
           onClick={handleSearch}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center gap-2"
         >
+          <Search className="w-5 h-5" />
           Search
         </button>
       </div>

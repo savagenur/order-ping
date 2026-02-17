@@ -1,4 +1,5 @@
 import type { OrderInput } from "../../types/order";
+import { PlusCircle } from "lucide-react";
 
 interface OrderFormProps {
   formData: OrderInput;
@@ -17,9 +18,12 @@ export default function OrderForm({
 }: OrderFormProps) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-        Add New Order
-      </h2>
+      <div className="flex items-center mb-6">
+        <PlusCircle className="w-6 h-6 text-blue-600 mr-2" />
+        <h2 className="text-xl font-semibold text-gray-900">
+          Add New Order
+        </h2>
+      </div>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -79,13 +83,16 @@ export default function OrderForm({
             />
           </div>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          {loading ? "Adding..." : "Add Order"}
-        </button>
+        <div className="mt-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <PlusCircle className="w-5 h-5 mr-2" />
+            {loading ? "Adding..." : "Add Order"}
+          </button>
+        </div>
       </form>
     </div>
   );

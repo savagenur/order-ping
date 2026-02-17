@@ -1,19 +1,24 @@
 import { useState } from "react";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import type { Order } from "../../types/order";
 import OrderCard from "./OrderCard";
+import AllReadyConfirmModal from "./AllReadyConfirmModal";
 
 interface OrdersGridProps {
   orders: Order[];
   onMarkReady: (orderId: string) => void;
   onMarkCompleted: (orderId: string) => void;
+  onMarkAllReady: () => void;
 }
 
 export default function OrdersGrid({ 
   orders, 
   onMarkReady, 
-  onMarkCompleted 
+  onMarkCompleted,
+  onMarkAllReady
 }: OrdersGridProps) {
   const [showOnlyToday, setShowOnlyToday] = useState(true);
+  const [showAllReadyConfirm, setShowAllReadyConfirm] = useState(false);
   
   const pendingOrders = orders.filter((o) => o.status === "pending");
   const readyOrders = orders.filter((o) => o.status === "ready");
@@ -33,13 +38,29 @@ export default function OrdersGrid({
       })
     : allCompletedOrders;
 
+  const handleConfirmAllReady = () => {
+    onMarkAllReady();
+    setShowAllReadyConfirm(false);
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Pending Orders */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Pending ({pendingOrders.length})
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Pending ({pendingOrders.length})
+          </h2>
+          {pendingOrders.length > 0 && (
+            <button
+              onClick={() => setShowAllReadyConfirm(true)}
+              className="flex items-center gap-1 px-3 py-1 border border-green-600 text-green-600 text-sm rounded-md hover:bg-green-50 transition"
+            >
+              <CheckCircleIcon className="h-4 w-4" />
+              All Ready
+            </button>
+          )}
+        </div>
         <div className="space-y-3">
           {pendingOrders.map((order) => (
             <OrderCard
@@ -110,6 +131,14 @@ export default function OrdersGrid({
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <AllReadyConfirmModal
+        show={showAllReadyConfirm}
+        pendingCount={pendingOrders.length}
+        onConfirm={handleConfirmAllReady}
+        onCancel={() => setShowAllReadyConfirm(false)}
+      />
     </div>
   );
 }

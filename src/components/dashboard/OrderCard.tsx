@@ -45,7 +45,7 @@ export default function OrderCard({
             onClick={() => onMarkReady?.(order.id)}
             className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition"
           >
-            Mark as Ready
+            Ready
           </button>
         );
       case "ready":
@@ -54,7 +54,7 @@ export default function OrderCard({
             onClick={() => onMarkCompleted?.(order.id)}
             className="w-full px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition"
           >
-            Mark as Picked Up
+            Picked Up
           </button>
         );
       default:

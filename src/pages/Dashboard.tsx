@@ -9,6 +9,7 @@ import {
   Timestamp,
   where,
   orderBy,
+  writeBatch,
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -147,6 +148,32 @@ export default function Dashboard() {
     }
   };
 
+  const handleMarkAllReady = async () => {
+    try {
+      const pendingOrders = orders.filter(order => order.status === "pending");
+      if (pendingOrders.length === 0) return;
+      
+      // Create a batch to update all orders at once
+      const batch = writeBatch(db);
+      const now = Timestamp.now();
+      
+      // Add each pending order to the batch
+      pendingOrders.forEach(order => {
+        const orderRef = doc(db, "orders", order.id);
+        batch.update(orderRef, {
+          status: "ready",
+          readyAt: now,
+        });
+      });
+      
+      // Commit the batch
+      await batch.commit();
+    } catch (error) {
+      console.error("Error updating orders:", error);
+      alert("Failed to update orders");
+    }
+  };
+
   const handleMarkCompleted = async (orderId: string) => {
     try {
       const orderRef = doc(db, "orders", orderId);
@@ -237,6 +264,7 @@ export default function Dashboard() {
           orders={orders}
           onMarkReady={handleMarkReady}
           onMarkCompleted={handleMarkCompleted}
+          onMarkAllReady={handleMarkAllReady}
         />
       </div>
 
