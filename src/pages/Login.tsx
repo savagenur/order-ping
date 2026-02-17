@@ -102,6 +102,9 @@ export default function Login() {
 
         <div className="mt-8 text-center text-sm text-gray-600">
           <p>Need an account? Contact your administrator.</p>
+          <p className="mt-2 text-xs text-gray-500">
+            Contact: usalife609@gmail.com
+          </p>
         </div>
       </div>
     </div>

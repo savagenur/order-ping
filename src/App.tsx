@@ -1,17 +1,15 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import type { User } from "firebase/auth";
-
-import { auth } from "./lib/firebase";
-import Dashboard from "./pages/Dashboard";
-import Queue from "./pages/Queue";
-import Login from "./pages/Login";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import Dashboard from './pages/Dashboard';
+import Queue from './pages/Queue';
+import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminCarts from './pages/AdminCarts';
+import AdminWorkers from './pages/AdminWorkers';
+import AdminRoute from './components/AdminRoute';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -45,8 +43,13 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Queue />} />
         <Route path="/queue" element={<Queue />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        
+        {/* Worker Routes - Protected */}
         <Route
           path="/dashboard"
           element={
@@ -55,7 +58,32 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
+        
+        {/* Admin Routes - Admin Only */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/carts"
+          element={
+            <AdminRoute>
+              <AdminCarts />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/workers"
+          element={
+            <AdminRoute>
+              <AdminWorkers />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </Router>
   );

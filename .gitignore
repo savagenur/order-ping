@@ -37,3 +37,7 @@ dist-ssr
 .firebase
 .firebaserc
 service-account-key.json
+
+setup-admin.cjs
+setup-cart.cjs
+draft.txt

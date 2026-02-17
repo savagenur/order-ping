@@ -1,136 +1,85 @@
-import {onDocumentUpdated} from "firebase-functions/v2/firestore";
-import {onSchedule} from "firebase-functions/v2/scheduler";
-import {defineSecret} from "firebase-functions/params";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+// TODO: Uncomment when ready to use Twilio
+// import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
-import * as twilio from "twilio";
+// import * as twilio from "twilio";
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Define secrets from Secret Manager
-const twilioAccountSid = defineSecret("TWILIO_ACCOUNT_SID");
-const twilioAuthToken = defineSecret("TWILIO_AUTH_TOKEN");
-const twilioPhoneNumber = defineSecret("TWILIO_PHONE_NUMBER");
+// Define secrets (Required for v2 to handle API keys securely)
+// const twilioAccountSid = defineSecret("TWILIO_ACCOUNT_SID");
+// const twilioAuthToken = defineSecret("TWILIO_AUTH_TOKEN");
+// const twilioPhoneNumber = defineSecret("TWILIO_PHONE_NUMBER");
 
 /**
- * Format phone number to E.164 format for Twilio
- * Converts (555) 123-4567 to +15551234567
+ * Helper: Format phone number to E.164
  */
-function toE164(phoneNumber: string): string {
-  // Remove all non-digits
-  const digits = phoneNumber.replace(/\D/g, "");
-
-  // Add +1 for US numbers (assumes 10 digit US numbers)
-  if (digits.length === 10) {
-    return `+1${digits}`;
-  }
-
-  // If already has country code, just add +
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `+${digits}`;
-  }
-
-  // Return as-is if it's already in a valid format
-  return phoneNumber;
-}
+// function toE164(phoneNumber: string): string {
+//   const digits = phoneNumber.replace(/\D/g, "");
+//   if (digits.length === 10) return `+1${digits}`;
+//   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+//   return phoneNumber.startsWith("+") ? phoneNumber : `+${digits}`;
+// }
 
 /**
- * Send SMS notification when order is marked as ready
- * Triggers on order status change to 'ready'
+ * 1. Send SMS when order is READY
  */
 export const sendOrderReadySMS = onDocumentUpdated(
   {
     document: "orders/{orderId}",
     region: "us-west1",
-    secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
+    // secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
   },
   async (event) => {
     const newData = event.data?.after.data();
     const previousData = event.data?.before.data();
 
-    if (!newData || !previousData) {
-      return null;
-    }
+    if (!newData || !previousData) return null;
 
-    // Check if status changed to 'ready'
     if (newData.status === "ready" && previousData.status !== "ready") {
-      try {
-        // Initialize Twilio client with secrets
-        const twilioClient = twilio.default(
-          twilioAccountSid.value(),
-          twilioAuthToken.value()
-        );
+      // try {
+      //   const client = twilio.default(
+      //     twilioAccountSid.value(),
+      //     twilioAuthToken.value(),
+      //   );
+      //   const formattedPhone = toE164(newData.phoneNumber);
 
-        const customerName = newData.customerName;
-        const phoneNumber = newData.phoneNumber;
-        const orderNumber = newData.orderNumber || "";
-        const cartName = newData.cartName || "Your food cart";
+      //   const message = newData.orderNumber
+      //     ? `Hi ${newData.customerName}! Order #${newData.orderNumber} is ready at ${newData.cartName || "the cart"}! 🎉`
+      //     : `Hi ${newData.customerName}! Your order is ready for pickup! 🎉`;
 
-        // Format phone number to E.164
-        const formattedPhone = toE164(phoneNumber);
+      //   const result = await client.messages.create({
+      //     body: message,
+      //     from: twilioPhoneNumber.value(),
+      //     to: formattedPhone,
+      //   });
 
-        // Create message with order number
-        const message = orderNumber
-          ? `Hi ${customerName}! Order #${orderNumber} is ready for pickup at ${cartName}! 🎉`
-          : `Hi ${customerName}! Your order is ready for pickup at ${cartName}! 🎉`;
-
-        // Send SMS via Twilio
-        const result = await twilioClient.messages.create({
-          body: message,
-          from: twilioPhoneNumber.value(),
-          to: formattedPhone,
-        });
-
-        console.log(`SMS sent successfully to ${formattedPhone}`, {
-          sid: result.sid,
-          status: result.status,
-          orderId: event.params.orderId,
-          orderNumber: orderNumber,
-          customerName: customerName,
-        });
-
-        // Update order with SMS status
-        if (event.data) {
-          await event.data.after.ref.update({
-            smsSent: true,
-            smsSentAt: admin.firestore.FieldValue.serverTimestamp(),
-            smsId: result.sid,
-          });
-        }
-
-        return {success: true, messageSid: result.sid};
-      } catch (error: any) {
-        console.error("Error sending SMS:", {
-          error: error.message,
-          code: error.code,
-          orderId: event.params.orderId,
-          phoneNumber: newData.phoneNumber,
-        });
-
-        // Update order with error status
-        if (event.data) {
-          await event.data.after.ref.update({
-            smsSent: false,
-            smsError: error.message,
-            smsErrorAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-
-        return {success: false, error: error.message};
-      }
+      //   await event.data?.after.ref.update({
+      //     smsSent: true,
+      //     smsSentAt: admin.firestore.FieldValue.serverTimestamp(),
+      //     smsId: result.sid,
+      //   });
+      // } catch (error: any) {
+      //   console.error("SMS Error:", error.message);
+      //   await event.data?.after.ref.update({
+      //     smsSent: false,
+      //     smsError: error.message,
+      //   });
+      // }
     }
-
     return null;
-  }
+  },
 );
 
 /**
- * Optional: Scheduled function to clean up old completed orders
- * Runs daily to delete orders older than 30 days
+ * 2. Scheduled Cleanup (Daily at 2 AM)
  */
 export const cleanupOldOrders = onSchedule(
   {
-    schedule: "0 2 * * *", // Runs at 2 AM every day
+    schedule: "0 2 * * *",
     timeZone: "America/Los_Angeles",
     region: "us-west1",
   },
@@ -139,26 +88,69 @@ export const cleanupOldOrders = onSchedule(
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    const snapshot = await db
+      .collection("orders")
+      .where("status", "==", "completed")
+      .where("completedAt", "<", thirtyDaysAgo)
+      .get();
+
+    const batch = db.batch();
+    snapshot.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+
+    console.log(`Cleaned up ${snapshot.size} orders.`);
+  },
+);
+
+/**
+ * 3. Create Worker (Callable Function)
+ */
+export const createWorker = onCall(
+  {
+    region: "us-west1",
+    cors: [
+      "http://localhost:5173", 
+      "https://order-pingx.web.app/", 
+      "https://order-pingx.firebaseapp.com/"
+    ],
+    // secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
+  },
+  async (request) => {
+    // Check Auth & Admin Claims
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in.");
+    }
+
+    const caller = await admin.auth().getUser(request.auth!.uid);
+    if (caller.customClaims?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin access required.");
+    }
+
+    const { email, password, cartId, cartName } = request.data;
+
     try {
-      const snapshot = await db
-        .collection("orders")
-        .where("status", "==", "completed")
-        .where("completedAt", "<", thirtyDaysAgo)
-        .get();
+      const userRecord = await admin.auth().createUser({ email, password });
 
-      const batch = db.batch();
-      let count = 0;
-
-      snapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-        count++;
+      await admin.auth().setCustomUserClaims(userRecord.uid, {
+        cartId,
+        cartName,
+        role: "worker",
       });
 
-      await batch.commit();
-
-      console.log(`Cleaned up ${count} old completed orders`);
+      return { success: true, uid: userRecord.uid };
     } catch (error: any) {
-      console.error("Error cleaning up old orders:", error.message);
+      throw new HttpsError("internal", error.message);
     }
-  }
+  },
+);
+
+export const makeMeAdmin = onCall(
+  { region: "us-west1", cors: true },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login first!");
+
+    await admin.auth().setCustomUserClaims(request.auth.uid, { role: "admin" });
+
+    return { success: true, message: "You are now an admin locally!" };
+  },
 );
