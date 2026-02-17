@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import type { FirebaseError } from 'firebase/app';
@@ -9,7 +9,34 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          if (idTokenResult.claims.role === 'admin') {
+            navigate('/admin/dashboard', { replace: true });
+          }
+        } catch (err) {
+          console.error('Error checking admin role:', err);
+        }
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-indigo-100 to-purple-100 flex items-center justify-center p-4">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

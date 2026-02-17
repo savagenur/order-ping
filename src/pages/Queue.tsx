@@ -7,10 +7,10 @@ import {
   where,
 } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { db } from "../lib/firebase";
 import type { Order } from "../types/order";
-import InvalidQRCode from "../components/InvalidQrCode";
+import WelcomePage from "../components/WelcomePage";
 import LoadingSpinner from "../components/LoadingSpinner";
 import QueueHeader from "../components/queue/QueueHeader";
 import OrderSearch from "../components/queue/OrderSearch";
@@ -35,6 +35,7 @@ const mapFirestoreToOrder = (docId: string, data: DocumentData): Order => {
 };
 
 export default function Queue() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cartId = searchParams.get("cart");
 
@@ -101,7 +102,7 @@ export default function Queue() {
 
   // RENDER LOGIC
   if (!cartId) {
-    return <InvalidQRCode />;
+    return <WelcomePage />;
   }
 
   if (loading) {
@@ -120,9 +121,21 @@ export default function Queue() {
         <PendingOrders pendingOrders={pendingOrders} />
 
         {/* Footer */}
-        <div className="text-center mt-8 text-gray-600 text-sm">
+        <div className="text-center mt-8 text-gray-600 text-sm gap-1 flex flex-col">
           <p>Updates automatically • No refresh needed</p>
-          <p className="mt-2 text-xs text-gray-500">
+          {/* Subtle Login Link */}
+          <div className=" text-center">
+            <p className="text-sm text-gray-600">
+              Are you a worker?{" "}
+              <button
+                onClick={() => navigate("/login")}
+                className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors cursor-pointer"
+              >
+                Login here
+              </button>
+            </p>
+          </div>
+          <p className=" text-xs text-gray-500">
             Contact: usalife609@gmail.com
           </p>
         </div>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { Eye, EyeOff } from "lucide-react";
@@ -10,7 +10,27 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/dashboard", { replace: true });
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
