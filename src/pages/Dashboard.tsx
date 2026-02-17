@@ -16,7 +16,7 @@ import { db, auth } from "../lib/firebase";
 import { getNextOrderNumber } from "../types/orderUtils";
 import type { Order, OrderInput } from "../types/order";
 import { useUserCart } from "../hooks/useUserCart";
-import UserMenu from "../components/UserMenu";
+import UserMenu from "../components/dashboard/UserMenu";
 import OrderForm from "../components/dashboard/OrderForm";
 import OrdersGrid from "../components/dashboard/OrdersGrid";
 import QRCodeModal from "../components/dashboard/QRCodeModal";
@@ -103,8 +103,8 @@ export default function Dashboard() {
       return;
     }
 
-    // Validate phone number
-    if (!validatePhoneNumber(formData.phoneNumber)) {
+    // Validate phone number only if provided
+    if (formData.phoneNumber && !validatePhoneNumber(formData.phoneNumber)) {
       alert("Please enter a valid 10-digit phone number");
       setLoading(false);
       return;

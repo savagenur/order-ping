@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { Link } from 'react-router-dom';
-import { db,functions } from '../lib/firebase';
-import type { Worker, WorkerInput } from '../types/admin';
-import type { Cart } from '../types/admin';
+import { db, functions } from '../lib/firebase';
+import type { Worker, WorkerInput, Cart } from '../types/admin';
+import { Plus } from 'lucide-react';
+import AdminHeader from '../components/admin/AdminHeader';
+import WorkersTable from '../components/admin/WorkersTable';
+import CreateWorkerModal from '../components/admin/CreateWorkerModal';
 
 interface CreateWorkerResponse {
   success: boolean;
@@ -162,27 +164,16 @@ export default function AdminWorkers() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <Link to="/admin/dashboard" className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block">
-                ← Back to Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold text-gray-900">Manage Workers</h1>
-              <p className="text-sm text-gray-600">{workers.length} worker{workers.length !== 1 ? 's' : ''} total</p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              disabled={carts.length === 0}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              + Create New Worker
-            </button>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Manage Workers"
+        subtitle={`${workers.length} worker${workers.length !== 1 ? 's' : ''} total`}
+        actionButton={{
+          text: 'Worker',
+          onClick: () => setShowCreateModal(true),
+          disabled: carts.length === 0,
+          icon: <Plus className="w-4 h-4" />,
+        }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {carts.length === 0 ? (
@@ -193,12 +184,12 @@ export default function AdminWorkers() {
             <h3 className="mt-2 text-sm font-medium text-gray-900">No carts available</h3>
             <p className="mt-1 text-sm text-gray-500">Create a cart first before adding workers.</p>
             <div className="mt-6">
-              <Link
-                to="/admin/carts"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition inline-block"
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
               >
                 Go to Carts
-              </Link>
+              </button>
             </div>
           </div>
         ) : workers.length === 0 ? (
@@ -218,147 +209,23 @@ export default function AdminWorkers() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assigned Cart
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {workers.map((worker) => (
-                  <tr key={worker.uid} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{worker.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{worker.cartName}</div>
-                      <div className="text-xs text-gray-500">{worker.cartId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {worker.active ? (
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Inactive</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {worker.createdAt.toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button
-                        onClick={() => handleDeleteWorker(worker.uid, worker.email)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <WorkersTable
+            workers={workers}
+            onDelete={handleDeleteWorker}
+          />
         )}
       </div>
 
-      {/* Create Worker Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Create New Worker</h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateWorker} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="worker@yourbusiness.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Minimum 6 characters"
-                />
-                <p className="text-xs text-gray-500 mt-1">Worker will use this to login</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign to Cart *
-                </label>
-                <select
-                  required
-                  value={formData.cartId}
-                  onChange={handleCartSelect}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select a cart...</option>
-                  {carts.map((cart) => (
-                    <option key={cart.id} value={cart.cartId}>
-                      {cart.displayName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {submitting ? 'Creating...' : 'Create Worker'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateWorkerModal
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateWorker}
+        formData={formData}
+        onChange={setFormData}
+        submitting={submitting}
+        carts={carts}
+        onCartSelect={handleCartSelect}
+      />
     </div>
   );
 }

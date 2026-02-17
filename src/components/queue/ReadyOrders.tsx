@@ -1,4 +1,4 @@
-import type { Order } from "../types/order";
+import type { Order } from "../../types/order";
 
 interface ReadyOrdersProps {
   readyOrders: Order[];
@@ -42,7 +42,7 @@ export default function ReadyOrders({ readyOrders }: ReadyOrdersProps) {
                   )}
                 </div>
               </div>
-              <div className="text-green-700 font-bold text-xl">
+              <div className="text-green-700 font-bold text-xl text-nowrap">
                 ✓ READY
               </div>
             </div>

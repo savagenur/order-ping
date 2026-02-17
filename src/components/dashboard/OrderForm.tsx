@@ -39,6 +39,7 @@ export default function OrderForm({
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="John Doe"
+              maxLength={50}
             />
           </div>
           <div>
@@ -46,12 +47,11 @@ export default function OrderForm({
               htmlFor="phoneNumber"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Phone Number *
+              Phone Number (Optional)
             </label>
             <input
               type="tel"
               id="phoneNumber"
-              required
               value={formData.phoneNumber}
               onChange={onPhoneChange}
               className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -75,6 +75,7 @@ export default function OrderForm({
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="2x Burger, 1x Fries"
+              maxLength={200}
             />
           </div>
         </div>

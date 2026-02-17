@@ -93,7 +93,9 @@ export default function OrderCard({
               {order.customerName}
             </h3>
           </div>
-          <p className="text-sm text-gray-600">{order.phoneNumber}</p>
+          {order.phoneNumber && (
+            <p className="text-sm text-gray-600">{order.phoneNumber}</p>
+          )}
           {order.orderDetails && (
             <p className="text-sm text-gray-700 mt-1">{order.orderDetails}</p>
           )}

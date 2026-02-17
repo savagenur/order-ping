@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Order } from "../types/order";
+import type { Order } from "../../types/order";
 
 interface OrderSearchProps {
   orders: Order[];

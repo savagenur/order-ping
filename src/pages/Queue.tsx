@@ -12,10 +12,10 @@ import { db } from "../lib/firebase";
 import type { Order } from "../types/order";
 import InvalidQRCode from "../components/InvalidQrCode";
 import LoadingSpinner from "../components/LoadingSpinner";
-import QueueHeader from "../components/QueueHeader";
-import OrderSearch from "../components/OrderSearch";
-import ReadyOrders from "../components/ReadyOrders";
-import PendingOrders from "../components/PendingOrders";
+import QueueHeader from "../components/queue/QueueHeader";
+import OrderSearch from "../components/queue/OrderSearch";
+import ReadyOrders from "../components/queue/ReadyOrders";
+import PendingOrders from "../components/queue/PendingOrders";
 
 // Helper function to safely map Firestore data to Order type
 const mapFirestoreToOrder = (docId: string, data: DocumentData): Order => {

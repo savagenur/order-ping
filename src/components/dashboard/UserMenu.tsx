@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { auth } from "../lib/firebase";
+import { auth } from "../../lib/firebase";
 
 interface UserMenuProps {
   cartName: string;
