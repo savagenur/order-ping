@@ -34,6 +34,29 @@ export function useAddOrder() {
   });
 }
 
+export function useAddNumpadOrder() {
+  return useMutation({
+    mutationFn: async (input: {
+      orderNumber: number;
+      color: string;
+      cartId: string;
+      cartName: string;
+    }) => {
+      await addDoc(collection(db, 'orders'), {
+        orderNumber: input.orderNumber,
+        customerName: '',
+        phoneNumber: '',
+        orderDetails: '',
+        color: input.color,
+        status: 'pending',
+        cartId: input.cartId,
+        cartName: input.cartName,
+        createdAt: Timestamp.now(),
+      });
+    },
+  });
+}
+
 export function useMarkReady() {
   return useMutation({
     mutationFn: async (orderId: string) => {

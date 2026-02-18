@@ -1,54 +1,65 @@
+import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
+import { getOrderColor } from "../../lib/orderColors";
 
 interface ReadyOrdersProps {
   readyOrders: Order[];
+  onSelectOrder: (orderId: string) => void;
 }
 
-export default function ReadyOrders({ readyOrders }: ReadyOrdersProps) {
-  if (readyOrders.length === 0) {
-    return null;
-  }
+export default function ReadyOrders({
+  readyOrders,
+  onSelectOrder,
+}: ReadyOrdersProps) {
+  if (readyOrders.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Ready for Pickup
-        </h2>
-        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-          {readyOrders.length}{" "}
-          {readyOrders.length === 1 ? "order" : "orders"}
-        </span>
+    <section className="px-4 mt-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+            Ready for Pickup
+          </h2>
+          <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
+            {readyOrders.length}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <AnimatePresence mode="popLayout">
+            {readyOrders.map((order) => {
+              const color = getOrderColor(order.orderNumber);
+              return (
+                <motion.button
+                  key={order.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  onClick={() => onSelectOrder(order.id)}
+                  className="relative bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col items-center gap-2 min-h-20 cursor-pointer active:scale-95 transition-transform"
+                  style={{
+                    boxShadow: `0 0 20px -8px ${color.hex}`,
+                  }}
+                >
+                  <span className="font-mono font-extrabold text-2xl sm:text-3xl text-white">
+                    #{order.orderNumber}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${color.badge} ${color.badgeText}`}
+                  >
+                    {color.name}
+                  </span>
+                  <span className="text-emerald-400 text-xs font-semibold uppercase mt-1">
+                    ✓ Ready
+                  </span>
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
-      <div className="space-y-3">
-        {readyOrders.map((order) => (
-          <div
-            key={order.id}
-            className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500 animate-pulse"
-          >
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="shrink-0 w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                  #{order.orderNumber}
-                </span>
-                <div>
-                  <p className="font-semibold text-gray-900 text-lg">
-                    {order.customerName}
-                  </p>
-                  {order.orderDetails && (
-                    <p className="text-sm text-gray-600">
-                      {order.orderDetails}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="text-green-700 font-bold text-xl text-nowrap">
-                ✓ READY
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }

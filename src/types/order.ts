@@ -6,6 +6,7 @@ export interface Order {
   customerName: string;
   phoneNumber: string;
   orderDetails?: string;
+  color?: string;
   status: 'pending' | 'ready' | 'completed';
   cartId: string;
   cartName: string;

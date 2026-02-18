@@ -28,11 +28,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ initialized: true });
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed:', { user: !!user, loading: false });
       if (user) {
         try {
           const idTokenResult = await user.getIdTokenResult();
-          console.log('Token claims:', idTokenResult.claims);
           const cartId = (idTokenResult.claims.cartId as string) || null;
           const cartName = (idTokenResult.claims.cartName as string) || null;
           const isAdmin = idTokenResult.claims.role === 'admin';
@@ -44,7 +42,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             isAdmin,
             loading: false,
           });
-          console.log('Auth state updated:', { cartId, cartName, isAdmin });
         } catch (error) {
           console.error('Error getting token claims:', error);
           set({ user, loading: false });

@@ -1,5 +1,80 @@
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase'; 
+
+/**
+ * Get the last created order's number (most recent order, not highest number)
+ * @param cartId - The cart ID to get order number for
+ * @returns The last created order's number (0 if no orders exist)
+ */
+export async function getLastCreatedOrderNumber(cartId: string): Promise<number> {
+  try {
+    // Get start and end of today
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    // Query orders created today for this cart, ordered by creation time (newest first)
+    const q = query(
+      collection(db, 'orders'),
+      where('cartId', '==', cartId),
+      where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+      where('createdAt', '<=', Timestamp.fromDate(endOfDay)),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    
+    // Get the most recent order (first in the ordered results)
+    if (!snapshot.empty) {
+      const lastOrder = snapshot.docs[0].data();
+      return lastOrder.orderNumber || 0;
+    }
+
+    return 0;
+  } catch (error) {
+    console.error('Error getting last created order number:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get the last order number for today (highest existing order number)
+ * @param cartId - The cart ID to get order number for
+ * @returns The last order number (0 if no orders exist)
+ */
+export async function getLastOrderNumber(cartId: string): Promise<number> {
+  try {
+    // Get start and end of today
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    // Query orders created today for this cart
+    const q = query(
+      collection(db, 'orders'),
+      where('cartId', '==', cartId),
+      where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+      where('createdAt', '<=', Timestamp.fromDate(endOfDay))
+    );
+
+    const snapshot = await getDocs(q);
+    
+    // Find highest order number
+    let maxOrderNumber = 0;
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.orderNumber && data.orderNumber > maxOrderNumber) {
+        maxOrderNumber = data.orderNumber;
+      }
+    });
+
+    // Return last number (0 if no orders exist)
+    return maxOrderNumber;
+  } catch (error) {
+    console.error('Error getting last order number:', error);
+    return 0;
+  }
+}
 
 /**
  * Get the next order number for today (resets daily)

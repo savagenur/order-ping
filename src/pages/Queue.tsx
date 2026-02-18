@@ -1,16 +1,23 @@
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueueOrders } from "../hooks/useQueueOrders";
 import WelcomePage from "../components/WelcomePage";
 import LoadingSpinner from "../components/LoadingSpinner";
 import QueueHeader from "../components/queue/QueueHeader";
-import OrderSearch from "../components/queue/OrderSearch";
+import PinnedOrder from "../components/queue/PinnedOrder";
 import ReadyOrders from "../components/queue/ReadyOrders";
 import PendingOrders from "../components/queue/PendingOrders";
+
+const PINNED_KEY = "orderping_pinned_order";
 
 export default function Queue() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cartId = searchParams.get("cart");
+
+  const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(() =>
+    localStorage.getItem(PINNED_KEY),
+  );
 
   // TanStack Query - realtime queue orders via Firestore onSnapshot
   const { data, isLoading } = useQueueOrders(cartId);
@@ -19,11 +26,43 @@ export default function Queue() {
   const readyOrders = data?.readyOrders ?? [];
   const cartName = data?.cartName ?? "";
 
-  const getPosition = (orderId: string) => {
-    return pendingOrders.findIndex((order) => order.id === orderId) + 1;
-  };
-
   const allOrders = [...pendingOrders, ...readyOrders];
+
+  // Find the pinned order from the live data
+  const pinnedOrder = pinnedOrderId
+    ? allOrders.find((o) => o.id === pinnedOrderId) ?? null
+    : null;
+
+  // Calculate queue position for pinned order (only if it's pending)
+  const queuePosition = pinnedOrder && pinnedOrder.status === 'pending' 
+    ? pendingOrders.findIndex((o) => o.id === pinnedOrderId) + 1 
+    : undefined;
+
+  // Auto-clear pinned order if it's been completed (no longer in active lists)
+  useEffect(() => {
+    if (pinnedOrderId && !isLoading && allOrders.length > 0 && !pinnedOrder) {
+      // Order was completed or removed — keep pinned for a grace period
+      // so the user sees it disappear naturally
+    }
+  }, [pinnedOrderId, pinnedOrder, isLoading, allOrders.length]);
+
+  const handleSelectOrder = useCallback((orderId: string) => {
+    setPinnedOrderId(orderId);
+    localStorage.setItem(PINNED_KEY, orderId);
+    // Scroll to top to show pinned order
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleClearPinned = useCallback(() => {
+    setPinnedOrderId(null);
+    localStorage.removeItem(PINNED_KEY);
+  }, []);
+
+  // Filter pinned order out of the section lists to avoid duplication
+  const filteredReadyOrders = readyOrders.filter(
+    (o) => o.id !== pinnedOrderId,
+  );
+  // Keep pinned order in pending list so it remains visible
 
   // RENDER LOGIC
   if (!cartId) {
@@ -35,36 +74,37 @@ export default function Queue() {
   }
 
   return (
-    <div className="min-h-screen min-w-screen #f2f3f4">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <QueueHeader cartName={cartName} />
+    <div className="min-h-screen min-w-screen bg-zinc-950">
+      <QueueHeader cartName={cartName} />
 
-        <OrderSearch orders={allOrders} getPosition={getPosition} />
+      <PinnedOrder order={pinnedOrder} onClear={handleClearPinned} queuePosition={queuePosition} />
 
-        <ReadyOrders readyOrders={readyOrders} />
+      <ReadyOrders
+        readyOrders={filteredReadyOrders}
+        onSelectOrder={handleSelectOrder}
+      />
 
-        <PendingOrders pendingOrders={pendingOrders} />
+      <PendingOrders
+        pendingOrders={pendingOrders}
+        onSelectOrder={handleSelectOrder}
+      />
 
-        {/* Footer */}
-        <div className="text-center mt-8 text-gray-600 text-sm gap-1 flex flex-col">
-          <p>Updates automatically • No refresh needed</p>
-          {/* Subtle Login Link */}
-          <div className=" text-center">
-            <p className="text-sm text-gray-600">
-              Are you a worker?{" "}
-              <button
-                onClick={() => navigate("/login")}
-                className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors cursor-pointer"
-              >
-                Login here
-              </button>
-            </p>
-          </div>
-          <p className=" text-xs text-gray-500">
-            Contact: usalife609@gmail.com
-          </p>
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="text-center pb-8 pt-4 px-4 space-y-1">
+        <p className="text-zinc-600 text-xs">
+          Updates automatically • No refresh needed
+        </p>
+        <p className="text-xs text-zinc-600">
+          Are you a worker?{" "}
+          <button
+            onClick={() => navigate("/login")}
+            className="text-blue-500 hover:text-blue-400 font-medium underline transition-colors cursor-pointer"
+          >
+            Login here
+          </button>
+        </p>
+        <p className="text-xs text-zinc-700">Contact: usalife609@gmail.com</p>
+      </footer>
     </div>
   );
 }

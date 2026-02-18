@@ -1,23 +1,161 @@
 @import "tailwindcss";
 
+/* ──────────────────────────────────────────────
+   1. THEME — Color Palette & Typography Tokens
+   ────────────────────────────────────────────── */
 @theme {
-  /* This creates the 'primary' color family */
-  /* This maps 'primary' specifically to the built-in blue-500 hex code */
-  --color-primary: var(--color-blue-500);
-  
-  /* If you want to define the shades manually for more control: */
-  --color-primary-600: var(--color-blue-600);
-  --color-primary-700: var(--color-blue-700);
-  
-  /* You can also add a 'success' color for your 'Ready for Pickup' status */
-  --color-success: #22c55e;
+  /* Background & Surface */
+  --color-base: #09090b;
+  --color-surface: #18181b;
+  --color-surface-border: #27272a;
+
+  /* Primary (Sky Blue) */
+  --color-primary: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  /* Accent — Neon System */
+  --color-accent-blue: #3b82f6;
+  --color-accent-green: #10b981;
+  --color-accent-red: #ef4444;
+  --color-accent-yellow: #f59e0b;
+
+  /* Semantic */
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Typography */
+  --font-sans: "Inter", "Roboto", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, "Courier New", monospace;
 }
 
+/* ──────────────────────────────────────────────
+   2. BASE — Body, Scrollbars, Overscroll
+   ────────────────────────────────────────────── */
 body {
-  background-color: #f2f3f4;
+  background-color: #09090b;
+  color: #fafafa;
   margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
+  overscroll-behavior-y: contain;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Thin dark scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #27272a;
+  border-radius: 9999px;
+}
+
+/* Smooth transitions globally */
+*, *::before, *::after {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* ──────────────────────────────────────────────
+   3. TYPOGRAPHY HIERARCHY
+   ────────────────────────────────────────────── */
+h1 {
+  font-weight: 500;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.order-number {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: #ffffff;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ──────────────────────────────────────────────
+   4. ORDER CARDS — Neon Borders & Glow
+   ────────────────────────────────────────────── */
+.order-card {
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 0.75rem;
+  border-left-width: 4px;
+}
+
+.order-card-blue   { border-left-color: #3b82f6; }
+.order-card-green  { border-left-color: #10b981; }
+.order-card-red    { border-left-color: #ef4444; }
+.order-card-yellow { border-left-color: #f59e0b; }
+
+/* Neon glow utilities */
+.order-glow-blue {
+  box-shadow: 0 0 15px -5px #3b82f6;
+}
+.order-glow-green {
+  box-shadow: 0 0 15px -5px #10b981;
+}
+.order-glow-red {
+  box-shadow: 0 0 15px -5px #ef4444;
+}
+.order-glow-yellow {
+  box-shadow: 0 0 15px -5px #f59e0b;
+}
+
+/* ──────────────────────────────────────────────
+   5. CONTROL BUTTONS — Numpad / Chef View
+   ────────────────────────────────────────────── */
+.numpad-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  color: #fafafa;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.numpad-btn:active {
+  transform: scale(0.95);
+  background-color: #3b82f6;
+  box-shadow: 0 0 15px -5px #3b82f6;
+}
+
+/* ──────────────────────────────────────────────
+   6. QUEUE — Pulse Glow for Pinned Ready Orders
+   ────────────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
 }
