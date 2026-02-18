@@ -1,24 +1,13 @@
-import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../lib/firebase';
-import type { Worker, WorkerInput, Cart } from '../types/admin';
+import { useState, useMemo } from 'react';
+import type { WorkerInput } from '../types/admin';
+import { useAdminCarts, useAdminWorkers, useCreateWorker, useDeleteWorker } from '../hooks/useAdminQueries';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import WorkersTable from '../components/admin/WorkersTable';
 import CreateWorkerModal from '../components/admin/CreateWorkerModal';
 import DeleteWorkerModal from '../components/admin/DeleteWorkerModal';
 
-interface CreateWorkerResponse {
-  success: boolean;
-  uid: string;
-  error?: string;
-}
-
 export default function AdminWorkers() {
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [carts, setCarts] = useState<Cart[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<{id: string, email: string} | null>(null);
@@ -29,55 +18,17 @@ export default function AdminWorkers() {
     cartId: '',
     cartName: '',
   });
-  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // TanStack Query - cached data
+  const { data: allCarts = [], isLoading: cartsLoading } = useAdminCarts();
+  const { data: workers = [], isLoading: workersLoading } = useAdminWorkers();
+  const createWorker = useCreateWorker();
+  const deleteWorker = useDeleteWorker();
 
-  const loadData = async () => {
-    try {
-      // Load carts
-      const cartsSnapshot = await getDocs(collection(db, 'carts'));
-      const cartsData: Cart[] = [];
-      cartsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        cartsData.push({
-          id: doc.id,
-          businessName: data.businessName,
-          location: data.location,
-          displayName: data.displayName,
-          cartId: data.cartId,
-          createdAt: data.createdAt?.toDate(),
-          createdBy: data.createdBy,
-          active: data.active ?? true,
-        });
-      });
-      setCarts(cartsData.filter((cart) => cart.active));
+  // Only active carts for the dropdown
+  const carts = useMemo(() => allCarts.filter((cart) => cart.active), [allCarts]);
 
-      // Load workers
-      const workersSnapshot = await getDocs(collection(db, 'workers'));
-      const workersData: Worker[] = [];
-      workersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        workersData.push({
-          uid: doc.id,
-          email: data.email,
-          workerName: data.workerName || '',
-          cartId: data.cartId,
-          cartName: data.cartName,
-          createdAt: data.createdAt?.toDate(),
-          active: data.active ?? true,
-        });
-      });
-      setWorkers(workersData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      alert('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = cartsLoading || workersLoading;
 
   const handleCreateWorker = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,12 +43,8 @@ export default function AdminWorkers() {
       return;
     }
 
-    setSubmitting(true);
-
     try {
-      // Call Cloud Function to create worker
-      const createWorkerFunction = httpsCallable(functions, 'createWorker');
-      const result = await createWorkerFunction({
+      const result = await createWorker.mutateAsync({
         email: formData.email,
         password: formData.password,
         workerName: formData.workerName,
@@ -105,33 +52,13 @@ export default function AdminWorkers() {
         cartName: formData.cartName,
       });
 
-      const data = result.data as CreateWorkerResponse;
-
-      if (data.success) {
-        // Add worker to Firestore
-        await addDoc(collection(db, 'workers'), {
-          uid: data.uid,
-          email: formData.email,
-          workerName: formData.workerName,
-          cartId: formData.cartId,
-          cartName: formData.cartName,
-          createdAt: Timestamp.now(),
-          active: true,
-        });
-
-        alert(`Worker created successfully!\n\nEmail: ${formData.email}\nPassword: ${formData.password}\n\nShare these credentials with the worker.`);
-        setShowCreateModal(false);
-        setFormData({ email: '', password: '', workerName: '', cartId: '', cartName: '' });
-        loadData();
-      } else {
-        throw new Error(data.error || 'Failed to create worker');
-      }
+      alert(`Worker created successfully!\n\nEmail: ${result.email}\nPassword: ${result.password}\n\nShare these credentials with the worker.`);
+      setShowCreateModal(false);
+      setFormData({ email: '', password: '', workerName: '', cartId: '', cartName: '' });
     } catch (error: unknown) {
       console.error('Error creating worker:', error);
       const message = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Failed to create worker: ${message}`);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -155,9 +82,8 @@ export default function AdminWorkers() {
     if (!workerToDelete) return;
 
     try {
-      await deleteDoc(doc(db, 'workers', workerToDelete.id));
+      await deleteWorker.mutateAsync(workerToDelete.id);
       alert('Worker deleted from database. Note: Firebase Auth account still exists.');
-      loadData();
     } catch (error) {
       console.error('Error deleting worker:', error);
       alert('Failed to delete worker');
@@ -240,7 +166,7 @@ export default function AdminWorkers() {
         onSubmit={handleCreateWorker}
         formData={formData}
         onChange={setFormData}
-        submitting={submitting}
+        submitting={createWorker.isPending}
         carts={carts}
         onCartSelect={handleCartSelect}
       />

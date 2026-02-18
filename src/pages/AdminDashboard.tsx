@@ -1,75 +1,26 @@
-import { useState, useEffect } from 'react';
-import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { useAuthStore } from '../stores/authStore';
+import { useAdminStats } from '../hooks/useAdminQueries';
 import StatsCard from '../components/admin/StatsCard';
 import QuickActions from '../components/admin/QuickActions';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalCarts: 0,
-    totalWorkers: 0,
-    totalOrders: 0,
-    todayOrders: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const { logout } = useAuthStore();
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      // Get all carts
-      const cartsSnapshot = await getDocs(collection(db, 'carts'));
-      const activeCarts = cartsSnapshot.docs.filter(doc => doc.data().active !== false);
-      
-      // Get all workers
-      const workersSnapshot = await getDocs(collection(db, 'workers'));
-      const activeWorkers = workersSnapshot.docs.filter(doc => doc.data().active !== false);
-      
-      // Get all orders for order stats
-      const ordersSnapshot = await getDocs(collection(db, 'orders'));
-      let todayCount = 0;
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      ordersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        
-        // Count today's orders
-        const createdAt = data.createdAt?.toDate();
-        if (createdAt && createdAt >= today) {
-          todayCount++;
-        }
-      });
-
-      setStats({
-        totalCarts: activeCarts.length,
-        totalWorkers: activeWorkers.length,
-        totalOrders: ordersSnapshot.size,
-        todayOrders: todayCount,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // TanStack Query - admin stats (cached 2 min)
+  const { data: stats, isLoading } = useAdminStats();
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate('/admin/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  if (loading) {
+  if (isLoading || !stats) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg text-gray-600">Loading...</div>

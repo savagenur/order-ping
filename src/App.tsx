@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from './lib/firebase';
+import { useEffect } from 'react';
+import { useAuthStore } from './stores/authStore';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
 import Login from './pages/Login';
@@ -11,20 +10,9 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCarts from './pages/AdminCarts';
 import AdminWorkers from './pages/AdminWorkers';
-import AdminRoute from './components/AdminRoute';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { user, loading } = useAuthStore();
 
   if (loading) {
     return (
@@ -41,7 +29,32 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { loading, isAdmin } = useAuthStore();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
+  const initialize = useAuthStore((s) => s.initialize);
+
+  useEffect(() => {
+    const unsubscribe = initialize();
+    return () => unsubscribe();
+  }, [initialize]);
+
   return (
     <Router>
       <Routes>

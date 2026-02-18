@@ -1,22 +1,9 @@
-import { useEffect, useState } from "react";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  updateDoc,
-  doc,
-  Timestamp,
-  where,
-  orderBy,
-  writeBatch,
-} from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, auth } from "../lib/firebase";
-import { getNextOrderNumber } from "../types/orderUtils";
-import type { Order, OrderInput } from "../types/order";
-import { useUserCart } from "../hooks/useUserCart";
+import { useAuthStore } from "../stores/authStore";
+import { useDashboardOrders } from "../hooks/useDashboardOrders";
+import { useAddOrder, useMarkReady, useMarkAllReady, useMarkCompleted } from "../hooks/useOrderMutations";
+import type { OrderInput } from "../types/order";
 import UserMenu from "../components/dashboard/UserMenu";
 import OrderForm from "../components/dashboard/OrderForm";
 import OrdersGrid from "../components/dashboard/OrdersGrid";
@@ -25,16 +12,25 @@ import LogoutModal from "../components/dashboard/LogoutModal";
 
 export default function Dashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [formData, setFormData] = useState<OrderInput>({
     customerName: "",
     phoneNumber: "",
     orderDetails: "",
   });
-  const [loading, setLoading] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const navigate = useNavigate();
-  const { cartId, cartName, loading: cartLoading } = useUserCart();
+
+  // Zustand auth store - single source of truth for user/cart info
+  const { cartId, cartName, loading: cartLoading, logout } = useAuthStore();
+
+  // TanStack Query - realtime orders via Firestore onSnapshot
+  const { data: orders = [] } = useDashboardOrders(cartId);
+
+  // Mutations
+  const addOrder = useAddOrder();
+  const markReady = useMarkReady();
+  const markAllReady = useMarkAllReady();
+  const markCompleted = useMarkCompleted();
 
   // Format phone number as (XXX) XXX-XXXX
   const formatPhoneNumber = (value: string) => {
@@ -59,89 +55,32 @@ export default function Dashboard() {
     return digits.length === 10;
   };
 
-  useEffect(() => {
-    if (!cartId) return;
-
-    // Simplified query - filter by cartId only, sort in memory
-    const q = query(
-      collection(db, "orders"),
-      where("cartId", "==", cartId),
-      orderBy("createdAt", "asc"),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData: Order[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        ordersData.push({
-          id: doc.id,
-          orderNumber: data.orderNumber || 0,
-          customerName: data.customerName,
-          phoneNumber: data.phoneNumber,
-          orderDetails: data.orderDetails,
-          status: data.status,
-          cartId: data.cartId,
-          cartName: data.cartName,
-          createdAt: data.createdAt?.toDate(),
-          readyAt: data.readyAt?.toDate(),
-          completedAt: data.completedAt?.toDate(),
-        });
-      });
-
-      setOrders(ordersData);
-    });
-
-    return () => unsubscribe();
-  }, [cartId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     if (!cartId || !cartName) {
       alert("Cart information not found. Please contact administrator.");
-      setLoading(false);
       return;
     }
 
     // Validate phone number only if provided
     if (formData.phoneNumber && !validatePhoneNumber(formData.phoneNumber)) {
       alert("Please enter a valid 10-digit phone number");
-      setLoading(false);
       return;
     }
 
     try {
-      // Get next order number for today
-      const orderNumber = await getNextOrderNumber(cartId);
-
-      await addDoc(collection(db, "orders"), {
-        orderNumber: orderNumber,
-        customerName: formData.customerName,
-        phoneNumber: formData.phoneNumber,
-        orderDetails: formData.orderDetails || "",
-        status: "pending",
-        cartId: cartId,
-        cartName: cartName,
-        createdAt: Timestamp.now(),
-      });
-
+      await addOrder.mutateAsync({ formData, cartId, cartName });
       setFormData({ customerName: "", phoneNumber: "", orderDetails: "" });
     } catch (error) {
       console.error("Error adding order:", error);
       alert("Failed to add order");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleMarkReady = async (orderId: string) => {
     try {
-      const orderRef = doc(db, "orders", orderId);
-      await updateDoc(orderRef, {
-        status: "ready",
-        readyAt: Timestamp.now(),
-      });
+      await markReady.mutateAsync(orderId);
     } catch (error) {
       console.error("Error updating order:", error);
       alert("Failed to update order");
@@ -151,23 +90,7 @@ export default function Dashboard() {
   const handleMarkAllReady = async () => {
     try {
       const pendingOrders = orders.filter(order => order.status === "pending");
-      if (pendingOrders.length === 0) return;
-      
-      // Create a batch to update all orders at once
-      const batch = writeBatch(db);
-      const now = Timestamp.now();
-      
-      // Add each pending order to the batch
-      pendingOrders.forEach(order => {
-        const orderRef = doc(db, "orders", order.id);
-        batch.update(orderRef, {
-          status: "ready",
-          readyAt: now,
-        });
-      });
-      
-      // Commit the batch
-      await batch.commit();
+      await markAllReady.mutateAsync(pendingOrders);
     } catch (error) {
       console.error("Error updating orders:", error);
       alert("Failed to update orders");
@@ -176,12 +99,7 @@ export default function Dashboard() {
 
   const handleMarkCompleted = async (orderId: string) => {
     try {
-      const orderRef = doc(db, "orders", orderId);
-      await updateDoc(orderRef, {
-        status: "completed",
-        completedAt: Timestamp.now(),
-        completedBy: auth.currentUser?.uid || '',
-      });
+      await markCompleted.mutateAsync(orderId);
     } catch (error) {
       console.error("Error completing order:", error);
       alert("Failed to complete order");
@@ -190,7 +108,7 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate("/login");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -255,7 +173,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OrderForm
           formData={formData}
-          loading={loading}
+          loading={addOrder.isPending}
           onFormChange={setFormData}
           onSubmit={handleSubmit}
           onPhoneChange={handlePhoneChange}

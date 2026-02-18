@@ -1,107 +1,53 @@
-import { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
-import type { Cart, CartInput } from '../types/admin';
+import { useState, useMemo } from 'react';
+import type { CartInput } from '../types/admin';
+import { useAdminCarts, useCreateCart, useDeleteCart } from '../hooks/useAdminQueries';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import CartCard from '../components/admin/CartCard';
 import CreateCartModal from '../components/admin/CreateCartModal';
 
+function generateCartId(businessName: string, location: string): string {
+  const slug = (str: string) =>
+    str
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const namePart = slug(businessName);
+  const locationPart = slug(location);
+
+  if (!namePart && !locationPart) return '';
+  if (!namePart) return locationPart;
+  if (!locationPart) return namePart;
+
+  return `${namePart}-${locationPart}`;
+}
+
 export default function AdminCarts() {
-  const [carts, setCarts] = useState<Cart[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState<CartInput>({
     businessName: '',
     location: '',
   });
-  const [cartIdPreview, setCartIdPreview] = useState('');
-  const [cartIdError, setCartIdError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadCarts();
-  }, []);
+  // TanStack Query - carts list (cached 5 min)
+  const { data: carts = [], isLoading } = useAdminCarts();
+  const createCart = useCreateCart();
+  const deleteCart = useDeleteCart();
 
-  useEffect(() => {
-    // Generate cart ID preview as user types
-    if (formData.businessName || formData.location) {
-      const generated = generateCartId(formData.businessName, formData.location);
-      setCartIdPreview(generated);
-      checkCartIdAvailability(generated);
-    } else {
-      setCartIdPreview('');
-      setCartIdError('');
-    }
-  }, [formData.businessName, formData.location]);
+  // Derived state - no useEffect needed
+  const cartIdPreview = useMemo(
+    () => generateCartId(formData.businessName, formData.location),
+    [formData.businessName, formData.location],
+  );
 
-  const generateCartId = (businessName: string, location: string): string => {
-    const slug = (str: string) =>
-      str
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-
-    const namePart = slug(businessName);
-    const locationPart = slug(location);
-
-    if (!namePart && !locationPart) return '';
-    if (!namePart) return locationPart;
-    if (!locationPart) return namePart;
-
-    return `${namePart}-${locationPart}`;
-  };
-
-  const checkCartIdAvailability = async (cartId: string) => {
-    if (!cartId) {
-      setCartIdError('');
-      return;
-    }
-
-    try {
-      const cartsSnapshot = await getDocs(collection(db, 'carts'));
-      const exists = cartsSnapshot.docs.some((doc) => doc.data().cartId === cartId);
-
-      if (exists) {
-        setCartIdError('⚠️ A cart with this ID already exists');
-      } else {
-        setCartIdError('');
-      }
-    } catch (error) {
-      console.error('Error checking cart ID:', error);
-    }
-  };
-
-  const loadCarts = async () => {
-    try {
-      const cartsSnapshot = await getDocs(collection(db, 'carts'));
-      const cartsData: Cart[] = [];
-
-      cartsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        cartsData.push({
-          id: doc.id,
-          businessName: data.businessName,
-          location: data.location,
-          displayName: data.displayName,
-          cartId: data.cartId,
-          createdAt: data.createdAt?.toDate(),
-          createdBy: data.createdBy,
-          active: data.active ?? true,
-        });
-      });
-
-      cartsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      setCarts(cartsData);
-    } catch (error) {
-      console.error('Error loading carts:', error);
-      alert('Failed to load carts');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const cartIdError = useMemo(() => {
+    if (!cartIdPreview) return '';
+    const exists = carts.some((c) => c.cartId === cartIdPreview);
+    return exists ? '⚠️ A cart with this ID already exists' : '';
+  }, [cartIdPreview, carts]);
 
   const handleCreateCart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,32 +62,21 @@ export default function AdminCarts() {
       return;
     }
 
-    setSubmitting(true);
-
     try {
-      const cartId = cartIdPreview;
       const displayName = `${formData.businessName} ${formData.location}`;
-      const currentUser = auth.currentUser;
-
-      await addDoc(collection(db, 'carts'), {
+      await createCart.mutateAsync({
         businessName: formData.businessName,
         location: formData.location,
-        displayName: displayName,
-        cartId: cartId,
-        createdAt: Timestamp.now(),
-        createdBy: currentUser?.email || 'admin',
-        active: true,
+        cartId: cartIdPreview,
+        displayName,
       });
 
       alert('Cart created successfully!');
       setShowCreateModal(false);
       setFormData({ businessName: '', location: '' });
-      loadCarts();
     } catch (error) {
       console.error('Error creating cart:', error);
       alert('Failed to create cart');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -151,16 +86,15 @@ export default function AdminCarts() {
     }
 
     try {
-      await deleteDoc(doc(db, 'carts', cartId));
+      await deleteCart.mutateAsync(cartId);
       alert('Cart deleted successfully');
-      loadCarts();
     } catch (error) {
       console.error('Error deleting cart:', error);
       alert('Failed to delete cart');
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg text-gray-600">Loading carts...</div>
@@ -217,7 +151,7 @@ export default function AdminCarts() {
         onSubmit={handleCreateCart}
         formData={formData}
         onChange={setFormData}
-        submitting={submitting}
+        submitting={createCart.isPending}
         cartIdPreview={cartIdPreview}
         cartIdError={cartIdError}
       />
