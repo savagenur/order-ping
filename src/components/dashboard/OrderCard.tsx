@@ -63,13 +63,19 @@ export default function OrderCard({
   };
 
   const getTimeDisplay = () => {
+    const formatTime = (date: Date | { toDate: () => Date } | undefined) => {
+      if (!date) return "";
+      const timeDate = date instanceof Date ? date : date.toDate();
+      return timeDate.toLocaleTimeString();
+    };
+
     switch (order.status) {
       case "ready":
-        return `Ready at: ${order.readyAt?.toLocaleTimeString()}`;
+        return `Ready at: ${formatTime(order.readyAt)}`;
       case "completed":
-        return `Completed: ${order.completedAt?.toLocaleTimeString()}`;
+        return `Completed: ${formatTime(order.completedAt)}`;
       default:
-        return order.createdAt?.toLocaleTimeString();
+        return formatTime(order.createdAt);
     }
   };
 

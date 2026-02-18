@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Order } from "../../types/order";
+import { getTime } from "../../utils/dateUtils";
 
 interface OrderMetricsProps {
   orders: Order[];
@@ -25,8 +26,8 @@ export default function OrderMetrics({ orders }: OrderMetricsProps) {
     const avgTimeToReady = ordersWithReadyTime.length > 0
       ? Math.round(
           ordersWithReadyTime.reduce((sum, order) => {
-            const createdTime = order.createdAt.getTime();
-            const readyTime = order.readyAt!.getTime();
+            const createdTime = getTime(order.createdAt);
+            const readyTime = getTime(order.readyAt!);
             return sum + (readyTime - createdTime) / (1000 * 60); // Convert ms to minutes
           }, 0) / ordersWithReadyTime.length
         )
@@ -37,8 +38,8 @@ export default function OrderMetrics({ orders }: OrderMetricsProps) {
     const avgTimeToCompletion = ordersWithCompletionTime.length > 0
       ? Math.round(
           ordersWithCompletionTime.reduce((sum, order) => {
-            const createdTime = order.createdAt.getTime();
-            const completedTime = order.completedAt!.getTime();
+            const createdTime = getTime(order.createdAt);
+            const completedTime = getTime(order.completedAt!);
             return sum + (completedTime - createdTime) / (1000 * 60); // Convert ms to minutes
           }, 0) / ordersWithCompletionTime.length
         )

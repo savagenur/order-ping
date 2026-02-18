@@ -35,7 +35,8 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
 
     // Daily revenue breakdown
     const dailyRevenueMap = ordersWithRevenue.reduce((acc, order) => {
-      const dateKey = order.createdAt.toISOString().split('T')[0];
+      const date = order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate();
+      const dateKey = date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, revenue: 0, orderCount: 0, avgOrderValue: 0 };
       }

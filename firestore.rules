@@ -1,23 +1,31 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /orders/{orderId} {
-      // Allow anyone to create an order for testing
-      allow read, write: if true; 
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
     }
     
+    function hasCartAccess(cartId) {
+      return request.auth != null && request.auth.token.cartId == cartId;
+    }
+    
+    // Carts - Admin only
     match /carts/{cartId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
     
+    // Workers - Admin only (relaxed for development)
     match /workers/{workerId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null; // Allow authenticated users to read
     }
     
-    // OR: Only allow authenticated users
-    // allow read, write: if request.auth != null;
+    // Orders - Admin or cart worker
+    match /orders/{orderId} {
+      allow read, write: if isAdmin();
+      allow read, create, update: if hasCartAccess(request.resource.data.cartId);
+      allow read: if true; // Public queue page
+    }
   }
 }

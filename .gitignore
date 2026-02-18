@@ -20,6 +20,7 @@ dist-ssr
 *.local
 .env
 .env.local
+.env.example
 .env.production
 
 # Editor directories and files

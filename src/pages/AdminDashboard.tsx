@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { useUserCart } from '../hooks/useUserCart';
 import StatsCard from '../components/admin/StatsCard';
 import QuickActions from '../components/admin/QuickActions';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { cartId } = useUserCart();
   const [stats, setStats] = useState({
     totalCarts: 0,
     totalWorkers: 0,

@@ -18,6 +18,7 @@ import TimeMetrics from "../components/analytics/TimeMetrics";
 import PerformanceAnalytics from "../components/analytics/PerformanceAnalytics";
 import Pagination from "../components/Pagination";
 import type { Order } from "../types/order";
+import { getTime, toLocaleDateString, toLocaleTimeString } from "../utils/dateUtils";
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export default function Analytics() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
   const { cartId, cartName, loading: cartLoading } = useUserCart();
-  
+
   const ORDERS_PER_PAGE = 10;
 
   // Load orders based on selected period and page
@@ -119,7 +120,7 @@ export default function Analytics() {
       }
 
       setOrders(ordersData);
-      
+
       // Scroll to bottom after content is loaded (only for pagination, not initial load)
       if (!reset) {
         // Try multiple approaches to ensure scroll works
@@ -129,7 +130,7 @@ export default function Analytics() {
             behavior: 'auto'
           });
         });
-        
+
         // Fallback: scroll again after a short delay
         setTimeout(() => {
           window.scrollTo({
@@ -231,14 +232,11 @@ export default function Analytics() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {orders.map((order) => {
                         // Calculate time to complete in minutes
-                        const timeToComplete =
-                          order.completedAt && order.createdAt
-                            ? Math.round(
-                                (order.completedAt.getTime() -
-                                  order.createdAt.getTime()) /
-                                  (1000 * 60),
-                              )
-                            : null;
+                        const createdTime = getTime(order.createdAt);
+                        const completedTime = order.completedAt ? getTime(order.completedAt) : null;
+                        const timeToComplete = completedTime && createdTime
+                          ? Math.round((completedTime - createdTime) / (1000 * 60))
+                          : null;
 
                         return (
                           <tr key={order.id}>
@@ -265,18 +263,11 @@ export default function Analytics() {
                                   order.status.slice(1)}
                               </span>
                             </td>
-                            <td className="px-2 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="text-xs sm:text-sm">
-                                <div>
-                                  {order.createdAt.toLocaleDateString()}
-                                </div>
-                                <div className="text-gray-400">
-                                  {order.createdAt.toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </div>
-                              </div>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {toLocaleDateString(order.createdAt)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {toLocaleTimeString(order.createdAt)}
                             </td>
                             <td className="px-2 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                               {timeToComplete !== null

@@ -24,7 +24,7 @@ export default function WorkerStats() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
-  const [workers, setWorkers] = useState<{ id: string; email: string }[]>([]);
+  const [workers, setWorkers] = useState<{ id: string; email: string; workerName: string; uid: string }[]>([]);
 
   // Get days in the selected month
   const getDaysInMonth = () => {
@@ -43,13 +43,15 @@ export default function WorkerStats() {
       try {
         const workersRef = collection(db, "workers");
         const snapshot = await getDocs(workersRef);
-        const workersData: { id: string; email: string }[] = [];
+        const workersData: { id: string; email: string; workerName: string; uid: string }[] = [];
         
         snapshot.forEach(doc => {
           const data = doc.data();
           workersData.push({
             id: doc.id,
             email: data.email || "Unknown",
+            workerName: data.workerName || "Unknown",
+            uid: data.uid || "Unknown",
           });
         });
         
@@ -92,15 +94,24 @@ export default function WorkerStats() {
           if (!order.completedBy) return;
           
           const workerId = order.completedBy;
-          const orderDate = order.completedAt ? formatDate(order.completedAt) : "";
+          const orderDate = order.completedAt ? formatDate(
+  order.completedAt instanceof Date 
+    ? order.completedAt 
+    : (order.completedAt as Timestamp).toDate()
+) : "";
           
           if (!orderDate) return;
           
           // Initialize worker stats if not exists
           if (!newStats[workerId]) {
-            const worker = workers.find(w => w.id === workerId);
+            console.log("workers array:", workers);
+            console.log("looking for workerId:", workerId);
+            
+            const worker = workers.find(w => w.id === workerId || w.uid === workerId);
+            console.log("found worker:", worker);
+            
             newStats[workerId] = {
-              name: worker?.email || "Unknown Worker",
+              name: worker?.workerName || `Worker ${workerId}`,
               ordersByDate: {},
               totalOrders: 0
             };

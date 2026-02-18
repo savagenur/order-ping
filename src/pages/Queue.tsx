@@ -78,7 +78,11 @@ export default function Queue() {
         const ready = allOrders
           .filter((o) => o.status === "ready")
           .sort(
-            (a, b) => (b.readyAt?.getTime() || 0) - (a.readyAt?.getTime() || 0),
+            (a, b) => {
+              const aTime = a.readyAt instanceof Date ? a.readyAt : a.readyAt?.toDate();
+              const bTime = b.readyAt instanceof Date ? b.readyAt : b.readyAt?.toDate();
+              return (bTime?.getTime() || 0) - (aTime?.getTime() || 0);
+            },
           );
 
         setPendingOrders(pending);

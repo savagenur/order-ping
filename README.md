@@ -1,75 +1,116 @@
-# React + TypeScript + Vite
+# OrderPing - React + TypeScript + Vite + Firebase
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern order management system built with React, TypeScript, Vite, and Firebase.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Admin Dashboard**: Manage carts, workers, and orders
+- **Real-time Analytics**: Track revenue and order statistics
+- **Firebase Integration**: Cloud Firestore, Authentication, and Functions
+- **Responsive Design**: Built with Tailwind CSS and modern UI components
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- Node.js 18+ 
+- Firebase CLI (`npm install -g firebase-tools`)
+- Firebase project with Firestore, Functions, and Hosting enabled
 
-Note: This will impact Vite dev & build performances.
+## Setup
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. **Clone and install dependencies**
+```bash
+git clone <repository-url>
+cd order-ping
+npm install
+cd functions && npm install && cd ..
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Configure Firebase**
+```bash
+firebase login
+firebase use your-project-id
 ```
+
+3. **Set up environment variables**
+```bash
+cp .env.example .env
+# Edit .env with your Firebase configuration
+```
+
+4. **Local development**
+```bash
+# Start Firebase emulators
+firebase emulators:start
+
+# In another terminal, start the dev server
+npm run dev
+```
+
+## Deployment
+
+### Deploy to Firebase Hosting
+
+1. **Build the application**
+```bash
+npm run build
+```
+
+2. **Deploy all services**
+```bash
+firebase deploy
+```
+
+### Deploy individual services
+
+```bash
+# Deploy only hosting (frontend)
+firebase deploy --only hosting
+
+# Deploy only functions
+firebase deploy --only functions
+
+# Deploy only Firestore rules
+firebase deploy --only firestore:rules
+```
+
+## Project Structure
+
+- `src/` - React frontend application
+- `functions/` - Firebase Cloud Functions
+- `public/` - Static assets
+- `firebase.json` - Firebase configuration
+- `firestore.rules` - Firestore security rules
+
+## Environment Variables
+
+The app uses Vite environment variables (prefixed with `VITE_`):
+
+- `VITE_FIREBASE_API_KEY` - Firebase API key
+- `VITE_FIREBASE_AUTH_DOMAIN` - Firebase auth domain
+- `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
+- `VITE_FIREBASE_STORAGE_BUCKET` - Firebase storage bucket
+- `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase messaging sender ID
+- `VITE_FIREBASE_APP_ID` - Firebase app ID
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `firebase emulators:start` - Start local Firebase emulators
+
+## Firebase Services Used
+
+- **Firestore** - NoSQL database for carts, workers, and orders
+- **Authentication** - User authentication and authorization
+- **Functions** - Serverless backend logic
+- **Hosting** - Static site hosting for the React app
+
+## Production Considerations
+
+- Ensure Firestore security rules are properly configured
+- Set up Firebase Functions with appropriate regions
+- Configure custom domain if needed
+- Monitor Firebase usage and costs
+- Set up proper error tracking and logging

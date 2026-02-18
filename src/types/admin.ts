@@ -17,6 +17,7 @@ export interface CartInput {
 export interface Worker {
   uid: string;
   email: string;
+  workerName: string;
   cartId: string;
   cartName: string;
   createdAt: Date;
@@ -26,6 +27,7 @@ export interface Worker {
 export interface WorkerInput {
   email: string;
   password: string;
+  workerName: string;
   cartId: string;
   cartName: string;
 }

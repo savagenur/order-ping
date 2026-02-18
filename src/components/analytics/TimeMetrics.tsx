@@ -24,7 +24,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
 
     // Count orders by hour and day
     orders.forEach((order) => {
-      const date = order.createdAt;
+      const date = order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate();
       const hour = date.getHours();
       const day = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
@@ -39,7 +39,10 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
     // Calculate average orders per day
     // Get unique dates from orders
     const uniqueDates = new Set(
-      orders.map((order) => order.createdAt.toISOString().split("T")[0]),
+      orders.map((order) => {
+        const date = order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate();
+        return date.toISOString().split("T")[0];
+      }),
     );
     const avgOrdersPerDay =
       uniqueDates.size > 0

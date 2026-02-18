@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface Order {
   id: string;
   orderNumber: number;
@@ -7,9 +9,9 @@ export interface Order {
   status: 'pending' | 'ready' | 'completed';
   cartId: string;
   cartName: string;
-  createdAt: Date;
-  readyAt?: Date;
-  completedAt?: Date;
+  createdAt: Date | Timestamp;
+  readyAt?: Date | Timestamp;
+  completedAt?: Date | Timestamp;
   completedBy?: string;
 }
 

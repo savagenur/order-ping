@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import type { Order } from "../../types/order";
+import { toDate, getTime } from "../../utils/dateUtils";
 import OrderCard from "./OrderCard";
 import AllReadyConfirmModal from "./AllReadyConfirmModal";
 import Pagination from "../Pagination";
@@ -31,18 +32,21 @@ export default function OrdersGrid({
   const todaysCompletedOrders = allCompletedOrders.filter((order) => {
     if (!order.completedAt) return false;
     const today = new Date();
-    const orderDate = order.completedAt;
+    const orderDate = toDate(order.completedAt);
+    const day = orderDate.getDate();
+    const month = orderDate.getMonth();
+    const year = orderDate.getFullYear();
     return (
-      orderDate.getDate() === today.getDate() &&
-      orderDate.getMonth() === today.getMonth() &&
-      orderDate.getFullYear() === today.getFullYear()
+      day === today.getDate() &&
+      month === today.getMonth() &&
+      year === today.getFullYear()
     );
   });
 
   // Sort today's completed orders by completedAt date in descending order (latest first)
   const sortedTodaysCompletedOrders = [...todaysCompletedOrders].sort((a, b) => {
-    const dateA = a.completedAt ? a.completedAt.getTime() : 0;
-    const dateB = b.completedAt ? b.completedAt.getTime() : 0;
+    const dateA = a.completedAt ? getTime(a.completedAt) : 0;
+    const dateB = b.completedAt ? getTime(b.completedAt) : 0;
     return dateB - dateA; // Descending order
   });
 

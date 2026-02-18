@@ -39,6 +39,20 @@ export default function CreateWorkerModal({
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Worker Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.workerName}
+              onChange={(e) => onChange({ ...formData, workerName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Email *
             </label>
             <input

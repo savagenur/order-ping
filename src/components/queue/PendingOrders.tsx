@@ -73,7 +73,7 @@ export default function PendingOrders({ pendingOrders }: PendingOrdersProps) {
                   </p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  Ordered at {order.createdAt?.toLocaleTimeString()}
+                  Ordered at {order.createdAt ? (order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate()).toLocaleTimeString() : ""}
                 </p>
               </div>
               <div className="text-sm text-gray-500">

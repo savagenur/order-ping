@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Order } from "../../types/order";
+import { getTime } from "../../utils/dateUtils";
 
 interface CustomerAnalyticsProps {
   orders: Order[];
@@ -38,7 +39,7 @@ export default function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
         phoneNumber: phone,
         orderCount: customerOrderList.length,
         totalSpent: 0, // TODO: Calculate from orderDetails when available as structured data
-        lastOrderDate: new Date(Math.max(...customerOrderList.map(o => o.createdAt.getTime())))
+        lastOrderDate: new Date(Math.max(...customerOrderList.map(o => getTime(o.createdAt))))
       }))
       .sort((a, b) => b.orderCount - a.orderCount)
       .slice(0, 10);

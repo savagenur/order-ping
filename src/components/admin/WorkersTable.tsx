@@ -14,6 +14,9 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -33,6 +36,9 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
           <tbody className="bg-white divide-y divide-gray-200">
             {workers.map((worker) => (
               <tr key={worker.uid} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{worker.workerName}</div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap ">
                   <div className="text-sm font-medium text-gray-900">{worker.email}</div>
                 </td>
@@ -71,7 +77,8 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
             <div key={worker.uid} className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-900">{worker.email}</h3>
+                  <h3 className="text-sm font-medium text-gray-900">{worker.workerName}</h3>
+                  <p className="text-xs text-gray-500">{worker.email}</p>
                   <p className="text-xs text-gray-500 mt-1">Created: {worker.createdAt.toLocaleDateString()}</p>
                 </div>
                 {worker.active ? (

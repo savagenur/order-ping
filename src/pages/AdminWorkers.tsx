@@ -22,6 +22,7 @@ export default function AdminWorkers() {
   const [formData, setFormData] = useState<WorkerInput>({
     email: '',
     password: '',
+    workerName: '',
     cartId: '',
     cartName: '',
   });
@@ -59,6 +60,7 @@ export default function AdminWorkers() {
         workersData.push({
           uid: doc.id,
           email: data.email,
+          workerName: data.workerName || '',
           cartId: data.cartId,
           cartName: data.cartName,
           createdAt: data.createdAt?.toDate(),
@@ -95,6 +97,7 @@ export default function AdminWorkers() {
       const result = await createWorkerFunction({
         email: formData.email,
         password: formData.password,
+        workerName: formData.workerName,
         cartId: formData.cartId,
         cartName: formData.cartName,
       });
@@ -106,6 +109,7 @@ export default function AdminWorkers() {
         await addDoc(collection(db, 'workers'), {
           uid: data.uid,
           email: formData.email,
+          workerName: formData.workerName,
           cartId: formData.cartId,
           cartName: formData.cartName,
           createdAt: Timestamp.now(),
@@ -114,7 +118,7 @@ export default function AdminWorkers() {
 
         alert(`Worker created successfully!\n\nEmail: ${formData.email}\nPassword: ${formData.password}\n\nShare these credentials with the worker.`);
         setShowCreateModal(false);
-        setFormData({ email: '', password: '', cartId: '', cartName: '' });
+        setFormData({ email: '', password: '', workerName: '', cartId: '', cartName: '' });
         loadData();
       } else {
         throw new Error(data.error || 'Failed to create worker');

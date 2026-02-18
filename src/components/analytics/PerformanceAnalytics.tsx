@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Order } from "../../types/order";
+import { getTime, toISOString } from "../../utils/dateUtils";
 
 interface PerformanceAnalyticsProps {
   orders: Order[];
@@ -24,7 +25,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       .filter(order => order.readyAt && order.createdAt)
       .map(order => ({
         orderNumber: order.orderNumber,
-        prepTime: (order.readyAt!.getTime() - order.createdAt.getTime()) / (1000 * 60), // minutes
+        prepTime: (getTime(order.readyAt!) - getTime(order.createdAt)) / (1000 * 60), // minutes
         customerName: order.customerName,
         createdAt: order.createdAt
       }));
@@ -34,7 +35,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       .filter(order => order.completedAt && order.createdAt)
       .map(order => ({
         orderNumber: order.orderNumber,
-        waitTime: (order.completedAt!.getTime() - order.createdAt.getTime()) / (1000 * 60), // minutes
+        waitTime: (getTime(order.completedAt!) - getTime(order.createdAt)) / (1000 * 60), // minutes
         customerName: order.customerName,
         createdAt: order.createdAt
       }));
@@ -58,7 +59,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
 
     // Daily performance (avg prep time by day)
     const dailyPerformance = prepTimes.reduce((acc, order) => {
-      const dateKey = order.createdAt.toISOString().split('T')[0];
+      const dateKey = toISOString(order.createdAt).split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, totalPrepTime: 0, orderCount: 0 };
       }
@@ -77,7 +78,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
 
     // Hourly performance (avg prep time by hour)
     const hourlyPerformance = prepTimes.reduce((acc, order) => {
-      const hour = order.createdAt.getHours();
+      const hour = new Date(getTime(order.createdAt)).getHours();
       if (!acc[hour]) {
         acc[hour] = { hour, totalPrepTime: 0, orderCount: 0 };
       }
@@ -114,9 +115,10 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
   }, [orders]);
 
   const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const roundedMinutes = Math.round(minutes * 100) / 100;
+    if (roundedMinutes < 60) return `${roundedMinutes} min`;
+    const hours = Math.floor(roundedMinutes / 60);
+    const mins = roundedMinutes % 60;
     return `${hours}h ${mins}m`;
   };
 

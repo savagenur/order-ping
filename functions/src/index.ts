@@ -110,8 +110,8 @@ export const createWorker = onCall(
     region: "us-west1",
     cors: [
       "http://localhost:5173", 
-      "https://order-pingx.web.app/", 
-      "https://order-pingx.firebaseapp.com/"
+      "https://order-pingx.web.app", 
+      "https://order-pingx.firebaseapp.com"
     ],
     // secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
   },
