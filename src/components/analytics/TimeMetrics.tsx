@@ -121,7 +121,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                   orders: count,
                   isPeak: index === timeMetrics.peakDay
                 }))}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
@@ -170,7 +170,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                 orders: count,
                 isPeak: index === timeMetrics.peakHour
               }))}
-              margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+              margin={{ top: 10, right: 10, left: 0, bottom: 40 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 

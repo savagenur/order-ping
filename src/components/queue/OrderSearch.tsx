@@ -37,14 +37,14 @@ export default function OrderSearch({ orders, getPosition }: OrderSearchProps) {
           onChange={(e) => setSearchName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Enter your name"
-          className="flex-1 px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
         />
         <button
           onClick={handleSearch}
           className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center gap-2"
         >
           <Search className="w-5 h-5" />
-          Search
+          <span className="hidden sm:inline">Search</span>
         </button>
       </div>
 
@@ -75,7 +75,7 @@ export default function OrderSearch({ orders, getPosition }: OrderSearchProps) {
               )}
               {myOrder.status === "ready" && (
                 <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  ✓ Ready for Pickup!
+                  ✓ Ready!
                 </span>
               )}
             </div>

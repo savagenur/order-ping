@@ -154,7 +154,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       {/* Performance Records */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* Fastest Order */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 sm:p-4">
           <h3 className="text-sm font-medium text-emerald-800 mb-2">🏆 Fastest Order</h3>
           {performanceData.fastestOrder ? (
             <div>
@@ -174,7 +174,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
         </div>
 
         {/* Slowest Order */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
           <h3 className="text-sm font-medium text-red-800 mb-2">⚠️ Slowest Order</h3>
           {performanceData.slowestOrder ? (
             <div>
@@ -194,10 +194,48 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
         </div>
       </div>
 
-      {/* Daily Performance Table */}
-      <div className="mb-6">
+      {/* Daily Performance */}
+      <div className="mb-4 sm:mb-6">
         <h3 className="text-sm sm:text-md font-medium text-gray-700 mb-2 sm:mb-3">Daily Performance (Last 7 Days)</h3>
-        <div className="overflow-x-auto">
+
+        {/* Mobile Card Layout */}
+        <div className="sm:hidden space-y-2">
+          {performanceData.dailyPerformance.length > 0 ? (
+            performanceData.dailyPerformance.map((day, index) => {
+              const performanceLevel = day.avgPrepTime <= 10 ? 'excellent' : 
+                                     day.avgPrepTime <= 15 ? 'good' : 
+                                     day.avgPrepTime <= 20 ? 'average' : 'poor';
+              const performanceColors = {
+                excellent: 'bg-green-100 text-green-800',
+                good: 'bg-blue-100 text-blue-800',
+                average: 'bg-yellow-100 text-yellow-800',
+                poor: 'bg-red-100 text-red-800'
+              };
+
+              return (
+                <div key={index} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-900">{day.date}</span>
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${performanceColors[performanceLevel]}`}>
+                      {performanceLevel.charAt(0).toUpperCase() + performanceLevel.slice(1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{day.orderCount} orders</span>
+                    <span>Avg: {formatTime(day.avgPrepTime)}</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-center py-4 text-sm text-gray-500">
+              No performance data available for the last 7 days
+            </p>
+          )}
+        </div>
+
+        {/* Tablet / Desktop Table Layout */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -260,7 +298,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       </div>
 
       {/* Performance Insights */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Performance Insights</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="flex items-start">

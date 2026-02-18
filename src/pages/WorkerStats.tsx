@@ -142,7 +142,7 @@ export default function WorkerStats() {
   const calendarDays = Array.from({ length: getDaysInMonth() }, (_, i) => i + 1);
   
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen w-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <WorkerStatsHeader 
           selectedMonth={selectedMonth} 

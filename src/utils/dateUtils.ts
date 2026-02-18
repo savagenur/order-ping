@@ -34,3 +34,30 @@ export function toISOString(date: Date | Timestamp): string {
 export function getTime(date: Date | Timestamp): number {
   return toDate(date).getTime();
 }
+
+/**
+ * Calculates the start date for a given period
+ */
+export function getStartDateForPeriod(period: string): Date {
+  const now = new Date();
+  const startDate = new Date();
+
+  switch (period) {
+    case "7days":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "30days":
+      startDate.setDate(now.getDate() - 30);
+      break;
+    case "90days":
+      startDate.setDate(now.getDate() - 90);
+      break;
+    case "year":
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 30);
+  }
+
+  return startDate;
+}

@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import WorkersTable from '../components/admin/WorkersTable';
 import CreateWorkerModal from '../components/admin/CreateWorkerModal';
+import DeleteWorkerModal from '../components/admin/DeleteWorkerModal';
 
 interface CreateWorkerResponse {
   success: boolean;
@@ -19,6 +20,8 @@ export default function AdminWorkers() {
   const [carts, setCarts] = useState<Cart[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [workerToDelete, setWorkerToDelete] = useState<{id: string, email: string} | null>(null);
   const [formData, setFormData] = useState<WorkerInput>({
     email: '',
     password: '',
@@ -144,18 +147,29 @@ export default function AdminWorkers() {
   };
 
   const handleDeleteWorker = async (workerId: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete worker "${email}"? This action cannot be undone.`)) {
-      return;
-    }
+    setWorkerToDelete({ id: workerId, email });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteWorker = async () => {
+    if (!workerToDelete) return;
 
     try {
-      await deleteDoc(doc(db, 'workers', workerId));
+      await deleteDoc(doc(db, 'workers', workerToDelete.id));
       alert('Worker deleted from database. Note: Firebase Auth account still exists.');
       loadData();
     } catch (error) {
       console.error('Error deleting worker:', error);
       alert('Failed to delete worker');
+    } finally {
+      setShowDeleteModal(false);
+      setWorkerToDelete(null);
     }
+  };
+
+  const cancelDeleteWorker = () => {
+    setShowDeleteModal(false);
+    setWorkerToDelete(null);
   };
 
   if (loading) {
@@ -229,6 +243,13 @@ export default function AdminWorkers() {
         submitting={submitting}
         carts={carts}
         onCartSelect={handleCartSelect}
+      />
+
+      <DeleteWorkerModal
+        show={showDeleteModal}
+        workerEmail={workerToDelete?.email || ''}
+        onConfirm={confirmDeleteWorker}
+        onCancel={cancelDeleteWorker}
       />
     </div>
   );

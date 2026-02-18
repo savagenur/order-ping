@@ -47,9 +47,14 @@ export default function QRCodeModal({
               className="w-64 h-64"
             />
           </div>
-          <p className="text-xs text-gray-500 mt-4 mb-4">
+          <a 
+            href={getQRCodeUrl()} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:text-blue-800 underline mt-4 mb-4 block break-all"
+          >
             {getQRCodeUrl()}
-          </p>
+          </a>
           <button
             onClick={downloadQRCode}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
