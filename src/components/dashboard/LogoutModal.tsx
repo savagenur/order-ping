@@ -15,11 +15,11 @@ export default function LogoutModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 z-60">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 z-60">
         <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-500/20 mb-4">
             <svg
-              className="h-6 w-6 text-red-600"
+              className="h-6 w-6 text-red-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -32,17 +32,17 @@ export default function LogoutModal({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
+          <h3 className="text-lg font-bold text-white mb-2">
             Confirm Logout
           </h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Are you sure you want to log out of <strong>{cartName}</strong>?
+          <p className="text-sm text-zinc-400 mb-6">
+            Are you sure you want to log out of <strong className="text-white">{cartName}</strong>?
             You will need to sign in again to manage orders.
           </p>
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium"
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition font-medium"
             >
               Cancel
             </button>

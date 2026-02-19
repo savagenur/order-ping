@@ -61,7 +61,7 @@ Do you want to continue? You can always switch back to paginated view.`
   if (cartLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
+        <div className="text-lg text-zinc-500">Loading...</div>
       </div>
     );
   }
@@ -71,7 +71,7 @@ Do you want to continue? You can always switch back to paginated view.`
   }
 
   return (
-    <div className="min-h-screen w-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
+    <div className="min-h-screen w-screen bg-zinc-950 p-3 sm:p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         <AnalyticsHeader
           selectedPeriod={selectedPeriod}
@@ -87,19 +87,19 @@ Do you want to continue? You can always switch back to paginated view.`
             <TimeMetrics orders={orders} />
 
             {/* Order Details */}
-            <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-0">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800">
+                <h2 className="text-base sm:text-lg font-semibold text-white">
                   Order Details
                 </h2>
                 <div className="flex items-center space-x-4">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-zinc-400">
                     {totalOrders} orders found
                   </div>
                   {totalOrders > ORDERS_PER_PAGE && (
                     <button
                       onClick={handleShowAllToggle}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-medium"
                     >
                       {showAllOrders ? 'Show Paginated' : 'Show All'}
                     </button>

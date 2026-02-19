@@ -3,10 +3,14 @@ import { useAuthStore } from '../stores/authStore';
 import { useRoleBasedStats } from '../hooks/useAdminQueries';
 import StatsCard from '../components/admin/StatsCard';
 import QuickActions from '../components/admin/QuickActions';
+import { ORDER_COLOR_OPTIONS } from '../lib/orderColors';
+import { useState } from 'react';
+import LogoutModal from '../components/dashboard/LogoutModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { logout, cartId, isSuperAdmin, role, loading: authLoading } = useAuthStore();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Debug logging
   console.log('AdminDashboard - Auth state:', { cartId, isSuperAdmin, role, authLoading });
@@ -26,10 +30,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    setShowLogoutModal(false);
+    await handleLogout();
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">
+        <div className="text-lg text-zinc-500">
           {authLoading ? 'Authenticating...' : 'Loading dashboard...'}
         </div>
       </div>
@@ -40,8 +57,8 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-          <p className="text-gray-600">Failed to load dashboard data.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+          <p className="text-zinc-400">Failed to load dashboard data.</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
@@ -56,24 +73,24 @@ export default function AdminDashboard() {
   if (!stats) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">No data available...</div>
+        <div className="text-lg text-zinc-500">No data available...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-zinc-950">
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className="bg-zinc-900 border-b border-zinc-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-sm text-gray-600">OrderPing Management</p>
+              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+              <p className="text-sm text-zinc-400">OrderPing Management</p>
             </div>
             <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm border border-red-600 text-red-600 hover:bg-red-50 rounded-md transition"
+              onClick={handleLogoutClick}
+              className="px-4 py-2 text-sm border border-red-600 text-red-400 hover:bg-red-600 hover:text-white rounded-md transition"
             >
               Logout
             </button>
@@ -87,8 +104,8 @@ export default function AdminDashboard() {
           <StatsCard
             title="Total Carts"
             value={stats.totalCarts}
-            bgColor="bg-indigo-100"
-            iconColor="text-indigo-600"
+            bgColor={ORDER_COLOR_OPTIONS[0].bg}
+            iconColor={ORDER_COLOR_OPTIONS[0].text}
             icon={
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -99,8 +116,8 @@ export default function AdminDashboard() {
           <StatsCard
             title="Workers"
             value={stats.totalWorkers}
-            bgColor="bg-green-100"
-            iconColor="text-green-600"
+            bgColor={ORDER_COLOR_OPTIONS[1].bg}
+            iconColor={ORDER_COLOR_OPTIONS[1].text}
             icon={
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -111,8 +128,8 @@ export default function AdminDashboard() {
           <StatsCard
             title="Total Orders"
             value={stats.totalOrders}
-            bgColor="bg-blue-100"
-            iconColor="text-blue-600"
+            bgColor={ORDER_COLOR_OPTIONS[2].bg}
+            iconColor={ORDER_COLOR_OPTIONS[2].text}
             icon={
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -123,8 +140,8 @@ export default function AdminDashboard() {
           <StatsCard
             title="Today's Orders"
             value={stats.todayOrders}
-            bgColor="bg-yellow-100"
-            iconColor="text-yellow-600"
+            bgColor={ORDER_COLOR_OPTIONS[3].bg}
+            iconColor={ORDER_COLOR_OPTIONS[3].text}
             icon={
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -135,6 +152,14 @@ export default function AdminDashboard() {
 
         <QuickActions />
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        show={showLogoutModal}
+        cartName="Admin Dashboard"
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
     </div>
   );
 }

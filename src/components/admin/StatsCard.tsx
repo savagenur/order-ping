@@ -8,7 +8,7 @@ interface StatsCardProps {
 
 export default function StatsCard({ title, value, icon, bgColor, iconColor }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center">
         <div className={`shrink-0 ${bgColor} rounded-md p-3`}>
           <div className={`h-6 w-6 ${iconColor}`}>
@@ -16,8 +16,8 @@ export default function StatsCard({ title, value, icon, bgColor, iconColor }: St
           </div>
         </div>
         <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-zinc-400">{title}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
         </div>
       </div>
     </div>

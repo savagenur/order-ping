@@ -38,8 +38,8 @@ export default function AdminWorkers() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">Workers cannot access admin management pages.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Access Denied</h1>
+          <p className="text-zinc-400">Workers cannot access admin management pages.</p>
         </div>
       </div>
     );
@@ -127,13 +127,13 @@ export default function AdminWorkers() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading workers...</div>
+        <div className="text-lg text-zinc-500">Loading workers...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-zinc-950">
       <AdminHeader
         title="Manage Workers"
         subtitle={`${workers.length} worker${workers.length !== 1 ? 's' : ''} total`}
@@ -147,12 +147,12 @@ export default function AdminWorkers() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {carts.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-lg">
+            <svg className="mx-auto h-12 w-12 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No carts available</h3>
-            <p className="mt-1 text-sm text-gray-500">Create a cart first before adding workers.</p>
+            <h3 className="mt-2 text-sm font-medium text-white">No carts available</h3>
+            <p className="mt-1 text-sm text-zinc-400">Create a cart first before adding workers.</p>
             <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -163,12 +163,12 @@ export default function AdminWorkers() {
             </div>
           </div>
         ) : workers.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-lg">
+            <svg className="mx-auto h-12 w-12 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No workers</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a worker account.</p>
+            <h3 className="mt-2 text-sm font-medium text-white">No workers</h3>
+            <p className="mt-1 text-sm text-zinc-400">Get started by creating a worker account.</p>
             <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(true)}

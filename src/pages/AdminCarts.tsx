@@ -62,8 +62,8 @@ export default function AdminCarts() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">Workers cannot access admin management pages.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Access Denied</h1>
+          <p className="text-zinc-400">Workers cannot access admin management pages.</p>
         </div>
       </div>
     );
@@ -126,13 +126,13 @@ export default function AdminCarts() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading carts...</div>
+        <div className="text-lg text-zinc-500">Loading carts...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-zinc-950">
       <AdminHeader
         title="Manage Carts"
         subtitle={`${carts.length} cart${carts.length !== 1 ? 's' : ''} total`}
@@ -146,12 +146,12 @@ export default function AdminCarts() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Carts List */}
         {carts.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-lg">
+            <svg className="mx-auto h-12 w-12 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No carts</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new cart.</p>
+            <h3 className="mt-2 text-sm font-medium text-white">No carts</h3>
+            <p className="mt-1 text-sm text-zinc-400">Get started by creating a new cart.</p>
             {isSuperAdmin && (
               <div className="mt-6">
                 <button

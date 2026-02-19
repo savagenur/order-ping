@@ -26,7 +26,7 @@ export default function WorkerStats() {
   const calendarDays = Array.from({ length: getDaysInMonth() }, (_, i) => i + 1);
   
   return (
-    <div className="min-h-screen w-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen w-screen bg-zinc-950 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <WorkerStatsHeader 
           selectedMonth={selectedMonth} 
@@ -35,7 +35,7 @@ export default function WorkerStats() {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="text-lg text-gray-600">Loading...</div>
+            <div className="text-lg text-zinc-500">Loading...</div>
           </div>
         ) : (
           <>
@@ -51,7 +51,7 @@ export default function WorkerStats() {
                 />
               ))}
               {Object.keys(stats).length === 0 && (
-                <div className="bg-white shadow rounded-lg p-8 text-center text-sm text-gray-500">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center text-sm text-zinc-500">
                   No data available for this month
                 </div>
               )}
