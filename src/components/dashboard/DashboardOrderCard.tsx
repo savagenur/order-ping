@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
 
@@ -18,12 +17,7 @@ export default function DashboardOrderCard({
   const color = getOrderColorByName(order.color || "BLUE");
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -30 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 60, transition: { duration: 0.25 } }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+    <div
       className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 ${color.glow}`}
       style={{ 
         borderLeftWidth: 4, 
@@ -54,14 +48,13 @@ export default function DashboardOrderCard({
       </div>
 
       {/* Action Button */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
+      <button
         onClick={onAction}
         className={`shrink-0 px-5 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
         {actionLabel}
-      </motion.button>
-    </motion.div>
+      </button>
+    </div>
   );
 }

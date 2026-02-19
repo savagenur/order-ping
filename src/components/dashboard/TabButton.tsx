@@ -1,11 +1,10 @@
-import { motion } from "framer-motion";
-
 interface TabButtonProps {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
   badge?: number;
+  position: 'left' | 'right';
 }
 
 export default function TabButton({
@@ -14,6 +13,7 @@ export default function TabButton({
   icon,
   label,
   badge,
+  position,
 }: TabButtonProps) {
   return (
     <button
@@ -32,10 +32,13 @@ export default function TabButton({
         </span>
       )}
       {active && (
-        <motion.div
-          layoutId="tab-indicator"
-          className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500"
-          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+        <div
+          className={`absolute top-0 h-0.5 bg-blue-500 transition-transform duration-300 ease-out ${
+            position === 'left' ? 'left-0 right-0' : 'left-0 right-0'
+          }`}
+          style={{
+            transform: position === 'left' ? 'translateX(0)' : 'translateX(0)',
+          }}
         />
       )}
     </button>

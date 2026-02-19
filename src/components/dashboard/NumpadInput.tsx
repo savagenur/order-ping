@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { ORDER_COLOR_OPTIONS } from "../../lib/orderColors";
+import { memo } from "react";
 
 interface NumpadInputProps {
   onSubmit: () => void;
@@ -9,7 +10,7 @@ interface NumpadInputProps {
 
 const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
 
-export default function NumpadInput({ onSubmit, loading }: NumpadInputProps) {
+const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInputProps) {
   const {
     currentInput,
     selectedColor,
@@ -149,4 +150,6 @@ export default function NumpadInput({ onSubmit, loading }: NumpadInputProps) {
       </motion.button>
     </div>
   );
-}
+});
+
+export default NumpadInput;

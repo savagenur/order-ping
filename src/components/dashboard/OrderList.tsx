@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
 
@@ -20,7 +19,7 @@ interface BulkButtonState {
   completedConfirm: boolean;
 }
 
-export default function OrderList({
+const OrderList = memo(function OrderList({
   orders,
   onMarkReady,
   onMarkCompleted,
@@ -51,8 +50,7 @@ export default function OrderList({
           </h2>
           <div className="flex items-center gap-2">
             {preparingOrders.length > 0 && (
-              <motion.button
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={() => {
                   if (buttonState.readyConfirm) {
                     onMarkAllReady();
@@ -77,7 +75,7 @@ export default function OrderList({
                   : buttonState.readyConfirm
                   ? "Tap Again to Confirm!"
                   : "Mark All Ready"}
-              </motion.button>
+              </button>
             )}
             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
               {preparingOrders.length}
@@ -91,17 +89,15 @@ export default function OrderList({
           </div>
         ) : (
           <div className="space-y-2">
-            <AnimatePresence mode="popLayout">
-              {preparingOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  actionLabel="Set Ready"
-                  actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
-                  onAction={() => onMarkReady(order.id)}
-                />
-              ))}
-            </AnimatePresence>
+            {preparingOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                actionLabel="Set Ready"
+                actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
+                onAction={() => onMarkReady(order.id)}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -114,8 +110,7 @@ export default function OrderList({
           </h2>
           <div className="flex items-center gap-2">
             {readyOrders.length > 0 && (
-              <motion.button
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={() => {
                   if (buttonState.completedConfirm) {
                     onMarkAllCompleted();
@@ -133,14 +128,13 @@ export default function OrderList({
                     ? "bg-amber-500 text-white border-amber-400 hover:bg-amber-400 active:bg-amber-600"
                     : "bg-transparent text-zinc-400 border-zinc-400 hover:bg-zinc-400 hover:text-white active:bg-zinc-500"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
-                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {bulkActionLoading.markingAllCompleted
                   ? "Completing..."
                   : buttonState.completedConfirm
                   ? "Tap Again to Confirm!"
                   : "Mark All Picked Up"}
-              </motion.button>
+              </button>
             )}
             <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
               {readyOrders.length}
@@ -154,23 +148,23 @@ export default function OrderList({
           </div>
         ) : (
           <div className="space-y-2">
-            <AnimatePresence mode="popLayout">
-              {readyOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  actionLabel="Complete"
-                  actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
-                  onAction={() => onMarkCompleted(order.id)}
-                />
-              ))}
-            </AnimatePresence>
+            {readyOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                actionLabel="Complete"
+                actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
+                onAction={() => onMarkCompleted(order.id)}
+              />
+            ))}
           </div>
         )}
       </section>
     </div>
   );
-}
+});
+
+export default OrderList;
 
 function OrderCard({
   order,
@@ -186,12 +180,7 @@ function OrderCard({
   const color = getOrderColorByName(order.color || "BLUE");
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -30 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 60, transition: { duration: 0.25 } }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+    <div
       className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 ${color.glow}`}
       style={{ 
         borderLeftWidth: 4, 
@@ -222,14 +211,13 @@ function OrderCard({
       </div>
 
       {/* Action Button */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
+      <button
         onClick={onAction}
         className={`shrink-0 px-5 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
         {actionLabel}
-      </motion.button>
-    </motion.div>
+      </button>
+    </div>
   );
 }

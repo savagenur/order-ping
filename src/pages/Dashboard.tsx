@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { PlusCircle, ListOrdered } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
@@ -127,6 +126,7 @@ export default function Dashboard() {
     }
   };
 
+
   const handleSwipe = (direction: "left" | "right") => {
     if (direction === "left" && activeTab === "create") {
       setActiveTab("list");
@@ -135,6 +135,38 @@ export default function Dashboard() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const touchStartX = touch.clientX;
+    const touchStartY = touch.clientY;
+    
+    const handleTouchMove = (moveEvent: TouchEvent) => {
+      const touch = moveEvent.touches[0];
+      const touchEndX = touch.clientX;
+      const touchEndY = touch.clientY;
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // Only handle horizontal swipes
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        if (deltaX > 0) {
+          handleSwipe("right");
+        } else {
+          handleSwipe("left");
+        }
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  };
   const handleLogout = async () => {
     try {
       await logout();
@@ -197,60 +229,34 @@ export default function Dashboard() {
       <div className="flex-1 overflow-hidden">
         {/* Mobile: Tab-based layout */}
         <div className="md:hidden h-full">
-          <AnimatePresence mode="wait">
-            {activeTab === "create" ? (
-              <motion.div
-                key="create"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="h-full overflow-hidden touch-action: manipulation overscroll-behavior-none"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(_, { offset, velocity }) => {
-                  if (offset.x < -50 || velocity.x < -500) {
-                    handleSwipe("left");
-                  }
+          {activeTab === "create" ? (
+            <div 
+              className="h-full overflow-hidden touch-action: manipulation overscroll-behavior-none"
+              onTouchStart={handleTouchStart}
+            >
+              <NumpadInput
+                onSubmit={handleAddOrder}
+                loading={addNumpadOrder.isPending}
+              />
+            </div>
+          ) : (
+            <div 
+              className="h-full overflow-y-auto"
+              onTouchStart={handleTouchStart}
+            >
+              <OrderList
+                orders={orders}
+                onMarkReady={handleMarkReady}
+                onMarkCompleted={handleMarkCompleted}
+                onMarkAllReady={handleMarkAllReady}
+                onMarkAllCompleted={handleMarkAllCompleted}
+                bulkActionLoading={{
+                  markingAllReady: preparingCount > 0 && preparingCount === orders.filter(o => o.status === "pending" && markReady.isPending).length,
+                  markingAllCompleted: readyCount > 0 && readyCount === orders.filter(o => o.status === "ready" && markCompleted.isPending).length,
                 }}
-              >
-                <NumpadInput
-                  onSubmit={handleAddOrder}
-                  loading={addNumpadOrder.isPending}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="list"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-                className="h-full overflow-y-auto"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(_, { offset, velocity }) => {
-                  if (offset.x > 50 || velocity.x > 500) {
-                    handleSwipe("right");
-                  }
-                }}
-              >
-                <OrderList
-                  orders={orders}
-                  onMarkReady={handleMarkReady}
-                  onMarkCompleted={handleMarkCompleted}
-                  onMarkAllReady={handleMarkAllReady}
-                  onMarkAllCompleted={handleMarkAllCompleted}
-                  bulkActionLoading={{
-                    markingAllReady: preparingCount > 0 && preparingCount === orders.filter(o => o.status === "pending" && markReady.isPending).length,
-                    markingAllCompleted: readyCount > 0 && readyCount === orders.filter(o => o.status === "ready" && markCompleted.isPending).length,
-                  }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              />
+            </div>
+          )}
         </div>
 
         {/* Tablet & Desktop: Split layout */}
@@ -277,8 +283,7 @@ export default function Dashboard() {
                       </h2>
                       <div className="flex items-center gap-2">
                         {preparingOrders.length > 0 && (
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
+                          <button
                             onClick={() => {
                               if (buttonState.readyConfirm) {
                                 handleMarkAllReady();
@@ -303,7 +308,7 @@ export default function Dashboard() {
                               : buttonState.readyConfirm
                               ? "Tap Again to Confirm!"
                               : "Mark All Ready"}
-                          </motion.button>
+                          </button>
                         )}
                         <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
                           {preparingOrders.length}
@@ -317,17 +322,15 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <AnimatePresence mode="popLayout">
-                          {preparingOrders.map((order) => (
-                            <DashboardOrderCard
-                              key={order.id}
-                              order={order}
-                              actionLabel="Set Ready"
-                              actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
-                              onAction={async () => await markReady.mutateAsync(order.id)}
-                            />
-                          ))}
-                        </AnimatePresence>
+                        {preparingOrders.map((order) => (
+                          <DashboardOrderCard
+                            key={order.id}
+                            order={order}
+                            actionLabel="Set Ready"
+                            actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
+                            onAction={async () => await markReady.mutateAsync(order.id)}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>
@@ -345,8 +348,7 @@ export default function Dashboard() {
                       </h2>
                       <div className="flex items-center gap-2">
                         {readyOrders.length > 0 && (
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
+                          <button
                             onClick={() => {
                               if (buttonState.completedConfirm) {
                                 handleMarkAllCompleted();
@@ -371,7 +373,7 @@ export default function Dashboard() {
                               : buttonState.completedConfirm
                               ? "Tap Again to Confirm!"
                               : "Mark All Picked Up"}
-                          </motion.button>
+                          </button>
                         )}
                         <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
                           {readyOrders.length}
@@ -385,17 +387,15 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <AnimatePresence mode="popLayout">
-                          {readyOrders.map((order) => (
-                            <DashboardOrderCard
-                              key={order.id}
-                              order={order}
-                              actionLabel="Complete"
-                              actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
-                              onAction={async () => await markCompleted.mutateAsync(order.id)}
-                            />
-                          ))}
-                        </AnimatePresence>
+                        {readyOrders.map((order) => (
+                          <DashboardOrderCard
+                            key={order.id}
+                            order={order}
+                            actionLabel="Complete"
+                            actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
+                            onAction={async () => await markCompleted.mutateAsync(order.id)}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>
@@ -437,6 +437,7 @@ export default function Dashboard() {
             onClick={() => setActiveTab("create")}
             icon={<PlusCircle className="w-4 h-4" />}
             label="Create"
+            position="left"
           />
           <TabButton
             active={activeTab === "list"}
@@ -444,6 +445,7 @@ export default function Dashboard() {
             icon={<ListOrdered className="w-4 h-4" />}
             label="List"
             badge={listCount > 0 ? listCount : undefined}
+            position="right"
           />
         </div>
       </div>
