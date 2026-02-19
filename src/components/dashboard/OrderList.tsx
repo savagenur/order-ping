@@ -41,7 +41,7 @@ const OrderList = memo(function OrderList({
     });
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-lg mx-auto px-4 pb-6 space-y-6">
       {/* Preparing Section */}
       <section>
         <div className="sticky top-0 z-10 flex items-center justify-between mb-3 bg-zinc-950/90 backdrop-blur-md py-2 -mx-4 px-4">

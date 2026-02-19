@@ -273,11 +273,11 @@ export default function Dashboard() {
               </div>
               
               {/* Middle Panel - Preparing */}
-              <div className="w-1/3 border-r border-zinc-800 overflow-y-auto">
-                <div className="max-w-lg mx-auto px-4 py-6">
-                  {/* Preparing Section */}
-                  <section>
-                    <div className="sticky top-0 z-10 flex items-center justify-between mb-3 bg-zinc-950/90 backdrop-blur-md py-2 -mx-4 px-4">
+              <div className="w-1/3 border-r border-zinc-800 flex flex-col">
+                {/* Static Header */}
+                <div className="sticky top-0 z-10 shrink-0 bg-zinc-950 border-b border-zinc-800">
+                  <div className="max-w-lg mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between">
                       <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
                         Preparing
                       </h2>
@@ -315,7 +315,12 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-
+                  </div>
+                </div>
+                
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="max-w-lg mx-auto px-4 py-6">
                     {preparingOrders.length === 0 ? (
                       <div className="text-center py-10">
                         <p className="text-zinc-600 text-sm">No orders being prepared</p>
@@ -333,16 +338,16 @@ export default function Dashboard() {
                         ))}
                       </div>
                     )}
-                  </section>
+                  </div>
                 </div>
               </div>
               
               {/* Right Panel - Ready */}
-              <div className="w-1/3 overflow-y-auto">
-                <div className="max-w-lg mx-auto px-4 py-6">
-                  {/* Ready Section */}
-                  <section>
-                    <div className="sticky top-0 z-10 flex items-center justify-between mb-3 bg-zinc-950/90 backdrop-blur-md py-2 -mx-4 px-4">
+              <div className="w-1/3 flex flex-col">
+                {/* Static Header */}
+                <div className="sticky top-0 z-10 shrink-0 bg-zinc-950 border-b border-zinc-800">
+                  <div className="max-w-lg mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between">
                       <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
                         Ready for Pickup
                       </h2>
@@ -380,7 +385,12 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-
+                  </div>
+                </div>
+                
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="max-w-lg mx-auto px-4 py-6">
                     {readyOrders.length === 0 ? (
                       <div className="text-center py-10">
                         <p className="text-zinc-600 text-sm">No orders ready</p>
@@ -398,7 +408,7 @@ export default function Dashboard() {
                         ))}
                       </div>
                     )}
-                  </section>
+                  </div>
                 </div>
               </div>
             </>
@@ -414,15 +424,34 @@ export default function Dashboard() {
               </div>
               
               {/* Right Panel - Orders */}
-              <div className="w-1/2 overflow-y-auto">
-                <OrderList
-                  orders={orders}
-                  onMarkReady={handleMarkReady}
-                  onMarkCompleted={handleMarkCompleted}
-                  onMarkAllReady={handleMarkAllReady}
-                  onMarkAllCompleted={handleMarkAllCompleted}
-                  bulkActionLoading={bulkActionLoading}
-                />
+              <div className="w-1/2 flex flex-col">
+                {/* Static Header */}
+                <div className="sticky top-0 z-10 shrink-0 bg-zinc-950 border-b border-zinc-800">
+                  <div className="max-w-lg mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+                        Orders
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
+                          {orders.length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto">
+                  <OrderList
+                    orders={orders}
+                    onMarkReady={handleMarkReady}
+                    onMarkCompleted={handleMarkCompleted}
+                    onMarkAllReady={handleMarkAllReady}
+                    onMarkAllCompleted={handleMarkAllCompleted}
+                    bulkActionLoading={bulkActionLoading}
+                  />
+                </div>
               </div>
             </>
           )}
