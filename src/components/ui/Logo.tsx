@@ -44,69 +44,13 @@ const Logo = () => {
       }`}
       onClick={handleClick}
     >
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="48" 
-        height="48" 
-        viewBox="0 0 48 48" 
-        fill="none"
-      >
-        <rect width="48" height="48" fill="white" fill-opacity="0.01"/>
-        
-        {/* Main circle */}
-        <circle
-          cx="20"
-          cy="20"
-          r="16"
-          fill="#FBBF24"
-          stroke="#D1D5DB"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        {/* Small rectangle */}
-        <path d="M44 18V20H42V18H44Z" fill="#FBBF24"/>
-
-        {/* Outer arc */}
-        <path
-          d="M42 20H44V18H42V20ZM42 20C42 29.1371 36.4299 36.9732 28.5 40.2978"
-          stroke="#D1D5DB"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        {/* Base */}
-        <path
-          d="M14 35L10 44H30L26 35"
-          stroke="#D1D5DB"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        {/* Center circle */}
-        <circle
-          cx="20"
-          cy="20"
-          r="4"
-          fill="#FBBF24"
-          stroke="#D1D5DB"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        {/* Inner arc */}
-        <path
-          d="M10 20C10 14.4772 14.4772 10 20 10"
-          stroke="#D1D5DB"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      <img 
+        src="/orderping-logo.svg?v=2" 
+        alt="OrderPing Logo"
+        width="48"
+        height="48"
+        className="w-12 h-12"
+      />
     </div>
   );
 };

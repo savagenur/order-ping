@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Smartphone, LineChart, MapPin, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import orderpingLogo from '/orderping-logo.svg';
 import Logo from '../components/ui/Logo';
 
 export default function About() {
@@ -55,7 +54,9 @@ export default function About() {
             className="mb-8"
           >
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <img src={orderpingLogo} alt="OrderPing Logo" className="w-8 h-8 sm:w-12 sm:h-12" />
+              <div className="w-8 h-8 sm:w-12 sm:h-12">
+                <Logo />
+              </div>
               <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 OrderPing
               </h1>
@@ -202,7 +203,9 @@ export default function About() {
               className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl p-6 sm:p-8 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
             >
               <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-cyan-500/20 rounded-full mb-4 sm:mb-6">
-                <img src={orderpingLogo} alt="OrderPing Logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8">
+                  <Logo />
+                </div>
               </div>
               <h4 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-cyan-400">Chef Dashboard</h4>
               <p className="text-zinc-300 leading-relaxed">
