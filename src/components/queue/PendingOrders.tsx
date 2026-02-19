@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
-import { getOrderColor } from "../../lib/orderColors";
+import { getOrderColor, getOrderColorByName } from "../../lib/orderColors";
 
 interface PendingOrdersProps {
   pendingOrders: Order[];
@@ -31,7 +31,7 @@ export default function PendingOrders({
           <div className="space-y-2">
             <AnimatePresence mode="popLayout">
               {pendingOrders.map((order, index) => {
-                const color = getOrderColor(order.orderNumber);
+                const color = order.color ? getOrderColorByName(order.color) : getOrderColor(order.orderNumber);
                 const position = index + 1;
                 return (
                   <motion.button

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
-import { getOrderColor } from "../../lib/orderColors";
+import { getOrderColor, getOrderColorByName } from "../../lib/orderColors";
 
 interface ReadyOrdersProps {
   readyOrders: Order[];
@@ -28,7 +28,7 @@ export default function ReadyOrders({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <AnimatePresence mode="popLayout">
             {readyOrders.map((order) => {
-              const color = getOrderColor(order.orderNumber);
+              const color = order.color ? getOrderColorByName(order.color) : getOrderColor(order.orderNumber);
               return (
                 <motion.button
                   key={order.id}

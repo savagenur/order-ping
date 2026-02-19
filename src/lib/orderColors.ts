@@ -70,7 +70,7 @@ export const ORDER_COLOR_OPTIONS: OrderColor[] = [
 ];
 
 export function getOrderColor(orderNumber: number): OrderColor {
-  return ORDER_COLORS[orderNumber % ORDER_COLORS.length];
+  return ORDER_COLOR_OPTIONS[(orderNumber - 1) % ORDER_COLOR_OPTIONS.length];
 }
 
 export function getOrderColorByName(name: string): OrderColor {

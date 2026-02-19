@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
-import { getOrderColor } from "../../lib/orderColors";
+import { getOrderColor, getOrderColorByName } from "../../lib/orderColors";
 
 const getOrdinalSuffix = (num: number): string => {
   const j = num % 10;
@@ -43,7 +43,7 @@ export default function PinnedOrder({ order, onClear, queuePosition }: PinnedOrd
 
   if (!order) return null;
 
-  const color = getOrderColor(order.orderNumber);
+  const color = order.color ? getOrderColorByName(order.color) : getOrderColor(order.orderNumber);
   const isReady = order.status === "ready";
 
   return (
