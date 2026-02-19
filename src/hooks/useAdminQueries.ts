@@ -207,7 +207,7 @@ export function useCreateCart() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { businessName: string; location: string; cartId: string; displayName: string; settings?: { instagramHandle?: string; googleMapsLink?: string; websiteUrl?: string; } }) => {
+    mutationFn: async (input: { businessName: string; location: string; cartId: string; displayName: string; settings?: { instagramHandle?: string; placeId?: string; websiteUrl?: string; } }) => {
       const currentUser = auth.currentUser;
       await addDoc(collection(db, 'carts'), {
         businessName: input.businessName,
@@ -399,7 +399,7 @@ interface UpdateCartData {
   displayName?: string;
   settings?: {
     instagramHandle?: string;
-    googleMapsLink?: string;
+    placeId?: string;
     websiteUrl?: string;
   };
   active?: boolean;
@@ -417,7 +417,7 @@ export function useUpdateCart() {
         displayName?: string;
         settings?: {
           instagramHandle?: string;
-          googleMapsLink?: string;
+          placeId?: string;
           websiteUrl?: string;
         };
         active?: boolean;

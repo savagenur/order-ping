@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 interface QueueFooterProps {
   settings: {
     instagramHandle?: string;
-    googleMapsLink?: string;
+    placeId?: string;
     websiteUrl?: string;
   };
   pinnedOrderStatus?: string;
@@ -20,11 +20,14 @@ export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooter
   const formatInstagramUrl = (handle?: string) => {
     if (!handle) return null;
     const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle;
-    return `https://instagram.com/${cleanHandle}`;
+    // Use www.instagram.com for better Android compatibility
+    return `https://www.instagram.com/${cleanHandle}`;
   };
 
   const instagramUrl = formatInstagramUrl(settings.instagramHandle);
-  const reviewUrl = settings.googleMapsLink;
+  const reviewUrl = settings.placeId ? (
+    settings.placeId.startsWith('https://') ? settings.placeId : `https://search.google.com/local/writereview?placeid=${settings.placeId}`
+  ) : undefined;
   const websiteUrl = settings.websiteUrl;
 
   console.log('URLs:', { instagramUrl, reviewUrl, websiteUrl });

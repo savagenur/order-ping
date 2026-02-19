@@ -8,7 +8,7 @@ export interface Cart {
   // Добавь это:
   settings: {
     instagramHandle?: string;
-    googleMapsLink?: string;
+    placeId?: string;
     websiteUrl?: string;
   };
   
@@ -23,7 +23,7 @@ export interface CartInput {
   displayName: string;
   settings: {
     instagramHandle?: string;
-    googleMapsLink?: string;
+    placeId?: string;
     websiteUrl?: string;
   };
 }

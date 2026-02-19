@@ -102,17 +102,17 @@ export default function CreateCartModal({
 
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1">
-              Google Maps Link
+              Google Place ID
             </label>
             <input
-              type="url"
-              value={formData.settings.googleMapsLink}
+              type="text"
+              value={formData.settings.placeId}
               onChange={(e) => onChange({ 
                 ...formData, 
-                settings: { ...formData.settings, googleMapsLink: e.target.value }
+                settings: { ...formData.settings, placeId: e.target.value }
               })}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:border-blue-500 focus:outline-none"
-              placeholder="https://maps.google.com/..."
+              placeholder="ChIJd1y..."
             />
           </div>
 

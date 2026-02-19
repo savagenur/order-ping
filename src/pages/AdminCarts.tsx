@@ -38,7 +38,7 @@ export default function AdminCarts() {
     displayName: '',
     settings: {
       instagramHandle: '',
-      googleMapsLink: '',
+      placeId: '',
       websiteUrl: '',
     },
   });
@@ -103,7 +103,7 @@ export default function AdminCarts() {
         displayName: '',
         settings: {
           instagramHandle: '',
-          googleMapsLink: '',
+          placeId: '',
           websiteUrl: '',
         },
       });
@@ -138,7 +138,7 @@ export default function AdminCarts() {
     displayName: string;
     settings: {
       instagramHandle?: string;
-      googleMapsLink?: string;
+      placeId?: string;
       websiteUrl?: string;
     };
     active: boolean;

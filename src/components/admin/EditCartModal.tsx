@@ -11,7 +11,7 @@ interface EditCartModalProps {
     displayName: string;
     settings: {
       instagramHandle?: string;
-      googleMapsLink?: string;
+      placeId?: string;
       websiteUrl?: string;
     };
     active: boolean;
@@ -36,7 +36,7 @@ export default function EditCartModal({
     const location = formData.get('location') as string;
     const displayName = formData.get('displayName') as string;
     const instagramHandle = formData.get('instagramHandle') as string;
-    const googleMapsLink = formData.get('googleMapsLink') as string;
+    const placeId = formData.get('placeId') as string;
     const websiteUrl = formData.get('websiteUrl') as string;
     const active = formData.get('active') === 'true';
 
@@ -46,7 +46,7 @@ export default function EditCartModal({
       displayName,
       settings: {
         instagramHandle: instagramHandle || undefined,
-        googleMapsLink: googleMapsLink || undefined,
+        placeId: placeId || undefined,
         websiteUrl: websiteUrl || undefined,
       },
       active,
@@ -145,13 +145,13 @@ export default function EditCartModal({
 
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1">
-                Google Maps Link
+                Google Place ID
               </label>
               <input
-                type="url"
-                name="googleMapsLink"
-                defaultValue={cart.settings?.googleMapsLink || ''}
-                placeholder="https://maps.google.com/..."
+                type="text"
+                name="placeId"
+                defaultValue={cart.settings?.placeId || ''}
+                placeholder="ChIJd1y..."
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
