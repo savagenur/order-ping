@@ -18,6 +18,7 @@ function mapDoc(doc: { id: string; data: () => Record<string, unknown> }): Order
     customerName: (data.customerName as string) || '',
     phoneNumber: (data.phoneNumber as string) || '',
     orderDetails: data.orderDetails as string | undefined,
+    color: data.color as string | undefined,
     status: (data.status as Order['status']) || 'pending',
     cartId: (data.cartId as string) || '',
     cartName: (data.cartName as string) || '',
