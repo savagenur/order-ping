@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from "framer-motion";
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { ORDER_COLOR_OPTIONS } from "../../lib/orderColors";
 import { memo } from "react";
@@ -39,30 +38,25 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
     <div className="h-full flex flex-col px-4 py-3 gap-2">
       {/* Big Display */}
       <div className="shrink-0">
-        <AnimatePresence>
-          {successFlash && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl backdrop-blur-sm"
-            >
-              <span className="text-emerald-400 text-4xl font-bold mb-2">
-                ✓ Added!
-              </span>
-              {lastAddedOrder && (
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-emerald-300 text-3xl font-bold">
-                    Order #{lastAddedOrder}
-                  </span>
-                  <span className="text-emerald-200 text-2xl font-medium uppercase tracking-wider">
-                    {selectedColor}
-                  </span>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {successFlash && (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl backdrop-blur-sm"
+          >
+            <span className="text-emerald-400 text-4xl font-bold mb-2">
+              ✓ Added!
+            </span>
+            {lastAddedOrder && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-emerald-300 text-3xl font-bold">
+                  Order #{lastAddedOrder}
+                </span>
+                <span className="text-emerald-200 text-2xl font-medium uppercase tracking-wider">
+                  {selectedColor}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center">
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 font-semibold">
@@ -70,14 +64,7 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
           </p>
           <div className="font-mono font-extrabold text-3xl text-white min-h-10 flex items-center justify-center">
             {currentInput ? (
-              <motion.span
-                key={currentInput}
-                initial={{ scale: 1.1 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              >
-                #{currentInput}
-              </motion.span>
+              <span>#{currentInput}</span>
             ) : (
               <span className="text-zinc-700">#___</span>
             )}
@@ -118,9 +105,8 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
         {NUMPAD_KEYS.map((key) => {
           const isAction = key === "C" || key === "⌫";
           return (
-            <motion.button
+            <button
               key={key}
-              whileTap={{ scale: 0.9 }}
               onClick={() => handleKey(key)}
               className={`h-full rounded-lg text-base font-bold flex items-center justify-center cursor-pointer select-none ${
                 isAction
@@ -130,14 +116,13 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
               {key}
-            </motion.button>
+            </button>
           );
         })}
       </div>
 
       {/* ADD TO QUEUE Button */}
-      <motion.button
-        whileTap={canSubmit ? { scale: 0.95 } : undefined}
+      <button
         onClick={canSubmit ? onSubmit : undefined}
         disabled={!canSubmit}
         className={`w-full py-8 rounded-lg text-base font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
@@ -147,7 +132,7 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
         }`}
       >
         {loading ? "Adding..." : "Add to Queue"}
-      </motion.button>
+      </button>
     </div>
   );
 });
