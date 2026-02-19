@@ -100,6 +100,24 @@ export default function CreateWorkerModal({
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role *
+            </label>
+            <select
+              required
+              value={formData.role}
+              onChange={(e) => onChange({ ...formData, role: e.target.value as 'admin' | 'worker' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="worker">Worker</option>
+              <option value="admin">Admin</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Admin users can manage workers and settings
+            </p>
+          </div>
+
           <div className="flex gap-3 pt-4">
             <button
               type="button"

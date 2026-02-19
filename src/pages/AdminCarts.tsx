@@ -30,6 +30,12 @@ export default function AdminCarts() {
   const [formData, setFormData] = useState<CartInput>({
     businessName: '',
     location: '',
+    displayName: '',
+    settings: {
+      instagramHandle: '',
+      googleMapsLink: '',
+      websiteUrl: '',
+    },
   });
 
   // TanStack Query - carts list (cached 5 min)
@@ -69,11 +75,21 @@ export default function AdminCarts() {
         location: formData.location,
         cartId: cartIdPreview,
         displayName,
+        settings: formData.settings,
       });
 
       alert('Cart created successfully!');
       setShowCreateModal(false);
-      setFormData({ businessName: '', location: '' });
+      setFormData({ 
+        businessName: '', 
+        location: '', 
+        displayName: '',
+        settings: {
+          instagramHandle: '',
+          googleMapsLink: '',
+          websiteUrl: '',
+        },
+      });
     } catch (error) {
       console.error('Error creating cart:', error);
       alert('Failed to create cart');

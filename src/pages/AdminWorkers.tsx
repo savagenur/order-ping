@@ -17,6 +17,7 @@ export default function AdminWorkers() {
     workerName: '',
     cartId: '',
     cartName: '',
+    role: 'worker',
   });
 
   // TanStack Query - cached data
@@ -50,11 +51,19 @@ export default function AdminWorkers() {
         workerName: formData.workerName,
         cartId: formData.cartId,
         cartName: formData.cartName,
+        role: formData.role,
       });
 
       alert(`Worker created successfully!\n\nEmail: ${result.email}\nPassword: ${result.password}\n\nShare these credentials with the worker.`);
       setShowCreateModal(false);
-      setFormData({ email: '', password: '', workerName: '', cartId: '', cartName: '' });
+      setFormData({ 
+        email: '', 
+        password: '', 
+        workerName: '', 
+        cartId: '', 
+        cartName: '',
+        role: 'worker',
+      });
     } catch (error: unknown) {
       console.error('Error creating worker:', error);
       const message = error instanceof Error ? error.message : 'Unknown error occurred';

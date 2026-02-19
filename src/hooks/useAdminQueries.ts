@@ -67,6 +67,7 @@ async function fetchCarts(): Promise<Cart[]> {
       location: data.location,
       displayName: data.displayName,
       cartId: data.cartId,
+      settings: data.settings || {},
       createdAt: data.createdAt?.toDate(),
       createdBy: data.createdBy,
       active: data.active ?? true,
@@ -88,13 +89,14 @@ export function useCreateCart() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { businessName: string; location: string; cartId: string; displayName: string }) => {
+    mutationFn: async (input: { businessName: string; location: string; cartId: string; displayName: string; settings?: { instagramHandle?: string; googleMapsLink?: string; websiteUrl?: string; } }) => {
       const currentUser = auth.currentUser;
       await addDoc(collection(db, 'carts'), {
         businessName: input.businessName,
         location: input.location,
         displayName: input.displayName,
         cartId: input.cartId,
+        settings: input.settings || {},
         createdAt: Timestamp.now(),
         createdBy: currentUser?.email || 'admin',
         active: true,
@@ -133,6 +135,7 @@ async function fetchAdminWorkers(): Promise<Worker[]> {
       workerName: data.workerName || '',
       cartId: data.cartId,
       cartName: data.cartName,
+      role: data.role || 'worker',
       createdAt: data.createdAt?.toDate(),
       active: data.active ?? true,
     };
@@ -163,6 +166,7 @@ export function useCreateWorker() {
       workerName: string;
       cartId: string;
       cartName: string;
+      role: 'admin' | 'worker';
     }) => {
       const createWorkerFunction = httpsCallable(functions, 'createWorker');
       const result = await createWorkerFunction({
@@ -186,6 +190,7 @@ export function useCreateWorker() {
         workerName: input.workerName,
         cartId: input.cartId,
         cartName: input.cartName,
+        role: input.role,
         createdAt: Timestamp.now(),
         active: true,
       });

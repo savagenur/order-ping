@@ -65,6 +65,54 @@ export default function CreateCartModal({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Instagram Handle
+            </label>
+            <input
+              type="text"
+              value={formData.settings.instagramHandle}
+              onChange={(e) => onChange({ 
+                ...formData, 
+                settings: { ...formData.settings, instagramHandle: e.target.value }
+              })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="@yourbusiness"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Google Maps Link
+            </label>
+            <input
+              type="url"
+              value={formData.settings.googleMapsLink}
+              onChange={(e) => onChange({ 
+                ...formData, 
+                settings: { ...formData.settings, googleMapsLink: e.target.value }
+              })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="https://maps.google.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Website URL
+            </label>
+            <input
+              type="url"
+              value={formData.settings.websiteUrl}
+              onChange={(e) => onChange({ 
+                ...formData, 
+                settings: { ...formData.settings, websiteUrl: e.target.value }
+              })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="https://yourwebsite.com"
+            />
+          </div>
+
           {cartIdPreview && (
             <div className="bg-gray-50 p-3 rounded-md">
               <p className="text-xs text-gray-500 mb-1">Auto-generated Cart ID:</p>
