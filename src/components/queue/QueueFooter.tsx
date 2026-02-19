@@ -1,4 +1,5 @@
 import { Instagram, Star, Globe } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface QueueFooterProps {
   settings: {
@@ -43,19 +44,30 @@ export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooter
         </a>
 
         {/* Always show for testing - remove conditional */}
-        <a
+        <motion.a
           href={reviewUrl || '#'}
           target="_blank"
           rel="noopener noreferrer"
           className={`flex flex-col items-center gap-1 transition-all duration-200 hover:scale-105 active:scale-95 ${
             isReady 
-              ? 'text-blue-400 animate-pulse' 
-              : 'text-white hover:text-white'
+              ? 'text-amber-500' 
+              : 'text-zinc-500 hover:text-zinc-400'
           }`}
+          style={{
+            filter: isReady ? 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' : 'none'
+          }}
+          animate={isReady ? {
+            scale: [1, 1.05, 1],
+            opacity: [0.8, 1, 0.8]
+          } : undefined}
+          transition={{
+            duration: 2,
+            repeat: isReady ? Infinity : 0
+          }}
         >
           <Star className="w-6 h-6" />
           <span className="text-xs font-medium">Review Us</span>
-        </a>
+        </motion.a>
 
         {/* Always show for testing - remove conditional */}
         <a
