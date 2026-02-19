@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { useAuthStore } from "../stores/authStore";
 import { Eye, EyeOff } from "lucide-react";
+import Logo from "../components/ui/Logo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -40,19 +41,21 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen w-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-xl p-8">
+    <div className="min-h-screen min-w-screen bg-zinc-950 text-white flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">OrderPing</h1>
-            <p className="text-gray-600">Worker Dashboard Login</p>
+            <div className="flex justify-center mb-2">
+              <Logo />
+            </div>
+            <h1 className="text-2xl font-bold text-white">OrderPing</h1>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-zinc-300 mb-2"
               >
                 Email Address
               </label>
@@ -62,7 +65,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-4 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 placeholder="worker@example.com"
               />
             </div>
@@ -70,24 +73,24 @@ export default function Login() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-zinc-300 mb-2"
               >
                 Password
               </label>
               <div className="relative w-full">
                 <input
-                  type={showPassword ? "text" : "password"} // Dynamic type change
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-primary pr-12" // Added pr-12 for icon space
+                  className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-4 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   placeholder="••••••••"
                 />
                 <button
-                  type="button" // Important: prevents form submission
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -95,26 +98,19 @@ export default function Login() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="w-full bg-linear-to-r from-blue-500 to-cyan-500 text-white font-semibold py-4 rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
-        </div>
-
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>Need an account? Contact your administrator.</p>
-          <p className="mt-2 text-xs text-gray-500">
-            Contact: usalife609@gmail.com
-          </p>
         </div>
       </div>
     </div>

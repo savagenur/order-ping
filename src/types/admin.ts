@@ -34,7 +34,7 @@ export interface Worker {
   workerName: string;
   cartId: string;
   cartName: string;
-  role: 'admin' | 'worker';
+  role: 'admin' | 'worker' | 'superadmin';
   createdAt: Date;
   active: boolean;
 }
@@ -45,5 +45,5 @@ export interface WorkerInput {
   workerName: string;
   cartId: string;
   cartName: string;
-  role: 'admin' | 'worker'; // Определяет уровень доступа
+  role: 'admin' | 'worker' | 'superadmin'; // Определяет уровень доступа
 }

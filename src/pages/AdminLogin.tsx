@@ -29,10 +29,10 @@ export default function AdminLogin() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Check if user has admin role
+      // Check if user has admin or superadmin role
       const idTokenResult = await userCredential.user.getIdTokenResult();
       
-      if (idTokenResult.claims.role === 'admin') {
+      if (idTokenResult.claims.role === 'admin' || idTokenResult.claims.role === 'superadmin') {
         navigate('/admin/dashboard');
       } else {
         setError('Access denied. Admin privileges required.');

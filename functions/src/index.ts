@@ -122,11 +122,11 @@ export const createWorker = onCall(
     }
 
     const caller = await admin.auth().getUser(request.auth!.uid);
-    if (caller.customClaims?.role !== "admin") {
+    if (caller.customClaims?.role !== "admin" && caller.customClaims?.role !== "superadmin") {
       throw new HttpsError("permission-denied", "Admin access required.");
     }
 
-    const { email, password, cartId, cartName } = request.data;
+    const { email, password, cartId, cartName, role } = request.data;
 
     try {
       const userRecord = await admin.auth().createUser({ email, password });
@@ -134,7 +134,7 @@ export const createWorker = onCall(
       await admin.auth().setCustomUserClaims(userRecord.uid, {
         cartId,
         cartName,
-        role: "worker",
+        role: role || "worker",
       });
 
       return { success: true, uid: userRecord.uid };

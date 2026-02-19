@@ -1,15 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { useAdminStats } from '../hooks/useAdminQueries';
+import { useRoleBasedStats } from '../hooks/useAdminQueries';
 import StatsCard from '../components/admin/StatsCard';
 import QuickActions from '../components/admin/QuickActions';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const { logout, cartId, isSuperAdmin, role, loading: authLoading } = useAuthStore();
 
-  // TanStack Query - admin stats (cached 2 min)
-  const { data: stats, isLoading } = useAdminStats();
+  // Debug logging
+  console.log('AdminDashboard - Auth state:', { cartId, isSuperAdmin, role, authLoading });
+
+  // TanStack Query - role-based stats (cached 2 min)
+  const { data: stats, isLoading, error } = useRoleBasedStats(cartId, isSuperAdmin);
+
+  // Debug logging for query
+  console.log('AdminDashboard - Query state:', { isLoading, error, stats });
 
   const handleLogout = async () => {
     try {
@@ -20,10 +26,37 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isLoading || !stats) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
+        <div className="text-lg text-gray-600">
+          {authLoading ? 'Authenticating...' : 'Loading dashboard...'}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
+          <p className="text-gray-600">Failed to load dashboard data.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg text-gray-600">No data available...</div>
       </div>
     );
   }

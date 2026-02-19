@@ -5,20 +5,22 @@ import { auth } from '../lib/firebase';
 
 interface AdminRouteProps {
   children: React.ReactNode;
+  allowedRoles?: ('admin' | 'worker' | 'superadmin')[];
 }
 
-export default function AdminRoute({ children }: AdminRouteProps) {
+export default function AdminRoute({ children, allowedRoles = ['admin', 'superadmin'] }: AdminRouteProps) {
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'worker' | 'superadmin' | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Check if user has admin role
+        // Check if user has appropriate role
         const idTokenResult = await user.getIdTokenResult();
-        setIsAdmin(idTokenResult.claims.role === 'admin');
+        const role = (idTokenResult.claims.role as 'admin' | 'worker' | 'superadmin') || null;
+        setUserRole(role);
       } else {
-        setIsAdmin(false);
+        setUserRole(null);
       }
       setLoading(false);
     });
@@ -34,7 +36,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
-  if (!isAdmin) {
+  if (!userRole || !allowedRoles.includes(userRole)) {
     return <Navigate to="/admin/login" replace />;
   }
 

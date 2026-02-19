@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { WorkerInput } from '../types/admin';
-import { useAdminCarts, useAdminWorkers, useCreateWorker, useDeleteWorker } from '../hooks/useAdminQueries';
+import { useRoleBasedCarts, useRoleBasedWorkers, useCreateWorker, useDeleteWorker } from '../hooks/useAdminQueries';
+import { useAuthStore } from '../stores/authStore';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import WorkersTable from '../components/admin/WorkersTable';
@@ -11,6 +12,7 @@ export default function AdminWorkers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<{id: string, email: string} | null>(null);
+  const { cartId, isSuperAdmin, role } = useAuthStore();
   const [formData, setFormData] = useState<WorkerInput>({
     email: '',
     password: '',
@@ -20,9 +22,9 @@ export default function AdminWorkers() {
     role: 'worker',
   });
 
-  // TanStack Query - cached data
-  const { data: allCarts = [], isLoading: cartsLoading } = useAdminCarts();
-  const { data: workers = [], isLoading: workersLoading } = useAdminWorkers();
+  // TanStack Query - role-based cached data
+  const { data: allCarts = [], isLoading: cartsLoading } = useRoleBasedCarts(cartId, isSuperAdmin);
+  const { data: workers = [], isLoading: workersLoading } = useRoleBasedWorkers(cartId, isSuperAdmin);
   const createWorker = useCreateWorker();
   const deleteWorker = useDeleteWorker();
 
@@ -30,6 +32,18 @@ export default function AdminWorkers() {
   const carts = useMemo(() => allCarts.filter((cart) => cart.active), [allCarts]);
 
   const loading = cartsLoading || workersLoading;
+
+  // Redirect workers away from admin pages
+  if (role === 'worker') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600">Workers cannot access admin management pages.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleCreateWorker = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +58,9 @@ export default function AdminWorkers() {
       return;
     }
 
+    // Restrict role: Admin users can only create workers
+    const workerRole = isSuperAdmin ? formData.role : 'worker';
+
     try {
       const result = await createWorker.mutateAsync({
         email: formData.email,
@@ -51,7 +68,7 @@ export default function AdminWorkers() {
         workerName: formData.workerName,
         cartId: formData.cartId,
         cartName: formData.cartName,
-        role: formData.role,
+        role: workerRole,
       });
 
       alert(`Worker created successfully!\n\nEmail: ${result.email}\nPassword: ${result.password}\n\nShare these credentials with the worker.`);

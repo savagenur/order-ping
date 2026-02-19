@@ -8,6 +8,8 @@ interface AuthState {
   cartId: string | null;
   cartName: string | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  role: 'admin' | 'worker' | 'superadmin' | null;
   initialized: boolean;
   initialize: () => () => void;
   logout: () => Promise<void>;
@@ -19,6 +21,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   cartId: null,
   cartName: null,
   isAdmin: false,
+  isSuperAdmin: false,
+  role: null,
   initialized: false,
 
   initialize: () => {
@@ -33,13 +37,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const idTokenResult = await user.getIdTokenResult();
           const cartId = (idTokenResult.claims.cartId as string) || null;
           const cartName = (idTokenResult.claims.cartName as string) || null;
-          const isAdmin = idTokenResult.claims.role === 'admin';
+          const role = (idTokenResult.claims.role as 'admin' | 'worker' | 'superadmin') || null;
+          const isAdmin = role === 'admin' || role === 'superadmin';
+          const isSuperAdmin = role === 'superadmin';
 
           set({
             user,
             cartId,
             cartName,
             isAdmin,
+            isSuperAdmin,
+            role,
             loading: false,
           });
         } catch (error) {
@@ -52,6 +60,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           cartId: null,
           cartName: null,
           isAdmin: false,
+          isSuperAdmin: false,
+          role: null,
           loading: false,
         });
       }

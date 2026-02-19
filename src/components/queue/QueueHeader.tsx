@@ -1,17 +1,15 @@
+import Logo from '../ui/Logo';
+
 interface QueueHeaderProps {
   cartName: string;
 }
 
 export default function QueueHeader({ cartName }: QueueHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <img
-            src="/fast-food-svgrepo-com.svg"
-            alt="Fast Food Icon"
-            className="w-8 h-8"
-          />
+          <Logo />
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-white leading-tight tracking-normal normal-case">
               OrderPing

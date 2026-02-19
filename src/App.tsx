@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
+import About from './pages/About';
+import Register from './pages/Register';
 import Login from './pages/Login';
 import WorkerStats from './pages/WorkerStats';
 import Analytics from './pages/Analytics';
@@ -10,6 +12,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCarts from './pages/AdminCarts';
 import AdminWorkers from './pages/AdminWorkers';
+import AdminRoute from './components/AdminRoute';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
@@ -29,24 +32,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { loading, isAdmin } = useAuthStore();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
-  return <>{children}</>;
-}
-
 function App() {
   const initialize = useAuthStore((s) => s.initialize);
 
@@ -59,8 +44,10 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Queue />} />
+        <Route path="/" element={<About />} />
         <Route path="/queue" element={<Queue />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         

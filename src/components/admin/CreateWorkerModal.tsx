@@ -1,4 +1,5 @@
 import type { WorkerInput, Cart } from '../../types/admin';
+import { useAuthStore } from '../../stores/authStore';
 
 interface CreateWorkerModalProps {
   show: boolean;
@@ -21,6 +22,8 @@ export default function CreateWorkerModal({
   carts,
   onCartSelect,
 }: CreateWorkerModalProps) {
+  const { isSuperAdmin } = useAuthStore();
+  
   if (!show) return null;
 
   return (
@@ -107,14 +110,15 @@ export default function CreateWorkerModal({
             <select
               required
               value={formData.role}
-              onChange={(e) => onChange({ ...formData, role: e.target.value as 'admin' | 'worker' })}
+              onChange={(e) => onChange({ ...formData, role: e.target.value as 'admin' | 'worker' | 'superadmin' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="worker">Worker</option>
-              <option value="admin">Admin</option>
+              {isSuperAdmin && <option value="admin">Admin</option>}
+              {isSuperAdmin && <option value="superadmin">Super Admin</option>}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Admin users can manage workers and settings
+              {isSuperAdmin ? 'Admin users can manage workers and settings' : 'Workers can process orders and manage queue'}
             </p>
           </div>
 

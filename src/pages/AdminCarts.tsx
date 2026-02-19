@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { CartInput } from '../types/admin';
-import { useAdminCarts, useCreateCart, useDeleteCart } from '../hooks/useAdminQueries';
+import { useRoleBasedCarts, useCreateCart, useDeleteCart } from '../hooks/useAdminQueries';
+import { useAuthStore } from '../stores/authStore';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import CartCard from '../components/admin/CartCard';
@@ -27,6 +28,7 @@ function generateCartId(businessName: string, location: string): string {
 
 export default function AdminCarts() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { cartId, isSuperAdmin, role } = useAuthStore();
   const [formData, setFormData] = useState<CartInput>({
     businessName: '',
     location: '',
@@ -38,8 +40,8 @@ export default function AdminCarts() {
     },
   });
 
-  // TanStack Query - carts list (cached 5 min)
-  const { data: carts = [], isLoading } = useAdminCarts();
+  // TanStack Query - role-based carts list (cached 5 min)
+  const { data: carts = [], isLoading } = useRoleBasedCarts(cartId, isSuperAdmin);
   const createCart = useCreateCart();
   const deleteCart = useDeleteCart();
 
@@ -55,11 +57,23 @@ export default function AdminCarts() {
     return exists ? '⚠️ A cart with this ID already exists' : '';
   }, [cartIdPreview, carts]);
 
+  // Redirect workers away from admin pages
+  if (role === 'worker') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600">Workers cannot access admin management pages.</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleCreateCart = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.businessName.trim() || !formData.location.trim()) {
-      alert('Please fill in all fields');
+    if (!formData.businessName.trim() || !formData.location.trim() || !formData.displayName.trim()) {
+      alert('Please fill in all required fields');
       return;
     }
 
@@ -69,12 +83,11 @@ export default function AdminCarts() {
     }
 
     try {
-      const displayName = `${formData.businessName} ${formData.location}`;
       await createCart.mutateAsync({
         businessName: formData.businessName,
         location: formData.location,
         cartId: cartIdPreview,
-        displayName,
+        displayName: formData.displayName,
         settings: formData.settings,
       });
 
@@ -123,11 +136,11 @@ export default function AdminCarts() {
       <AdminHeader
         title="Manage Carts"
         subtitle={`${carts.length} cart${carts.length !== 1 ? 's' : ''} total`}
-        actionButton={{
+        actionButton={isSuperAdmin ? {
           text: 'Cart',
           onClick: () => setShowCreateModal(true),
           icon: <Plus className="w-4 h-4" />,
-        }}
+        } : undefined}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -139,14 +152,16 @@ export default function AdminCarts() {
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">No carts</h3>
             <p className="mt-1 text-sm text-gray-500">Get started by creating a new cart.</p>
-            <div className="mt-6">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-              >
-                + Create New Cart
-              </button>
-            </div>
+            {isSuperAdmin && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+                >
+                  + Create New Cart
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Cart } from '../../types/admin';
+import { useAuthStore } from '../../stores/authStore';
 import QRCodeModal from '../dashboard/QRCodeModal';
 
 interface CartCardProps {
@@ -10,6 +11,21 @@ interface CartCardProps {
 export default function CartCard({ cart, onDelete }: CartCardProps) {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { cartId: userCartId, isSuperAdmin, role } = useAuthStore();
+
+  // Debug logging
+  console.log('CartCard Debug:', { 
+    cartId: cart.cartId, 
+    userCartId, 
+    isSuperAdmin, 
+    role,
+    cartBusinessName: cart.businessName 
+  });
+
+  // Only superadmins can delete carts, regular admins can only view
+  const canDelete = isSuperAdmin;
+  
+  console.log('Can delete:', canDelete, 'Reason:', { isSuperAdmin, cartMatches: cart.cartId === userCartId });
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -51,12 +67,14 @@ export default function CartCard({ cart, onDelete }: CartCardProps) {
         >
           View QR
         </button>
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition"
-        >
-          Delete
-        </button>
+        {canDelete && (
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition"
+          >
+            Delete
+          </button>
+        )}
       </div>
 
       <p className="text-xs text-gray-400 mt-4">
