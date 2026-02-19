@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import type { CartInput } from '../types/admin';
-import { useRoleBasedCarts, useCreateCart, useDeleteCart } from '../hooks/useAdminQueries';
+import type { CartInput, Cart } from '../types/admin';
+import { useRoleBasedCarts, useCreateCart, useDeleteCart, useUpdateCart } from '../hooks/useAdminQueries';
 import { useAuthStore } from '../stores/authStore';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import CartCard from '../components/admin/CartCard';
 import CreateCartModal from '../components/admin/CreateCartModal';
+import EditCartModal from '../components/admin/EditCartModal';
 
 function generateCartId(businessName: string, location: string): string {
   const slug = (str: string) =>
@@ -28,6 +29,8 @@ function generateCartId(businessName: string, location: string): string {
 
 export default function AdminCarts() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [cartToEdit, setCartToEdit] = useState<Cart | null>(null);
   const { cartId, isSuperAdmin, role } = useAuthStore();
   const [formData, setFormData] = useState<CartInput>({
     businessName: '',
@@ -44,6 +47,7 @@ export default function AdminCarts() {
   const { data: carts = [], isLoading } = useRoleBasedCarts(cartId, isSuperAdmin);
   const createCart = useCreateCart();
   const deleteCart = useDeleteCart();
+  const updateCart = useUpdateCart();
 
   // Derived state - no useEffect needed
   const cartIdPreview = useMemo(
@@ -123,6 +127,39 @@ export default function AdminCarts() {
     }
   };
 
+  const handleEditCart = (cart: Cart) => {
+    setCartToEdit(cart);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateCart = async (data: {
+    businessName: string;
+    location: string;
+    displayName: string;
+    settings: {
+      instagramHandle?: string;
+      googleMapsLink?: string;
+      websiteUrl?: string;
+    };
+    active: boolean;
+  }) => {
+    if (!cartToEdit) return;
+
+    try {
+      await updateCart.mutateAsync({
+        cartId: cartToEdit.id,
+        data,
+      });
+      alert('Cart updated successfully!');
+      setShowEditModal(false);
+      setCartToEdit(null);
+    } catch (error: unknown) {
+      console.error('Error updating cart:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to update cart: ${message}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -170,6 +207,7 @@ export default function AdminCarts() {
                 key={cart.id}
                 cart={cart}
                 onDelete={handleDeleteCart}
+                onEdit={handleEditCart}
               />
             ))}
           </div>
@@ -185,6 +223,14 @@ export default function AdminCarts() {
         submitting={createCart.isPending}
         cartIdPreview={cartIdPreview}
         cartIdError={cartIdError}
+      />
+
+      <EditCartModal
+        show={showEditModal}
+        cart={cartToEdit}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateCart}
+        submitting={updateCart.isPending}
       />
     </div>
   );

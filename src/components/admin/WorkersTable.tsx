@@ -1,12 +1,14 @@
 import type { Worker } from '../../types/admin';
 import { useAuthStore } from '../../stores/authStore';
+import { Edit } from 'lucide-react';
 
 interface WorkersTableProps {
   workers: Worker[];
   onDelete: (id: string, email: string) => void;
+  onEdit?: (worker: Worker) => void;
 }
 
-export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
+export default function WorkersTable({ workers, onDelete, onEdit }: WorkersTableProps) {
   const { cartId: userCartId, isSuperAdmin, user } = useAuthStore();
 
   // Admins can delete workers assigned to their cart, superadmins can delete any worker
@@ -16,6 +18,11 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
     if (isOwnAccount) return false; // Cannot delete own account
     
     return isSuperAdmin || worker.cartId === userCartId;
+  };
+
+  // Only superadmins can edit workers
+  const canEditWorker = () => {
+    return isSuperAdmin;
   };
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg overflow-hidden min-w-[90vw] md:min-w-[70vw]">
@@ -68,16 +75,28 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
                   {worker.createdAt.toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  {canDeleteWorker(worker) ? (
-                    <button
-                      onClick={() => onDelete(worker.uid, worker.email)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  ) : (
-                    <span className="text-zinc-600">-</span>
-                  )}
+                  <div className="flex justify-end space-x-2">
+                    {canEditWorker() && onEdit && (
+                      <button
+                        onClick={() => onEdit(worker)}
+                        className="text-blue-400 hover:text-blue-300"
+                        title="Edit worker"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
+                    {canDeleteWorker(worker) ? (
+                      <button
+                        onClick={() => onDelete(worker.uid, worker.email)}
+                        className="text-red-400 hover:text-red-300"
+                        title="Delete worker"
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <span className="text-zinc-600">-</span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -107,7 +126,16 @@ export default function WorkersTable({ workers, onDelete }: WorkersTableProps) {
                 <p className="text-sm text-white">{worker.cartName}</p>
                 <p className="text-xs text-zinc-500">{worker.cartId}</p>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end space-x-2">
+                {canEditWorker() && onEdit && (
+                  <button
+                    onClick={() => onEdit(worker)}
+                    className="text-blue-400 hover:text-blue-300 text-sm"
+                    title="Edit worker"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
                 {canDeleteWorker(worker) ? (
                   <button
                     onClick={() => onDelete(worker.uid, worker.email)}

@@ -5,6 +5,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
   Timestamp,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -148,7 +149,8 @@ export function useRoleBasedCarts(cartId: string | null, isSuperAdmin: boolean) 
     queryKey: ['role-based-carts', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredCarts(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    // Temporarily remove enabled condition to debug
+    // enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
   });
 }
 
@@ -157,7 +159,8 @@ export function useRoleBasedWorkers(cartId: string | null, isSuperAdmin: boolean
     queryKey: ['role-based-workers', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredWorkers(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    // Temporarily remove enabled condition to debug
+    // enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
   });
 }
 
@@ -342,6 +345,97 @@ export function useDeleteWorker() {
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       queryClient.invalidateQueries({ queryKey: ['role-based-stats'] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+    },
+  });
+}
+
+// ─── Update Worker (Safe Mode) ───────────────────────────────────────────────────
+
+interface UpdateWorkerData {
+  role?: 'admin' | 'worker' | 'superadmin';
+  workerName?: string;
+  cartId?: string;
+  cartName?: string;
+  active?: boolean;
+}
+
+export function useUpdateWorker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ workerId, data }: { workerId: string; data: UpdateWorkerData }) => {
+      // Only allow updating safe fields - uid and email are excluded
+      const updateData: {
+        role?: 'admin' | 'worker' | 'superadmin';
+        workerName?: string;
+        cartId?: string;
+        cartName?: string;
+        active?: boolean;
+      } = {};
+      
+      if (data.role !== undefined) updateData.role = data.role;
+      if (data.workerName !== undefined) updateData.workerName = data.workerName;
+      if (data.cartId !== undefined) updateData.cartId = data.cartId;
+      if (data.cartName !== undefined) updateData.cartName = data.cartName;
+      if (data.active !== undefined) updateData.active = data.active;
+
+      await updateDoc(doc(db, 'workers', workerId), updateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['role-based-workers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-workers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['role-based-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+    },
+  });
+}
+
+// ─── Update Cart (Safe Mode) ─────────────────────────────────────────────────────
+
+interface UpdateCartData {
+  businessName?: string;
+  location?: string;
+  displayName?: string;
+  settings?: {
+    instagramHandle?: string;
+    googleMapsLink?: string;
+    websiteUrl?: string;
+  };
+  active?: boolean;
+}
+
+export function useUpdateCart() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ cartId: docId, data }: { cartId: string; data: UpdateCartData }) => {
+      // Only allow updating safe fields - cartId is excluded
+      const updateData: {
+        businessName?: string;
+        location?: string;
+        displayName?: string;
+        settings?: {
+          instagramHandle?: string;
+          googleMapsLink?: string;
+          websiteUrl?: string;
+        };
+        active?: boolean;
+      } = {};
+      
+      if (data.businessName !== undefined) updateData.businessName = data.businessName;
+      if (data.location !== undefined) updateData.location = data.location;
+      if (data.displayName !== undefined) updateData.displayName = data.displayName;
+      if (data.settings !== undefined) updateData.settings = data.settings;
+      if (data.active !== undefined) updateData.active = data.active;
+
+      await updateDoc(doc(db, 'carts', docId), updateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['role-based-carts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-carts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['role-based-stats'] });
     },
   });
 }

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import type { Cart } from '../../types/admin';
 import { useAuthStore } from '../../stores/authStore';
+import { Edit } from 'lucide-react';
 import QRCodeModal from '../dashboard/QRCodeModal';
 
 interface CartCardProps {
   cart: Cart;
   onDelete: (id: string, name: string) => void;
+  onEdit?: (cart: Cart) => void;
 }
 
-export default function CartCard({ cart, onDelete }: CartCardProps) {
+export default function CartCard({ cart, onDelete, onEdit }: CartCardProps) {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { cartId: userCartId, isSuperAdmin, role } = useAuthStore();
@@ -22,8 +24,9 @@ export default function CartCard({ cart, onDelete }: CartCardProps) {
     cartBusinessName: cart.businessName 
   });
 
-  // Only superadmins can delete carts, regular admins can only view
+  // Only superadmins can delete or edit carts, regular admins can only view
   const canDelete = isSuperAdmin;
+  const canEdit = isSuperAdmin;
   
   console.log('Can delete:', canDelete, 'Reason:', { isSuperAdmin, cartMatches: cart.cartId === userCartId });
 
@@ -67,6 +70,15 @@ export default function CartCard({ cart, onDelete }: CartCardProps) {
         >
           View QR
         </button>
+        {canEdit && onEdit && (
+          <button
+            onClick={() => onEdit(cart)}
+            className="px-3 py-2 text-sm bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition"
+            title="Edit cart"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+        )}
         {canDelete && (
           <button
             onClick={() => setShowDeleteModal(true)}

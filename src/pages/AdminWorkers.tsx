@@ -1,17 +1,20 @@
 import { useState, useMemo } from 'react';
-import type { WorkerInput } from '../types/admin';
-import { useRoleBasedCarts, useRoleBasedWorkers, useCreateWorker, useDeleteWorker } from '../hooks/useAdminQueries';
+import type { WorkerInput, Worker } from '../types/admin';
+import { useRoleBasedCarts, useRoleBasedWorkers, useCreateWorker, useDeleteWorker, useUpdateWorker } from '../hooks/useAdminQueries';
 import { useAuthStore } from '../stores/authStore';
 import { Plus } from 'lucide-react';
 import AdminHeader from '../components/admin/AdminHeader';
 import WorkersTable from '../components/admin/WorkersTable';
 import CreateWorkerModal from '../components/admin/CreateWorkerModal';
 import DeleteWorkerModal from '../components/admin/DeleteWorkerModal';
+import EditWorkerModal from '../components/admin/EditWorkerModal';
 
 export default function AdminWorkers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<{id: string, email: string} | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
   const { cartId, isSuperAdmin, role } = useAuthStore();
   const [formData, setFormData] = useState<WorkerInput>({
     email: '',
@@ -27,9 +30,22 @@ export default function AdminWorkers() {
   const { data: workers = [], isLoading: workersLoading } = useRoleBasedWorkers(cartId, isSuperAdmin);
   const createWorker = useCreateWorker();
   const deleteWorker = useDeleteWorker();
+  const updateWorker = useUpdateWorker();
 
-  // Only active carts for the dropdown
-  const carts = useMemo(() => allCarts.filter((cart) => cart.active), [allCarts]);
+  // Only active carts for the dropdown (superadmins see all carts)
+  const carts = useMemo(() => {
+    if (isSuperAdmin) {
+      return allCarts; // Superadmins see all carts (including inactive)
+    }
+    return allCarts.filter((cart) => cart.active); // Admins only see active carts
+  }, [allCarts, isSuperAdmin]);
+
+  // Debug logging
+  console.log('AdminWorkers Debug:', { cartId, isSuperAdmin, role, workersCount: workers.length });
+  console.log('Workers data:', workers);
+  console.log('All carts data:', allCarts);
+  console.log('All carts with active status:', allCarts.map(cart => ({ id: cart.id, cartId: cart.cartId, active: cart.active })));
+  console.log('Filtered carts data:', carts);
 
   const loading = cartsLoading || workersLoading;
 
@@ -124,6 +140,35 @@ export default function AdminWorkers() {
     setWorkerToDelete(null);
   };
 
+  const handleEditWorker = (worker: Worker) => {
+    setWorkerToEdit(worker);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateWorker = async (data: {
+    role: 'admin' | 'worker' | 'superadmin';
+    workerName: string;
+    cartId: string;
+    cartName: string;
+    active: boolean;
+  }) => {
+    if (!workerToEdit) return;
+
+    try {
+      await updateWorker.mutateAsync({
+        workerId: workerToEdit.uid,
+        data,
+      });
+      alert('Worker updated successfully!');
+      setShowEditModal(false);
+      setWorkerToEdit(null);
+    } catch (error: unknown) {
+      console.error('Error updating worker:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to update worker: ${message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -182,6 +227,7 @@ export default function AdminWorkers() {
           <WorkersTable
             workers={workers}
             onDelete={handleDeleteWorker}
+            onEdit={handleEditWorker}
           />
         )}
       </div>
@@ -202,6 +248,15 @@ export default function AdminWorkers() {
         workerEmail={workerToDelete?.email || ''}
         onConfirm={confirmDeleteWorker}
         onCancel={cancelDeleteWorker}
+      />
+
+      <EditWorkerModal
+        show={showEditModal}
+        worker={workerToEdit}
+        carts={carts}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateWorker}
+        submitting={updateWorker.isPending}
       />
     </div>
   );

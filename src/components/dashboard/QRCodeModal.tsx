@@ -28,19 +28,19 @@ export default function QRCodeModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Your QR Code</h3>
+          <h3 className="text-xl font-bold text-white">Your QR Code</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-zinc-400 hover:text-white transition-colors"
           >
             ✕
           </button>
         </div>
         <div className="text-center">
-          <p className="text-sm text-gray-600 mb-4">{cartName}</p>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+          <p className="text-sm text-zinc-400 mb-4">{cartName}</p>
+          <div className="bg-zinc-800/50 border border-zinc-700 p-4 rounded-lg inline-block">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(getQRCodeUrl())}`}
               alt="QR Code"
@@ -51,13 +51,13 @@ export default function QRCodeModal({
             href={getQRCodeUrl()} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:text-blue-800 underline mt-4 mb-4 block break-all"
+            className="text-xs text-blue-400 hover:text-blue-300 underline mt-4 mb-4 block break-all"
           >
             {getQRCodeUrl()}
           </a>
           <button
             onClick={downloadQRCode}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            className="w-full px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
           >
             Download QR Code
           </button>
