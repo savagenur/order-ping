@@ -36,11 +36,12 @@ export default function ReadyOrders({
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   onClick={() => onSelectOrder(order.id)}
                   className="relative bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col items-center gap-2 min-h-20 cursor-pointer active:scale-95 transition-transform"
                   style={{
                     boxShadow: `0 0 20px -8px ${color.hex}`,
+                    
                   }}
                 >
                   <span className="font-mono font-extrabold text-2xl sm:text-3xl text-white">

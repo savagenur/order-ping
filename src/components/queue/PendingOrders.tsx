@@ -40,7 +40,7 @@ export default function PendingOrders({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
                     onClick={() => onSelectOrder(order.id)}
                     className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-4 min-h-11 cursor-pointer active:scale-[0.98] transition-transform text-left"
                     style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
