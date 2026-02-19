@@ -237,6 +237,7 @@ export default function Dashboard() {
               <NumpadInput
                 onSubmit={handleAddOrder}
                 loading={addNumpadOrder.isPending}
+                initialOrderNumber={nextOrderNumber}
               />
             </div>
           ) : (
@@ -269,6 +270,7 @@ export default function Dashboard() {
                 <NumpadInput
                   onSubmit={handleAddOrder}
                   loading={addNumpadOrder.isPending}
+                  initialOrderNumber={nextOrderNumber}
                 />
               </div>
               
@@ -420,6 +422,7 @@ export default function Dashboard() {
                 <NumpadInput
                   onSubmit={handleAddOrder}
                   loading={addNumpadOrder.isPending}
+                  initialOrderNumber={nextOrderNumber}
                 />
               </div>
               

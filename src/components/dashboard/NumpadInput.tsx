@@ -5,11 +5,12 @@ import { memo } from "react";
 interface NumpadInputProps {
   onSubmit: () => void;
   loading: boolean;
+  initialOrderNumber?: number;
 }
 
 const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
 
-const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInputProps) {
+const NumpadInput = memo(function NumpadInput({ onSubmit, loading, initialOrderNumber }: NumpadInputProps) {
   const {
     currentInput,
     selectedColor,
@@ -29,6 +30,13 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
       }));
     } else {
       appendDigit(key);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (initialOrderNumber) {
+      useDashboardStore.setState({ currentInput: initialOrderNumber.toString() });
+      
     }
   };
 
@@ -58,7 +66,10 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading }: NumpadInput
           </div>
         )}
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center">
+        <div 
+          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center cursor-pointer"
+          onDoubleClick={handleDoubleClick}
+        >
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 font-semibold">
             Order Number
           </p>
