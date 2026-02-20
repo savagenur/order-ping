@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueueOrders } from "../hooks/useQueueOrders";
 import { useCartSettings } from "../hooks/useCartSettings";
@@ -10,8 +10,11 @@ import PinnedOrder from "../components/queue/PinnedOrder";
 import ReadyOrders from "../components/queue/ReadyOrders";
 import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
+import NotificationModal from "../components/queue/NotificationModal";
+import { getNotificationPermission, subscribeToOrderNotifications } from "../lib/notifications";
 
 const PINNED_KEY = "orderping_pinned_order";
+const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
 const BRAND_URL = "/about";
 
 export default function Queue() {
@@ -23,6 +26,9 @@ export default function Queue() {
     localStorage.getItem(PINNED_KEY),
   );
 
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   // TanStack Query - realtime queue orders via Firestore onSnapshot
   const { data, isLoading } = useQueueOrders(cartId);
   
@@ -33,7 +39,7 @@ export default function Queue() {
   const readyOrders = data?.readyOrders ?? [];
   const cartName = data?.cartName ?? "";
 
-  const allOrders = [...pendingOrders, ...readyOrders];
+  const allOrders = useMemo(() => [...pendingOrders, ...readyOrders], [pendingOrders, readyOrders]);
 
   // Find the pinned order from the live data
   const pinnedOrder = pinnedOrderId
@@ -53,17 +59,57 @@ export default function Queue() {
     }
   }, [pinnedOrderId, pinnedOrder, isLoading, allOrders.length]);
 
-  const handleSelectOrder = useCallback((orderId: string) => {
-    setPinnedOrderId(orderId);
-    localStorage.setItem(PINNED_KEY, orderId);
-    // Scroll to top to show pinned order
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
   const handleClearPinned = useCallback(() => {
     setPinnedOrderId(null);
     localStorage.removeItem(PINNED_KEY);
   }, []);
+
+  const handleCardClick = useCallback(async (orderId: string) => {
+    const order = allOrders.find(o => o.id === orderId);
+    
+    if (!order) return;
+    
+    // Check if order status is "preparing" (pending in current codebase)
+    if (order.status === 'pending') {
+      setSelectedOrder(orderId);
+      
+      // Check if notification has already been shown for this order in this session
+      const notificationShown = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}`);
+      
+      if (!notificationShown) {
+        // Check if notification permission is already granted
+        const permission = getNotificationPermission();
+        
+        if (permission === 'granted') {
+          // Automatically subscribe without showing modal
+          try {
+            const result = await subscribeToOrderNotifications(orderId);
+            if (result.success) {
+              // Successfully subscribed to notifications
+            } else {
+              console.error('Auto-subscription failed:', result.error);
+            }
+          } catch (error) {
+            console.error('Error auto-subscribing to notifications:', error);
+          }
+        } else if (permission === 'default') {
+          // Show modal to ask for permission
+          setTimeout(() => {
+            setShowAuthModal(true);
+          }, 1000);
+        }
+        // If permission is denied, do nothing
+        
+        // Mark that notification has been processed for this order in this session
+        sessionStorage.setItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}`, 'true');
+      }
+    }
+    
+    // Still allow normal order selection for all orders
+    setPinnedOrderId(orderId);
+    localStorage.setItem(PINNED_KEY, orderId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [allOrders]);
 
   // Filter pinned order out of the section lists to avoid duplication
   const filteredReadyOrders = readyOrders.filter(
@@ -88,12 +134,12 @@ export default function Queue() {
 
       <ReadyOrders
         readyOrders={filteredReadyOrders}
-        onSelectOrder={handleSelectOrder}
+        onSelectOrder={handleCardClick}
       />
 
       <PendingOrders
         pendingOrders={pendingOrders}
-        onSelectOrder={handleSelectOrder}
+        onSelectOrder={handleCardClick}
       />
 
       {/* Branding - positioned above the fixed footer */}
@@ -112,6 +158,16 @@ export default function Queue() {
       <QueueFooter 
         settings={cartSettings || {}} 
         pinnedOrderStatus={pinnedOrder?.status}
+      />
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onNotify={() => {
+          // Handle notification logic here (e.g., subscribe to notifications)
+        }}
+        orderId={selectedOrder}
       />
 
       {/* Original footer content - now hidden since we have the fixed footer */}

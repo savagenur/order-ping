@@ -13,22 +13,13 @@ interface CartCardProps {
 export default function CartCard({ cart, onDelete, onEdit }: CartCardProps) {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const { cartId: userCartId, isSuperAdmin, role } = useAuthStore();
+  const { isSuperAdmin } = useAuthStore();
 
-  // Debug logging
-  console.log('CartCard Debug:', { 
-    cartId: cart.cartId, 
-    userCartId, 
-    isSuperAdmin, 
-    role,
-    cartBusinessName: cart.businessName 
-  });
 
   // Only superadmins can delete or edit carts, regular admins can only view
   const canDelete = isSuperAdmin;
   const canEdit = isSuperAdmin;
   
-  console.log('Can delete:', canDelete, 'Reason:', { isSuperAdmin, cartMatches: cart.cartId === userCartId });
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg p-6">

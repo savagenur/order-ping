@@ -14,6 +14,9 @@ export interface Order {
   readyAt?: Date | Timestamp;
   completedAt?: Date | Timestamp;
   completedBy?: string;
+  notificationToken?: string;
+  isSubscribed?: boolean;
+  subscribedAt?: Date | Timestamp;
 }
 
 export interface OrderInput {

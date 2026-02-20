@@ -13,9 +13,6 @@ interface QueueFooterProps {
 export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooterProps) {
   const isReady = pinnedOrderStatus === 'ready';
 
-  // Debug logging
-  console.log('QueueFooter settings:', settings);
-  console.log('QueueFooter pinnedOrderStatus:', pinnedOrderStatus);
 
   const formatInstagramUrl = (handle?: string) => {
     if (!handle) return null;
@@ -30,7 +27,6 @@ export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooter
   ) : undefined;
   const websiteUrl = settings.websiteUrl;
 
-  console.log('URLs:', { instagramUrl, reviewUrl, websiteUrl });
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 h-20 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]">

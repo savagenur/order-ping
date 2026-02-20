@@ -6,6 +6,9 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 // import * as twilio from "twilio";
 
+// Import notification functions
+import { subscribeToNotifications, sendOrderReadyNotification } from "./notifications";
+
 // Initialize Firebase Admin
 admin.initializeApp();
 
@@ -98,7 +101,7 @@ export const cleanupOldOrders = onSchedule(
     snapshot.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
 
-    console.log(`Cleaned up ${snapshot.size} orders.`);
+    // Cleanup completed successfully
   },
 );
 
@@ -154,3 +157,6 @@ export const makeMeAdmin = onCall(
     return { success: true, message: "You are now an admin locally!" };
   },
 );
+
+// Re-export notification functions
+export { subscribeToNotifications, sendOrderReadyNotification };

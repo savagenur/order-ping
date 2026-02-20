@@ -9,17 +9,11 @@ import LogoutModal from '../components/dashboard/LogoutModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { logout, cartId, isSuperAdmin, role, loading: authLoading } = useAuthStore();
+  const { logout, cartId, isSuperAdmin, loading: authLoading } = useAuthStore();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // Debug logging
-  console.log('AdminDashboard - Auth state:', { cartId, isSuperAdmin, role, authLoading });
 
   // TanStack Query - role-based stats (cached 2 min)
   const { data: stats, isLoading, error } = useRoleBasedStats(cartId, isSuperAdmin);
-
-  // Debug logging for query
-  console.log('AdminDashboard - Query state:', { isLoading, error, stats });
 
   const handleLogout = async () => {
     try {

@@ -40,13 +40,6 @@ export default function AdminWorkers() {
     return allCarts.filter((cart) => cart.active); // Admins only see active carts
   }, [allCarts, isSuperAdmin]);
 
-  // Debug logging
-  console.log('AdminWorkers Debug:', { cartId, isSuperAdmin, role, workersCount: workers.length });
-  console.log('Workers data:', workers);
-  console.log('All carts data:', allCarts);
-  console.log('All carts with active status:', allCarts.map(cart => ({ id: cart.id, cartId: cart.cartId, active: cart.active })));
-  console.log('Filtered carts data:', carts);
-
   const loading = cartsLoading || workersLoading;
 
   // Redirect workers away from admin pages

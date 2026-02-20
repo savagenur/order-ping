@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
+import { getMessaging } from "firebase/messaging";
 // import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 // import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 // import { getAuth, connectAuthEmulator } from "firebase/auth";
@@ -22,6 +23,7 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const functions = getFunctions(app, "us-west1");
+export const messaging = getMessaging(app);
 // Check if we are running locally
 // if (import.meta.env.DEV) {
 //   connectFirestoreEmulator(db, '127.0.0.1', 8080);
