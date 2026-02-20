@@ -149,8 +149,7 @@ export function useRoleBasedCarts(cartId: string | null, isSuperAdmin: boolean) 
     queryKey: ['role-based-carts', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredCarts(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    // Temporarily remove enabled condition to debug
-    // enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
   });
 }
 
@@ -159,8 +158,7 @@ export function useRoleBasedWorkers(cartId: string | null, isSuperAdmin: boolean
     queryKey: ['role-based-workers', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredWorkers(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    // Temporarily remove enabled condition to debug
-    // enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
   });
 }
 

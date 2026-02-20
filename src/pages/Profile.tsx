@@ -7,7 +7,7 @@ import LogoutModal from "../components/dashboard/LogoutModal";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, cartId, cartName, logout } = useAuthStore();
+  const { user, cartId, cartName, logout, role } = useAuthStore();
   const [creationTime, setCreationTime] = useState<string>("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -96,7 +96,7 @@ export default function Profile() {
               <Shield className="w-5 h-5 text-zinc-500" />
               <div className="flex-1">
                 <p className="text-xs text-zinc-500 uppercase tracking-wider">Account Type</p>
-                <p className="text-white font-medium">Worker</p>
+                <p className="text-white font-medium capitalize">{role || 'Unknown'}</p>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { WorkerInput, Worker } from '../types/admin';
 import { useRoleBasedCarts, useRoleBasedWorkers, useCreateWorker, useDeleteWorker, useUpdateWorker } from '../hooks/useAdminQueries';
 import { useAuthStore } from '../stores/authStore';
@@ -15,7 +15,8 @@ export default function AdminWorkers() {
   const [workerToDelete, setWorkerToDelete] = useState<{id: string, email: string} | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
-  const { cartId, isSuperAdmin, role } = useAuthStore();
+  const { cartId, isSuperAdmin, role, loading: authLoading, initialized } = useAuthStore();
+  const [readyToQuery, setReadyToQuery] = useState(false);
   const [formData, setFormData] = useState<WorkerInput>({
     email: '',
     password: '',
@@ -26,11 +27,19 @@ export default function AdminWorkers() {
   });
 
   // TanStack Query - role-based cached data
-  const { data: allCarts = [], isLoading: cartsLoading } = useRoleBasedCarts(cartId, isSuperAdmin);
-  const { data: workers = [], isLoading: workersLoading } = useRoleBasedWorkers(cartId, isSuperAdmin);
+  const { data: allCarts = [], isLoading: cartsLoading } = useRoleBasedCarts(readyToQuery ? cartId : null, isSuperAdmin);
+  const { data: workers = [], isLoading: workersLoading } = useRoleBasedWorkers(readyToQuery ? cartId : null, isSuperAdmin);
   const createWorker = useCreateWorker();
+
+  useEffect(() => {
+    if (initialized && !authLoading) {
+      setReadyToQuery(true);
+    }
+  }, [initialized, authLoading]);
+
   const deleteWorker = useDeleteWorker();
   const updateWorker = useUpdateWorker();
+
 
   // Only active carts for the dropdown (superadmins see all carts)
   const carts = useMemo(() => {
@@ -40,7 +49,7 @@ export default function AdminWorkers() {
     return allCarts.filter((cart) => cart.active); // Admins only see active carts
   }, [allCarts, isSuperAdmin]);
 
-  const loading = cartsLoading || workersLoading;
+  const loading = cartsLoading || workersLoading || authLoading || !initialized || !readyToQuery;
 
   // Redirect workers away from admin pages
   if (role === 'worker') {
@@ -190,10 +199,15 @@ export default function AdminWorkers() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
             <h3 className="mt-2 text-sm font-medium text-white">No carts available</h3>
-            <p className="mt-1 text-sm text-zinc-400">Create a cart first before adding workers.</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              {!isSuperAdmin && cartId 
+                ? `Your admin cart ID (${cartId}) was not found or is inactive. Check browser console for details.`
+                : 'Create a cart first before adding workers.'
+              }
+            </p>
             <div className="mt-6">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => window.location.href = '/admin/carts'}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
               >
                 Go to Carts

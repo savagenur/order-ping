@@ -80,9 +80,7 @@ async function fetchWorkerStats(
   workers: WorkerDoc[],
   cartId?: string,
 ): Promise<{ stats: WorkerStatsMap; analytics: TeamAnalytics }> {
-  const [year, month] = selectedMonth.split('-').map(Number);
-  const startDate = new Date(year, month - 1, 1, 0, 0, 0);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
+  // const [year, month] = selectedMonth.split('-').map(Number);
 
   const ordersRef = collection(db, 'orders');
   const queryConstraints = [

@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminCarts from './pages/AdminCarts';
 import AdminWorkers from './pages/AdminWorkers';
 import AdminRoute from './components/AdminRoute';
+import AdminOnlyRoute from './components/AdminOnlyRoute';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
@@ -64,17 +65,17 @@ function App() {
         <Route
           path="/worker-stats"
           element={
-            <ProtectedRoute>
+            <AdminOnlyRoute>
               <WorkerStats />
-            </ProtectedRoute>
+            </AdminOnlyRoute>
           }
         />
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute>
+            <AdminOnlyRoute>
               <Analytics />
-            </ProtectedRoute>
+            </AdminOnlyRoute>
           }
         />
         <Route

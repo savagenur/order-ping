@@ -38,7 +38,7 @@ export default function EditCartModal({
     const instagramHandle = formData.get('instagramHandle') as string;
     const placeId = formData.get('placeId') as string;
     const websiteUrl = formData.get('websiteUrl') as string;
-    const active = formData.get('active') === 'true';
+    const active = formData.get('active') === 'on';
 
     onSubmit({
       businessName,

@@ -1,5 +1,6 @@
-import { QrCode, LogOut, BarChart3, Users, ListOrdered, PlusCircle, User } from "lucide-react";
+import { QrCode, LogOut, BarChart3, Users, ListOrdered, PlusCircle, User, Settings } from "lucide-react";
 import { auth } from "../../lib/firebase";
+import { useAuthStore } from "../../stores/authStore";
 import MenuButton from "./MenuButton";
 
 interface DashboardHeaderProps {
@@ -12,6 +13,7 @@ interface DashboardHeaderProps {
   onWorkerStats: () => void;
   onAnalytics: () => void;
   onProfile: () => void;
+  onAdminDashboard: () => void;
   onLayoutToggle: () => void;
   onLogout: () => void;
 }
@@ -26,9 +28,11 @@ export default function DashboardHeader({
   onWorkerStats,
   onAnalytics,
   onProfile,
+  onAdminDashboard,
   onLayoutToggle,
   onLogout,
 }: DashboardHeaderProps) {
+  const { isAdmin } = useAuthStore();
   return (
     <header className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -72,8 +76,13 @@ export default function DashboardHeader({
                 <div className="py-1">
                   <MenuButton icon={<User className="w-4 h-4" />} label="Profile" onClick={onProfile} />
                   <MenuButton icon={<QrCode className="w-4 h-4" />} label="QR Code" onClick={onQRCode} />
-                  <MenuButton icon={<Users className="w-4 h-4" />} label="Worker Stats" onClick={onWorkerStats} />
-                  <MenuButton icon={<BarChart3 className="w-4 h-4" />} label="Analytics" onClick={onAnalytics} />
+                  {isAdmin && (
+                    <>
+                      <MenuButton icon={<Settings className="w-4 h-4" />} label="Admin Console" onClick={onAdminDashboard} />
+                      <MenuButton icon={<Users className="w-4 h-4" />} label="Worker Stats" onClick={onWorkerStats} />
+                      <MenuButton icon={<BarChart3 className="w-4 h-4" />} label="Analytics" onClick={onAnalytics} />
+                    </>
+                  )}
                   <div className="hidden md:block border-t border-zinc-800 my-1"></div>
                   <MenuButton 
                     icon={layoutMode === '3-panel' ? <ListOrdered className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />} 

@@ -219,6 +219,7 @@ export default function Dashboard() {
         onWorkerStats={() => { navigate("/worker-stats"); setShowMenu(false); }}
         onAnalytics={() => { navigate("/analytics"); setShowMenu(false); }}
         onProfile={() => { navigate("/profile"); setShowMenu(false); }}
+        onAdminDashboard={() => { navigate("/admin/dashboard"); setShowMenu(false); }}
         onLayoutToggle={() => { 
           setLayoutMode(prev => prev === '3-panel' ? '2-panel' : '3-panel'); 
           setShowMenu(false); 
