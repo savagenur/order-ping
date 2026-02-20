@@ -6,11 +6,13 @@ import NotificationBell from "./NotificationBell";
 interface PendingOrdersProps {
   pendingOrders: Order[];
   onSelectOrder: (orderId: string) => void;
+  isLoading?: boolean;
 }
 
 export default function PendingOrders({
   pendingOrders,
   onSelectOrder,
+  isLoading = false,
 }: PendingOrdersProps) {
   return (
     <section className="px-3 mt-6 pb-8">
@@ -24,10 +26,21 @@ export default function PendingOrders({
           </span>
         </div>
 
-        {pendingOrders.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-zinc-600 text-sm">No orders being prepared</p>
-          </div>
+        {pendingOrders.length === 0 && !isLoading ? (
+          <motion.div 
+            className="text-center py-12"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <motion.p 
+              className="text-zinc-600 text-sm"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              No orders being prepared
+            </motion.p>
+          </motion.div>
         ) : (
           <div className="space-y-2">
             <AnimatePresence mode="popLayout">

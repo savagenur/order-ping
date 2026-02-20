@@ -57,19 +57,29 @@ export const subscribeToNotifications = onCall(
       );
     }
 
-    // Update the order with notification token
-    const updateData: any = {
-      notificationToken: fcmToken,
-      isSubscribed: true,
-      subscribedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
+    // Get existing subscribers or initialize empty array
+    const existingSubscribers = orderData?.notificationSubscribers || [];
     
-    // Add user info if authenticated
-    if (context.auth) {
-      updateData.subscribedBy = context.auth.uid;
+    // Check if this token is already subscribed
+    const isAlreadySubscribed = existingSubscribers.some((subscriber: any) => subscriber.fcmToken === fcmToken);
+    
+    if (!isAlreadySubscribed) {
+      // Add new subscriber to the array
+      const newSubscriber = {
+        fcmToken,
+        subscribedAt: new Date(),
+        subscribedBy: context.auth?.uid || null
+      };
+      
+      // Update the order with notification subscribers array
+      const updateData: any = {
+        notificationSubscribers: admin.firestore.FieldValue.arrayUnion(newSubscriber),
+        isSubscribed: true,
+        subscribedCount: existingSubscribers.length + 1
+      };
+      
+      await admin.firestore().collection("orders").doc(orderId).update(updateData);
     }
-    
-    await admin.firestore().collection("orders").doc(orderId).update(updateData);
 
     return {
       success: true,
@@ -100,46 +110,65 @@ export const sendOrderReadyNotification = onDocumentUpdated(
     beforeData?.status !== "ready" && 
     afterData?.status === "ready" && 
     afterData?.isSubscribed && 
-    afterData?.notificationToken
+    afterData?.notificationSubscribers &&
+    Array.isArray(afterData.notificationSubscribers) &&
+    afterData.notificationSubscribers.length > 0
   ) {
-    const { notificationToken, orderNumber, customerName, cartName, color } = afterData;
+    const { notificationSubscribers, orderNumber, customerName, cartName, cartId, color } = afterData;
     
-    const message = {
-      token: notificationToken,
-      data: {
-        title: `Order #${orderNumber} ${color} is Ready! 🎉`,
-        body: cartName 
-          ? `Your order is ready for pickup at ${cartName || "the cart"}!`
-          : `Your order is ready for pickup! 🎉`,
-        orderId: event.params.orderId,
-        orderNumber: String(orderNumber || ''),
-        customerName: String(customerName || ''),
-        cartName: String(cartName || ''),
-        type: 'order_ready',
-        icon: '/logox-small.png',
-        badge: '/logox-small.png',
-        tag: event.params.orderId,
-        renotify: 'true',
-        requireInteraction: 'true'
-      },
-      android: {
-        notification: {
+    // Send notifications to all subscribers
+    const notificationPromises = notificationSubscribers.map(async (subscriber: any) => {
+      const message = {
+        token: subscriber.fcmToken,
+        data: {
+          title: `Order #${orderNumber} ${color} is Ready! 🎉`,
+          body: cartName 
+            ? `Your order is ready for pickup at ${cartName || "the cart"}!`
+            : `Your order is ready for pickup! 🎉`,
+          orderId: event.params.orderId,
+          orderNumber: String(orderNumber || ''),
+          customerName: String(customerName || ''),
+          cartName: String(cartName || ''),
+          cartId: String(cartId || ''),
+          type: 'order_ready',
           icon: '/logox-small.png',
-          color: '#F59E0B',
+          badge: '/logox-small.png',
+          tag: event.params.orderId,
+          renotify: 'true',
+          requireInteraction: 'true'
+        },
+        android: {
+          notification: {
+            icon: '/logox-small.png',
+            color: '#F59E0B',
+          }
+        },
+        webpush: {
+          headers: {
+            Urgency: "high"
+          }
         }
-      },
-      webpush: {
-        headers: {
-          Urgency: "high"
+      };
+
+      try {
+        await admin.messaging().send(message);
+        console.log(`Notification sent successfully to token: ${subscriber.fcmToken}`);
+      } catch (error) {
+        console.error(`Error sending notification to token ${subscriber.fcmToken}:`, error);
+        // Optionally: Remove invalid tokens from the array
+        if (error instanceof Error && error.message.includes('registration-token-not-registered')) {
+          console.log(`Removing invalid token: ${subscriber.fcmToken}`);
+          await admin.firestore().collection("orders").doc(event.params.orderId).update({
+            notificationSubscribers: admin.firestore.FieldValue.arrayRemove(subscriber),
+            subscribedCount: Math.max(0, (afterData.subscribedCount || 1) - 1)
+          });
         }
       }
-    };
+    });
 
-    try {
-      await admin.messaging().send(message);
-    } catch (error) {
-      console.error("Error sending notification:", error);
-    }
+    // Send all notifications in parallel
+    await Promise.allSettled(notificationPromises);
+    console.log(`Processed ${notificationSubscribers.length} notifications for order ${event.params.orderId}`);
   } else {
     // Conditions not met for sending notification
   }

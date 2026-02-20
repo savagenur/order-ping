@@ -14,9 +14,19 @@ export interface Order {
   readyAt?: Date | Timestamp;
   completedAt?: Date | Timestamp;
   completedBy?: string;
-  notificationToken?: string;
+  // New multi-subscriber fields
+  notificationSubscribers?: NotificationSubscriber[];
   isSubscribed?: boolean;
+  subscribedCount?: number;
+  // Legacy field for backward compatibility
+  notificationToken?: string;
   subscribedAt?: Date | Timestamp;
+}
+
+export interface NotificationSubscriber {
+  fcmToken: string;
+  subscribedAt: Date | Timestamp;
+  subscribedBy?: string;
 }
 
 export interface OrderInput {

@@ -38,6 +38,27 @@ export default defineConfig(({ mode }) => {
           }
         }
       }
-    ]
+    ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Firebase chunk
+            firebase: ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/messaging'],
+            // UI libraries chunk
+            ui: ['framer-motion', '@headlessui/react', '@heroicons/react', 'lucide-react'],
+            // Charts chunk
+            charts: ['recharts'],
+            // React ecosystem
+            react: ['react', 'react-dom', 'react-router-dom'],
+            // Data fetching
+            query: ['@tanstack/react-query', 'zustand'],
+            // Utilities
+            utils: ['date-fns']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000 // Increase limit to 1MB since we're splitting chunks
+    }
   }
 })

@@ -93,16 +93,18 @@ self.addEventListener('notificationclick', (event) => {
 
   // Handle different actions
   if (event.action === 'view-order') {
-    // Open the app to the specific order
-    const orderId = event.notification.data?.orderId;
-    const urlToOpen = orderId ? `/?order=${orderId}` : '/';
+    // Open the app to the cart queue
+    const cartId = event.notification.data?.cartId;
+    
+    // Build URL with cart parameter only
+    const urlToOpen = cartId ? `/?cart=${cartId}` : '/';
     
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then((clientList) => {
           // Focus on existing window if available
           for (const client of clientList) {
-            if (client.url === urlToOpen && 'focus' in client) {
+            if (client.url.includes(urlToOpen.split('?')[0]) && 'focus' in client) {
               return client.focus();
             }
           }

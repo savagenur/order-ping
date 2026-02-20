@@ -144,6 +144,7 @@ export default function Queue() {
       <PendingOrders
         pendingOrders={pendingOrders}
         onSelectOrder={handleCardClick}
+        isLoading={isLoading}
       />
 
       {/* Branding - positioned above the fixed footer */}
