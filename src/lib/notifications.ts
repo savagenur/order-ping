@@ -198,7 +198,29 @@ export function isNotificationSupported(): boolean {
  */
 export function getNotificationPermission(): NotificationPermission {
   if (!isNotificationSupported()) {
-    return 'denied';
+    return 'default'; // Return 'default' instead of 'denied' to allow modal to show
   }
   return Notification.permission;
+}
+
+/**
+ * Check if the user is on an iOS device
+ */
+export function isIOS(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+/**
+ * Check if the app is running in PWA/standalone mode
+ */
+export function isPWA(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+         (window.navigator as any).standalone === true;
+}
+
+/**
+ * Check if the user is on iOS Safari (non-PWA)
+ */
+export function isIOSSafari(): boolean {
+  return isIOS() && !isPWA();
 }

@@ -1,7 +1,8 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Bell, AlertCircle, CheckCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, Bell, CheckCircle, PlusSquare, Share2, Smartphone, X } from "lucide-react";
 import { useState } from "react";
-import { subscribeToOrderNotifications, isNotificationSupported } from "../../lib/notifications";
+import { isNotificationSupported, subscribeToOrderNotifications } from "../../lib/notifications";
+import SafariPointer from "./SafariPointer";
 
 interface NotificationModalProps {
   isOpen: boolean;
@@ -10,10 +11,30 @@ interface NotificationModalProps {
   orderId: string | null;
 }
 
+// Extend Navigator interface for iOS standalone detection
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
+
+// Smart detection logic
+const isIOSDevice = (): boolean => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+};
+
+const isIOSSafari = (): boolean => {
+  return isIOSDevice() && window.navigator.standalone !== true;
+};
+
 export default function NotificationModal({ isOpen, onClose, onNotify, orderId }: NotificationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Smart detection: iOS Safari vs Standard mode
+  const isIOSSafariMode = isIOSSafari();
+  const showIOSInstructions = isIOSSafariMode;
 
   const handleNotify = async () => {
     if (!orderId) return;
@@ -73,7 +94,7 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
             animate={{ y: 0 }}
             exit={{ y: "100%", transition: { duration: 0.3, ease: "easeInOut" } }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl z-50 p-6"
+            className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl z-50 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
           >
             {/* Handle bar */}
             <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-6" />
@@ -126,10 +147,16 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
                   </motion.div>
                   
                   <h3 className="text-xl font-semibold text-white mb-2 text-center">
-                    Want a ping when your order is ready?
+                    {showIOSInstructions 
+                      ? "Get Pings on iPhone? 📲" 
+                      : "Get a ping when ready? 🔔"
+                    }
                   </h3>
                   <p className="text-zinc-400 text-sm mb-6 text-center">
-                    Get notified as soon as your order is ready for pickup. We'll send you a notification when it's your turn!
+                    {showIOSInstructions 
+                      ? "To get notifications on iPhone, you need to add this page to your home screen first."
+                      : "We'll notify you the moment your food is at the window."
+                    }
                   </p>
                   
                   {/* Error Message */}
@@ -139,36 +166,65 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
                       animate={{ opacity: 1, y: 0 }}
                       className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-2"
                     >
-                      <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
                       <p className="text-red-400 text-xs">{error}</p>
                     </motion.div>
                   )}
                   
-                  {/* Notify Me Button */}
-                  <motion.button
-                    onClick={handleNotify}
-                    disabled={isLoading}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    style={{ backgroundColor: '#F59E0B' }}
-                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                  >
-                    {isLoading ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                        />
-                        Enabling...
-                      </>
-                    ) : (
-                      <>
-                        <Bell className="w-4 h-4" />
-                        Notify Me
-                      </>
-                    )}
-                  </motion.button>
+                  {/* Action Content */}
+                  {showIOSInstructions ? (
+                    /* iOS Instructions */
+                    <motion.div 
+                      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <Share2 className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-white font-medium">1. Tap Share.</span>
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <PlusSquare className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-white font-medium">2. Select "Add to Home Screen".</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <Smartphone className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-white font-medium">3. Open <span className="text-[#F59E0B]">OrderPing</span> to get notified!</span>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    /* Regular Notify Me Button */
+                    <motion.button
+                      onClick={handleNotify}
+                      disabled={isLoading}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      style={{ backgroundColor: '#F59E0B' }}
+                      whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                          />
+                          Enabling...
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="w-4 h-4" />
+                          Notify Me
+                        </>
+                      )}
+                    </motion.button>
+                  )}
                   
                   {/* Cancel option */}
                   <button
@@ -176,12 +232,15 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
                     disabled={isLoading}
                     className="w-full mt-3 text-zinc-400 hover:text-white text-sm font-medium py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    No thanks
+                    {showIOSInstructions ? "I'll do it later" : "Maybe later"}
                   </button>
                 </>
               )}
             </div>
           </motion.div>
+          
+          {/* Safari Pointer for iOS users */}
+          <SafariPointer isVisible={isOpen} />
         </>
       )}
     </AnimatePresence>

@@ -93,10 +93,14 @@ export default function Queue() {
             console.error('Error auto-subscribing to notifications:', error);
           }
         } else if (permission === 'default') {
-          // Show modal to ask for permission
-          setTimeout(() => {
-            setShowAuthModal(true);
-          }, 1000);
+          // Check if user has previously dismissed the notification modal
+          const modalDismissed = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}_dismissed`);
+          if (!modalDismissed) {
+            // Show modal to ask for permission
+            setTimeout(() => {
+              setShowAuthModal(true);
+            }, 1000);
+          }
         }
         // If permission is denied, do nothing
         
@@ -163,7 +167,13 @@ export default function Queue() {
       {/* Notification Modal */}
       <NotificationModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          setShowAuthModal(false);
+          // Mark that user dismissed the modal for this order
+          if (selectedOrder) {
+            sessionStorage.setItem(`${NOTIFICATION_SHOWN_KEY}_${selectedOrder}_dismissed`, 'true');
+          }
+        }}
         onNotify={() => {
           // Handle notification logic here (e.g., subscribe to notifications)
         }}
