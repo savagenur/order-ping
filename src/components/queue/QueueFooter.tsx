@@ -45,7 +45,6 @@ export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooter
         {/* Always show for testing - remove conditional */}
         <motion.a
           href={reviewUrl || '#'}
-          target="_blank"
           rel="noopener noreferrer"
           className={`flex flex-col items-center gap-1 transition-all duration-200 hover:scale-105 active:scale-95 ${
             isReady 
@@ -71,7 +70,6 @@ export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooter
         {/* Always show for testing - remove conditional */}
         <a
           href={websiteUrl || '#'}
-          target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center gap-1 text-white hover:text-white transition-all duration-200 hover:scale-105 active:scale-95"
         >
