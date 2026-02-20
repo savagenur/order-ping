@@ -8,9 +8,26 @@ interface NumpadInputProps {
   initialOrderNumber?: number;
 }
 
-const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
+const NUMPAD_KEYS = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "C",
+  "0",
+  "⌫",
+];
 
-const NumpadInput = memo(function NumpadInput({ onSubmit, loading, initialOrderNumber }: NumpadInputProps) {
+const NumpadInput = memo(function NumpadInput({
+  onSubmit,
+  loading,
+  initialOrderNumber,
+}: NumpadInputProps) {
   const {
     currentInput,
     selectedColor,
@@ -35,8 +52,9 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading, initialOrderN
 
   const handleDoubleClick = () => {
     if (initialOrderNumber) {
-      useDashboardStore.setState({ currentInput: initialOrderNumber.toString() });
-      
+      useDashboardStore.setState({
+        currentInput: initialOrderNumber.toString(),
+      });
     }
   };
 
@@ -47,26 +65,21 @@ const NumpadInput = memo(function NumpadInput({ onSubmit, loading, initialOrderN
       {/* Big Display */}
       <div className="shrink-0">
         {successFlash && (
-          <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl backdrop-blur-sm"
-          >
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl backdrop-blur-sm">
             <span className="text-emerald-400 text-4xl font-bold mb-2">
               ✓ Added!
             </span>
             {lastAddedOrder && (
               <div className="flex flex-col items-center gap-1">
-                <span className="text-emerald-300 text-3xl font-bold">
-                  Order #{lastAddedOrder}
-                </span>
-                <span className="text-emerald-200 text-2xl font-medium uppercase tracking-wider">
-                  {selectedColor}
+                <span className="text-emerald-300 text-4xl font-bold">
+                  #{lastAddedOrder} {selectedColor}
                 </span>
               </div>
             )}
           </div>
         )}
 
-        <div 
+        <div
           className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center cursor-pointer"
           onDoubleClick={handleDoubleClick}
         >
