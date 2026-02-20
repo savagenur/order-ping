@@ -54,15 +54,15 @@ export default function PinnedOrder({ order, onClear, queuePosition }: PinnedOrd
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="px-4 pt-4"
+        className="px-3 pt-4"
       >
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="max-w-2xl mx-auto px-3 sm:px-5">
           <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
             My Order
           </p>
 
           <div
-            className={`relative rounded-2xl border-2 p-5 ${color.border} ${color.glow} bg-zinc-900 ${
+            className={`relative rounded-2xl border-2 p-4 ${color.border} ${color.glow} bg-zinc-900 ${
               isReady ? "animate-pulse-glow" : ""
             }`}
             style={

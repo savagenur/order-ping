@@ -14,8 +14,8 @@ export default function ReadyOrders({
   if (readyOrders.length === 0) return null;
 
   return (
-    <section className="px-4 mt-6">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+    <section className="px-3 mt-6">
+      <div className="max-w-2xl mx-auto px-3 sm:px-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
             Ready for Pickup
@@ -38,7 +38,7 @@ export default function ReadyOrders({
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
                   transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   onClick={() => onSelectOrder(order.id)}
-                  className="relative bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col items-center gap-2 min-h-20 cursor-pointer active:scale-95 transition-transform"
+                  className="relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex flex-col items-center gap-2 min-h-16 cursor-pointer active:scale-95 transition-transform"
                   style={{
                     boxShadow: `0 0 20px -8px ${color.hex}`,
                     

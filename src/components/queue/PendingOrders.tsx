@@ -13,8 +13,8 @@ export default function PendingOrders({
   onSelectOrder,
 }: PendingOrdersProps) {
   return (
-    <section className="px-4 mt-6 pb-8">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+    <section className="px-3 mt-6 pb-8">
+      <div className="max-w-2xl mx-auto px-3 sm:px-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             Preparing
@@ -43,7 +43,7 @@ export default function PendingOrders({
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ type: "spring", stiffness: 200, damping: 25 }}
                     onClick={() => onSelectOrder(order.id)}
-                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-4 min-h-11 cursor-pointer active:scale-[0.98] transition-transform text-left relative"
+                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3 min-h-10 cursor-pointer active:scale-[0.98] transition-transform text-left relative"
                     style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
                   >
                     <NotificationBell isSubscribed={order.isSubscribed} />
