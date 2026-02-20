@@ -52,7 +52,7 @@ export async function requestNotificationPermission(): Promise<NotificationSubsc
     
     // Add timeout to prevent hanging
     const tokenPromise = getToken(messaging, {
-      vapidKey: import.meta.env.VITE_VAPID_KEY,
+      vapidKey: "BEe09hbvQNef0u4fgmfMN_pRuhFsGY9W9QQQyR5OYs-YcriXv7O4dR1YSWa1kGo05aZR0IbdxTDHF9gMX5bqeaI",
       serviceWorkerRegistration: registration
     });
     

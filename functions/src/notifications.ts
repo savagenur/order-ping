@@ -19,12 +19,12 @@ export const subscribeToNotifications = onCall(
     const data = request.data;
     const context = request.auth ? { auth: request.auth } : { auth: null };
     
-    // Verify user is authenticated (optional, depending on your app)
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        "unauthenticated",
-        "User must be authenticated to subscribe to notifications"
-      );
+    // Allow both authenticated and anonymous users
+    // Optional: Log who is subscribing
+    if (context.auth) {
+      console.log(`Authenticated user ${context.auth.uid} subscribing to notifications`);
+    } else {
+      console.log('Anonymous user subscribing to notifications');
     }
 
   const { orderId, fcmToken } = data;
@@ -58,12 +58,18 @@ export const subscribeToNotifications = onCall(
     }
 
     // Update the order with notification token
-    await admin.firestore().collection("orders").doc(orderId).update({
+    const updateData: any = {
       notificationToken: fcmToken,
       isSubscribed: true,
-      subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-      subscribedBy: context.auth.uid
-    });
+      subscribedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Add user info if authenticated
+    if (context.auth) {
+      updateData.subscribedBy = context.auth.uid;
+    }
+    
+    await admin.firestore().collection("orders").doc(orderId).update(updateData);
 
     return {
       success: true,

@@ -26,6 +26,9 @@ try {
     
     // Handle background messages
     messaging.onBackgroundMessage((payload) => {
+      console.log('🔔 Background message received:', payload);
+      console.log('📦 Message data:', payload.data);
+      console.log('📦 Message notification:', payload.notification);
 
       // Extract notification data from payload.data (data-only message)
       const title = payload.data?.title;
@@ -61,7 +64,16 @@ try {
 
 
       // Show the notification
-      return self.registration.showNotification(notificationTitle, notificationOptions);
+      console.log('🎯 Showing notification:', notificationTitle, notificationOptions);
+      
+      try {
+        const notificationResult = self.registration.showNotification(notificationTitle, notificationOptions);
+        console.log('✅ Notification show result:', notificationResult);
+        return notificationResult;
+      } catch (error) {
+        console.error('❌ Error showing notification:', error);
+        throw error;
+      }
     });
 
     // Handle token refresh (only if available)
@@ -123,10 +135,23 @@ self.addEventListener('notificationclick', (event) => {
 
 // Service worker installation
 self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker installing...');
   self.skipWaiting();
 });
 
 // Service worker activation
 self.addEventListener('activate', (event) => {
+  console.log('🚀 Service Worker activating...');
   event.waitUntil(self.clients.claim());
+  console.log('✅ Service Worker activated and claimed clients');
+});
+
+// Add message listener for debugging
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker received message:', event.data);
+  
+  if (event.data && event.data.type === 'TEST_MESSAGE') {
+    console.log('🧪 Test message received, responding...');
+    event.ports[0]?.postMessage({ type: 'TEST_RESPONSE', received: true });
+  }
 });
