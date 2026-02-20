@@ -1,61 +1,16 @@
-import { useMemo } from "react";
-import type { Order } from "../../types/order";
-import { getTime } from "../../utils/dateUtils";
-
-interface OrderMetricsProps {
-  orders: Order[];
+interface OrderMetricsOptimizedProps {
+  metrics: {
+    totalOrders: number;
+    pendingOrders: number;
+    readyOrders: number;
+    completedOrders: number;
+    avgTimeToReady: number;
+    avgTimeToCompletion: number;
+    completionRate: number;
+  };
 }
 
-export default function OrderMetrics({ orders }: OrderMetricsProps) {
-  const metrics = useMemo(() => {
-    // Total orders
-    const totalOrders = orders.length;
-    
-    // Orders by status
-    const pendingOrders = orders.filter(order => order.status === 'pending').length;
-    const readyOrders = orders.filter(order => order.status === 'ready').length;
-    const completedOrders = orders.filter(order => order.status === 'completed').length;
-    
-    // Calculate completion rate
-    const completionRate = totalOrders > 0 
-      ? Math.round((completedOrders / totalOrders) * 100) 
-      : 0;
-    
-    // Calculate average time to ready (in minutes)
-    const ordersWithReadyTime = orders.filter(order => order.readyAt && order.createdAt);
-    const avgTimeToReady = ordersWithReadyTime.length > 0
-      ? Math.round(
-          ordersWithReadyTime.reduce((sum, order) => {
-            const createdTime = getTime(order.createdAt);
-            const readyTime = getTime(order.readyAt!);
-            return sum + (readyTime - createdTime) / (1000 * 60); // Convert ms to minutes
-          }, 0) / ordersWithReadyTime.length
-        )
-      : 0;
-    
-    // Calculate average time to completion (in minutes)
-    const ordersWithCompletionTime = orders.filter(order => order.completedAt && order.createdAt);
-    const avgTimeToCompletion = ordersWithCompletionTime.length > 0
-      ? Math.round(
-          ordersWithCompletionTime.reduce((sum, order) => {
-            const createdTime = getTime(order.createdAt);
-            const completedTime = getTime(order.completedAt!);
-            return sum + (completedTime - createdTime) / (1000 * 60); // Convert ms to minutes
-          }, 0) / ordersWithCompletionTime.length
-        )
-      : 0;
-    
-    return {
-      totalOrders,
-      pendingOrders,
-      readyOrders,
-      completedOrders,
-      completionRate,
-      avgTimeToReady,
-      avgTimeToCompletion
-    };
-  }, [orders]);
-
+export default function OrderMetricsOptimized({ metrics }: OrderMetricsOptimizedProps) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
       <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Order Metrics</h2>

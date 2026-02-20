@@ -1,63 +1,14 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import type { Order } from "../../types/order";
 
-interface TimeMetricsProps {
-  orders: Order[];
+interface TimeMetricsOptimizedProps {
+  metrics: {
+    hourlyOrders: number[];
+    dailyOrders: number[];
+  };
 }
 
-export default function TimeMetrics({ orders }: TimeMetricsProps) {
-  const timeMetrics = useMemo(() => {
-    if (orders.length === 0) {
-      return {
-        ordersByHour: Array(24).fill(0),
-        ordersByDay: Array(7).fill(0),
-        peakHour: 0,
-        peakDay: 0,
-        avgOrdersPerDay: 0,
-      };
-    }
-
-    // Initialize arrays for hours and days
-    const ordersByHour = Array(24).fill(0);
-    const ordersByDay = Array(7).fill(0);
-
-    // Count orders by hour and day
-    orders.forEach((order) => {
-      const date = order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate();
-      const hour = date.getHours();
-      const day = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-      ordersByHour[hour]++;
-      ordersByDay[day]++;
-    });
-
-    // Find peak hour and day
-    const peakHour = ordersByHour.indexOf(Math.max(...ordersByHour));
-    const peakDay = ordersByDay.indexOf(Math.max(...ordersByDay));
-
-    // Calculate average orders per day
-    // Get unique dates from orders
-    const uniqueDates = new Set(
-      orders.map((order) => {
-        const date = order.createdAt instanceof Date ? order.createdAt : order.createdAt.toDate();
-        return date.toISOString().split("T")[0];
-      }),
-    );
-    const avgOrdersPerDay =
-      uniqueDates.size > 0
-        ? Math.round((orders.length / uniqueDates.size) * 10) / 10
-        : 0;
-
-    return {
-      ordersByHour,
-      ordersByDay,
-      peakHour,
-      peakDay,
-      avgOrdersPerDay,
-    };
-  }, [orders]);
-
+export default function TimeMetricsOptimized({ metrics }: TimeMetricsOptimizedProps) {
   // Format hour for display (12-hour format with AM/PM)
   const formatHour = (hour: number) => {
     if (hour === 0) return "12 AM";
@@ -66,7 +17,35 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
   };
 
   // Day names
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = useMemo(() => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], []);
+
+  // Find peak hour and day
+  const peakHour = useMemo(() => {
+    const maxOrders = Math.max(...metrics.hourlyOrders);
+    return metrics.hourlyOrders.indexOf(maxOrders);
+  }, [metrics.hourlyOrders]);
+
+  const peakDay = useMemo(() => {
+    const maxOrders = Math.max(...metrics.dailyOrders);
+    return metrics.dailyOrders.indexOf(maxOrders);
+  }, [metrics.dailyOrders]);
+
+  // Prepare chart data
+  const hourlyChartData = useMemo(() => 
+    metrics.hourlyOrders.map((count, index) => ({
+      hour: formatHour(index),
+      orders: count,
+      isPeak: index === peakHour
+    })), [metrics.hourlyOrders, peakHour]
+  );
+
+  const dailyChartData = useMemo(() => 
+    metrics.dailyOrders.map((count, index) => ({
+      day: dayNames[index],
+      orders: count,
+      isPeak: index === peakDay
+    })), [metrics.dailyOrders, peakDay, dayNames]
+  );
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -86,7 +65,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                 Peak Hour
               </p>
               <p className="text-lg sm:text-xl font-bold text-indigo-300">
-                {formatHour(timeMetrics.peakHour)}
+                {formatHour(peakHour)}
               </p>
             </div>
             <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
@@ -94,15 +73,15 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                 Peak Day
               </p>
               <p className="text-lg sm:text-xl font-bold text-teal-300">
-                {dayNames[timeMetrics.peakDay]}
+                {dayNames[peakDay]}
               </p>
             </div>
             <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
               <p className="text-xs sm:text-sm text-amber-400 font-medium">
-                Avg Orders Per Day
+                Total Orders Analyzed
               </p>
               <p className="text-lg sm:text-xl font-bold text-amber-300">
-                {timeMetrics.avgOrdersPerDay}
+                {metrics.hourlyOrders.reduce((sum, count) => sum + count, 0)}
               </p>
             </div>
           </div>
@@ -115,14 +94,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
           </h3>
           <div className="h-48 sm:h-64">
             <ResponsiveContainer width={500} height={250} minWidth={0} minHeight={undefined} aspect={undefined}>
-              <BarChart
-                data={timeMetrics.ordersByDay.map((count, index) => ({
-                  day: dayNames[index],
-                  orders: count,
-                  isPeak: index === timeMetrics.peakDay
-                }))}
-                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
-              >
+              <BarChart data={dailyChartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis 
                   dataKey="day" 
@@ -145,10 +117,10 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                   labelStyle={{ color: '#f3f4f6', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="orders" radius={[8, 8, 0, 0]}>
-                  {timeMetrics.ordersByDay.map((_, index) => (
+                  {dailyChartData.map((_, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={index === timeMetrics.peakDay ? '#60a5fa' : '#1e40af'} 
+                      fill={index === peakDay ? '#60a5fa' : '#1e40af'} 
                     />
                   ))}
                 </Bar>
@@ -165,14 +137,7 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
         </h3>
         <div className="h-64 sm:h-80">
           <ResponsiveContainer width={500} height={250} minWidth={0} minHeight={undefined} aspect={undefined}>
-            <BarChart
-              data={timeMetrics.ordersByHour.map((count, index) => ({
-                hour: formatHour(index),
-                orders: count,
-                isPeak: index === timeMetrics.peakHour
-              }))}
-              margin={{ top: 10, right: 10, left: 0, bottom: 40 }}
-            >
+            <BarChart data={hourlyChartData} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="hour" 
@@ -198,10 +163,10 @@ export default function TimeMetrics({ orders }: TimeMetricsProps) {
                 labelStyle={{ color: '#f3f4f6', fontWeight: 'bold' }}
               />
               <Bar dataKey="orders" radius={[6, 6, 0, 0]}>
-                {timeMetrics.ordersByHour.map((_, index) => (
+                {hourlyChartData.map((_, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={index === timeMetrics.peakHour ? '#34d399' : '#059669'} 
+                    fill={index === peakHour ? '#34d399' : '#059669'} 
                   />
                 ))}
               </Bar>

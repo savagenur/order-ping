@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useAnalyticsOrders } from "../hooks/useAnalyticsOrders";
-import AnalyticsHeader from "../components/analytics/AnalyticsHeader";
-import OrderMetrics from "../components/analytics/OrderMetrics";
-import TimeMetrics from "../components/analytics/TimeMetrics";
+import OrderMetricsOptimized from "../components/analytics/OrderMetricsOptimized";
+import TimeMetricsOptimized from "../components/analytics/TimeMetricsOptimized";
 import PerformanceAnalytics from "../components/analytics/PerformanceAnalytics";
 import OrderDetails from "../components/analytics/OrderDetails";
 import AnalyticsLoading from "../components/analytics/AnalyticsLoading";
@@ -19,6 +19,7 @@ export default function Analytics() {
 
   const {
     orders,
+    metrics,
     totalOrders,
     totalPages,
     isLoading,
@@ -71,20 +72,48 @@ Do you want to continue? You can always switch back to paginated view.`
   }
 
   return (
-    <div className="min-h-screen w-screen bg-zinc-950 p-3 sm:p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto">
-        <AnalyticsHeader
-          selectedPeriod={selectedPeriod}
-          onPeriodChange={handlePeriodChange}
-        />
+    <div className="min-h-screen bg-zinc-950">
+      {/* Header */}
+      <div className="bg-zinc-900 border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div>
+              <Link 
+                to="/dashboard" 
+                className="text-sm text-blue-400 hover:text-blue-300 mb-2 inline-block transition"
+              >
+                ← Back to Dashboard
+              </Link>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">Business Analytics</h1>
+              <p className="text-sm text-zinc-400">OrderPing Performance Metrics</p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+              <select
+                value={selectedPeriod}
+                onChange={(e) => handlePeriodChange(e.target.value)}
+                className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="90days">Last 90 Days</option>
+                <option value="year">Last Year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {isLoading ? (
           <AnalyticsLoading />
         ) : (
           <>
-            <OrderMetrics orders={orders} />
+            <OrderMetricsOptimized metrics={metrics} />
+            {/* RevenueAnalytics orders={orders} /> */}
+            {/* CustomerAnalytics orders={orders} /> */}
             <PerformanceAnalytics orders={orders} />
-            <TimeMetrics orders={orders} />
+            <TimeMetricsOptimized metrics={metrics} />
 
             {/* Order Details */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6">
@@ -99,7 +128,7 @@ Do you want to continue? You can always switch back to paginated view.`
                   {totalOrders > ORDERS_PER_PAGE && (
                     <button
                       onClick={handleShowAllToggle}
-                      className="text-sm text-blue-400 hover:text-blue-300 font-medium"
+                      className="text-sm text-blue-400 hover:text-blue-300 font-medium transition"
                     >
                       {showAllOrders ? 'Show Paginated' : 'Show All'}
                     </button>

@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import WorkerStats from './pages/WorkerStats';
 import Analytics from './pages/Analytics';
+import Profile from './pages/Profile';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCarts from './pages/AdminCarts';
@@ -73,6 +74,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

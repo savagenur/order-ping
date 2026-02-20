@@ -8,7 +8,7 @@ interface OrderDetailsProps {
 export default function OrderDetails({ orders }: OrderDetailsProps) {
   if (orders.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-zinc-500">
         No orders found for the selected period
       </div>
     );
@@ -35,30 +35,30 @@ function MobileOrderList({ orders }: OrderDetailsProps) {
 function DesktopOrderTable({ orders }: OrderDetailsProps) {
   return (
     <div className="hidden sm:block overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-zinc-700">
+        <thead className="bg-zinc-800">
           <tr>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
               Order #
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
               Customer
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
               Date
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider hidden md:table-cell">
               Time
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider hidden lg:table-cell">
               Time to Complete
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-zinc-900 divide-y divide-zinc-700">
           {orders.map((order) => (
             <OrderTableRow key={order.id} order={order} />
           ))}
@@ -72,18 +72,18 @@ function OrderCard({ order }: { order: Order }) {
   const timeToComplete = calculateTimeToComplete(order);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3">
+    <div className="border border-zinc-700 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-sm font-medium text-zinc-300">
           #{order.orderNumber}
         </span>
         <StatusBadge status={order.status} />
       </div>
-      <p className="text-sm text-gray-700 truncate">{order.customerName}</p>
-      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+      <p className="text-sm text-zinc-400 truncate">{order.customerName}</p>
+      <div className="flex items-center justify-between mt-2 text-xs text-zinc-500">
         <span>{toLocaleDateString(order.createdAt)} {toLocaleTimeString(order.createdAt)}</span>
         {timeToComplete !== null && (
-          <span className="text-gray-600 font-medium">{timeToComplete} min</span>
+          <span className="text-zinc-400 font-medium">{timeToComplete} min</span>
         )}
       </div>
     </div>
@@ -94,11 +94,11 @@ function OrderTableRow({ order }: { order: Order }) {
   const timeToComplete = calculateTimeToComplete(order);
 
   return (
-    <tr>
-      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+    <tr className="hover:bg-zinc-800 transition-colors">
+      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-zinc-300">
         {order.orderNumber}
       </td>
-      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-zinc-400">
         <span className="block max-w-28 md:max-w-none truncate">
           {order.customerName}
         </span>
@@ -106,13 +106,13 @@ function OrderTableRow({ order }: { order: Order }) {
       <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
         <StatusBadge status={order.status} />
       </td>
-      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-zinc-400">
         {toLocaleDateString(order.createdAt)}
       </td>
-      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-zinc-400 hidden md:table-cell">
         {toLocaleTimeString(order.createdAt)}
       </td>
-      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
+      <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-zinc-400 hidden lg:table-cell">
         {timeToComplete !== null ? `${timeToComplete} min` : "-"}
       </td>
     </tr>
@@ -123,11 +123,11 @@ function StatusBadge({ status }: { status: Order['status'] }) {
   const getStatusClasses = (status: Order['status']) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-900 text-green-300";
       case "ready":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-900 text-blue-300";
       default:
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-900 text-yellow-300";
     }
   };
 

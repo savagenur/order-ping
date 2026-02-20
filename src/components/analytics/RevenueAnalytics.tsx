@@ -93,9 +93,9 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
   };
 
   const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-green-600';
-    if (growth < 0) return 'text-red-600';
-    return 'text-gray-600';
+    if (growth > 0) return 'text-green-400';
+    if (growth < 0) return 'text-red-400';
+    return 'text-zinc-400';
   };
 
   const getGrowthIcon = (growth: number) => {
@@ -105,35 +105,35 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-      <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Revenue Analytics</h2>
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+      <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Revenue Analytics</h2>
       
       {/* Revenue Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-green-600 font-medium">Total Revenue</p>
-          <p className="text-xl sm:text-2xl font-bold text-green-800">
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-green-400 font-medium">Total Revenue</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-300">
             {formatCurrency(revenueData.totalRevenue)}
           </p>
         </div>
         
-        <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-blue-600 font-medium">Avg Order Value</p>
-          <p className="text-xl sm:text-2xl font-bold text-blue-800">
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-blue-400 font-medium">Avg Order Value</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-300">
             {formatCurrency(revenueData.avgOrderValue)}
           </p>
         </div>
         
-        <div className="bg-purple-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-purple-600 font-medium">Revenue Growth</p>
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-purple-400 font-medium">Revenue Growth</p>
           <p className={`text-xl sm:text-2xl font-bold ${getGrowthColor(revenueData.revenueGrowth)}`}>
             {getGrowthIcon(revenueData.revenueGrowth)} {revenueData.revenueGrowth}%
           </p>
         </div>
         
-        <div className="bg-amber-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-amber-600 font-medium">Completed Revenue</p>
-          <p className="text-xl sm:text-2xl font-bold text-amber-800">
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-amber-400 font-medium">Completed Revenue</p>
+          <p className="text-xl sm:text-2xl font-bold text-amber-300">
             {formatCurrency(revenueData.revenueByStatus.completed)}
           </p>
         </div>
@@ -141,46 +141,46 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
 
       {/* Daily Revenue Table */}
       <div className="mb-6">
-        <h3 className="text-sm sm:text-md font-medium text-gray-700 mb-2 sm:mb-3">Daily Revenue (Last 7 Days)</h3>
+        <h3 className="text-sm sm:text-md font-medium text-zinc-300 mb-2 sm:mb-3">Daily Revenue (Last 7 Days)</h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-zinc-700">
+            <thead className="bg-zinc-800">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Orders
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Revenue
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Avg Order
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-zinc-900 divide-y divide-zinc-700">
               {revenueData.dailyRevenue.length > 0 ? (
                 revenueData.dailyRevenue.map((day, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={index} className={index % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-800'}>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                       {day.date}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                       {day.orderCount}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-zinc-300">
                       {formatCurrency(day.revenue)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                       {formatCurrency(day.avgOrderValue)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-zinc-500">
                     No revenue data available
                   </td>
                 </tr>
@@ -192,48 +192,48 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
 
       {/* Top Selling Items */}
       <div className="mb-6">
-        <h3 className="text-sm sm:text-md font-medium text-gray-700 mb-2 sm:mb-3">Top Selling Items</h3>
+        <h3 className="text-sm sm:text-md font-medium text-zinc-300 mb-2 sm:mb-3">Top Selling Items</h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-zinc-700">
+            <thead className="bg-zinc-800">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Item
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Price
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Sold
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Revenue
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-zinc-900 divide-y divide-zinc-700">
               {revenueData.topItems.length > 0 ? (
                 revenueData.topItems.map((item, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={index} className={index % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-800'}>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-zinc-300">
                       {item.name}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                       {formatCurrency(item.price)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-900 text-blue-300">
                         {item.quantity}
                       </span>
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-zinc-300">
                       {formatCurrency(item.revenue)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-zinc-500">
                     No item sales data available
                   </td>
                 </tr>
@@ -245,50 +245,50 @@ export default function RevenueAnalytics({ orders }: RevenueAnalyticsProps) {
 
       {/* Revenue by Status */}
       <div>
-        <h3 className="text-sm sm:text-md font-medium text-gray-700 mb-2 sm:mb-3">Revenue by Order Status</h3>
+        <h3 className="text-sm sm:text-md font-medium text-zinc-300 mb-2 sm:mb-3">Revenue by Order Status</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="bg-zinc-800 border border-yellow-700 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-yellow-600">Pending</p>
-                <p className="text-lg font-bold text-yellow-800">
+                <p className="text-xs font-medium text-yellow-400">Pending</p>
+                <p className="text-lg font-bold text-yellow-300">
                   {formatCurrency(revenueData.revenueByStatus.pending)}
                 </p>
               </div>
-              <div className="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-yellow-800">
+              <div className="w-8 h-8 bg-yellow-800 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-yellow-300">
                   {orders.filter(o => o.status === 'pending').length}
                 </span>
               </div>
             </div>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-zinc-800 border border-blue-700 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-blue-600">Ready</p>
-                <p className="text-lg font-bold text-blue-800">
+                <p className="text-xs font-medium text-blue-400">Ready</p>
+                <p className="text-lg font-bold text-blue-300">
                   {formatCurrency(revenueData.revenueByStatus.ready)}
                 </p>
               </div>
-              <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-blue-800">
+              <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-blue-300">
                   {orders.filter(o => o.status === 'ready').length}
                 </span>
               </div>
             </div>
           </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-zinc-800 border border-green-700 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-green-600">Completed</p>
-                <p className="text-lg font-bold text-green-800">
+                <p className="text-xs font-medium text-green-400">Completed</p>
+                <p className="text-lg font-bold text-green-300">
                   {formatCurrency(revenueData.revenueByStatus.completed)}
                 </p>
               </div>
-              <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-green-800">
+              <div className="w-8 h-8 bg-green-800 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-green-300">
                   {orders.filter(o => o.status === 'completed').length}
                 </span>
               </div>

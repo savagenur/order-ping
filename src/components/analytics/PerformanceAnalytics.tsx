@@ -123,29 +123,29 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-      <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Performance Analytics</h2>
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+      <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Performance Analytics</h2>
       
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-green-600 font-medium">Avg Prep Time</p>
-          <p className="text-xl sm:text-2xl font-bold text-green-800">{formatTime(performanceData.avgPrepTime)}</p>
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-green-400 font-medium">Avg Prep Time</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-300">{formatTime(performanceData.avgPrepTime)}</p>
         </div>
         
-        <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-blue-600 font-medium">Avg Wait Time</p>
-          <p className="text-xl sm:text-2xl font-bold text-blue-800">{formatTime(performanceData.avgWaitTime)}</p>
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-blue-400 font-medium">Avg Wait Time</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-300">{formatTime(performanceData.avgWaitTime)}</p>
         </div>
         
-        <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-yellow-600 font-medium">Efficiency Score</p>
-          <p className="text-xl sm:text-2xl font-bold text-yellow-800">{performanceData.efficiencyScore}%</p>
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-yellow-400 font-medium">Efficiency Score</p>
+          <p className="text-xl sm:text-2xl font-bold text-yellow-300">{performanceData.efficiencyScore}%</p>
         </div>
         
-        <div className="bg-purple-50 p-3 sm:p-4 rounded-lg">
-          <p className="text-xs sm:text-sm text-purple-600 font-medium">Total Analyzed</p>
-          <p className="text-xl sm:text-2xl font-bold text-purple-800">
+        <div className="bg-zinc-800 border border-zinc-700 p-3 sm:p-4 rounded-lg">
+          <p className="text-xs sm:text-sm text-purple-400 font-medium">Total Analyzed</p>
+          <p className="text-xl sm:text-2xl font-bold text-purple-300">
             {orders.filter(o => o.readyAt && o.createdAt).length}
           </p>
         </div>
@@ -154,49 +154,49 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       {/* Performance Records */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* Fastest Order */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 sm:p-4">
-          <h3 className="text-sm font-medium text-emerald-800 mb-2">🏆 Fastest Order</h3>
+        <div className="bg-zinc-800 border border-emerald-700 rounded-lg p-3 sm:p-4">
+          <h3 className="text-sm font-medium text-emerald-300 mb-2">🏆 Fastest Order</h3>
           {performanceData.fastestOrder ? (
             <div>
-              <p className="text-lg font-bold text-emerald-900">
+              <p className="text-lg font-bold text-emerald-200">
                 Order #{performanceData.fastestOrder.orderNumber}
               </p>
-              <p className="text-sm text-emerald-700">
+              <p className="text-sm text-emerald-400">
                 {performanceData.fastestOrder.customerName}
               </p>
-              <p className="text-sm font-medium text-emerald-600">
+              <p className="text-sm font-medium text-emerald-300">
                 Ready in {formatTime(performanceData.fastestOrder.prepTime)}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-emerald-600">No data available</p>
+            <p className="text-sm text-emerald-400">No data available</p>
           )}
         </div>
 
         {/* Slowest Order */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-          <h3 className="text-sm font-medium text-red-800 mb-2">⚠️ Slowest Order</h3>
+        <div className="bg-zinc-800 border border-red-700 rounded-lg p-3 sm:p-4">
+          <h3 className="text-sm font-medium text-red-300 mb-2">⚠️ Slowest Order</h3>
           {performanceData.slowestOrder ? (
             <div>
-              <p className="text-lg font-bold text-red-900">
+              <p className="text-lg font-bold text-red-200">
                 Order #{performanceData.slowestOrder.orderNumber}
               </p>
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-red-400">
                 {performanceData.slowestOrder.customerName}
               </p>
-              <p className="text-sm font-medium text-red-600">
+              <p className="text-sm font-medium text-red-300">
                 Ready in {formatTime(performanceData.slowestOrder.prepTime)}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-red-600">No data available</p>
+            <p className="text-sm text-red-400">No data available</p>
           )}
         </div>
       </div>
 
       {/* Daily Performance */}
       <div className="mb-4 sm:mb-6">
-        <h3 className="text-sm sm:text-md font-medium text-gray-700 mb-2 sm:mb-3">Daily Performance (Last 7 Days)</h3>
+        <h3 className="text-sm sm:text-md font-medium text-zinc-300 mb-2 sm:mb-3">Daily Performance (Last 7 Days)</h3>
 
         {/* Mobile Card Layout */}
         <div className="sm:hidden space-y-2">
@@ -206,21 +206,21 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
                                      day.avgPrepTime <= 15 ? 'good' : 
                                      day.avgPrepTime <= 20 ? 'average' : 'poor';
               const performanceColors = {
-                excellent: 'bg-green-100 text-green-800',
-                good: 'bg-blue-100 text-blue-800',
-                average: 'bg-yellow-100 text-yellow-800',
-                poor: 'bg-red-100 text-red-800'
+                excellent: 'bg-green-900 text-green-300',
+                good: 'bg-blue-900 text-blue-300',
+                average: 'bg-yellow-900 text-yellow-300',
+                poor: 'bg-red-900 text-red-300'
               };
 
               return (
-                <div key={index} className="border border-gray-200 rounded-lg p-3">
+                <div key={index} className="border border-zinc-700 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-900">{day.date}</span>
+                    <span className="text-sm font-medium text-zinc-300">{day.date}</span>
                     <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${performanceColors[performanceLevel]}`}>
                       {performanceLevel.charAt(0).toUpperCase() + performanceLevel.slice(1)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-xs text-zinc-500">
                     <span>{day.orderCount} orders</span>
                     <span>Avg: {formatTime(day.avgPrepTime)}</span>
                   </div>
@@ -228,7 +228,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
               );
             })
           ) : (
-            <p className="text-center py-4 text-sm text-gray-500">
+            <p className="text-center py-4 text-sm text-zinc-500">
               No performance data available for the last 7 days
             </p>
           )}
@@ -236,45 +236,45 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
 
         {/* Tablet / Desktop Table Layout */}
         <div className="hidden sm:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-zinc-700">
+            <thead className="bg-zinc-800">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Orders
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Avg Prep Time
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Performance
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-zinc-900 divide-y divide-zinc-700">
               {performanceData.dailyPerformance.length > 0 ? (
                 performanceData.dailyPerformance.map((day, index) => {
                   const performanceLevel = day.avgPrepTime <= 10 ? 'excellent' : 
                                          day.avgPrepTime <= 15 ? 'good' : 
                                          day.avgPrepTime <= 20 ? 'average' : 'poor';
                   const performanceColors = {
-                    excellent: 'bg-green-100 text-green-800',
-                    good: 'bg-blue-100 text-blue-800',
-                    average: 'bg-yellow-100 text-yellow-800',
-                    poor: 'bg-red-100 text-red-800'
+                    excellent: 'bg-green-900 text-green-300',
+                    good: 'bg-blue-900 text-blue-300',
+                    average: 'bg-yellow-900 text-yellow-300',
+                    poor: 'bg-red-900 text-red-300'
                   };
 
                   return (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={index} className={index % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-800'}>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                         {day.date}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                         {day.orderCount}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-zinc-300">
                         {formatTime(day.avgPrepTime)}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm">
@@ -287,7 +287,7 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={4} className="px-3 py-4 text-center text-sm text-zinc-500">
                     No performance data available for the last 7 days
                   </td>
                 </tr>
@@ -298,20 +298,20 @@ export default function PerformanceAnalytics({ orders }: PerformanceAnalyticsPro
       </div>
 
       {/* Performance Insights */}
-      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Performance Insights</h3>
+      <div className="bg-zinc-800 rounded-lg p-3 sm:p-4">
+        <h3 className="text-sm font-medium text-zinc-300 mb-2">Performance Insights</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="flex items-start">
-            <span className="text-green-600 mr-2">✓</span>
-            <span className="text-gray-600">
+            <span className="text-green-400 mr-2">✓</span>
+            <span className="text-zinc-400">
               {performanceData.efficiencyScore >= 80 ? 'Excellent efficiency!' : 
                performanceData.efficiencyScore >= 60 ? 'Good efficiency level.' : 
                'Room for improvement in efficiency.'}
             </span>
           </div>
           <div className="flex items-start">
-            <span className="text-blue-600 mr-2">ℹ</span>
-            <span className="text-gray-600">
+            <span className="text-blue-400 mr-2">ℹ</span>
+            <span className="text-zinc-400">
               Target prep time: 15 minutes or less
             </span>
           </div>

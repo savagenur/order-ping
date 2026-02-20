@@ -1,4 +1,5 @@
-import { QrCode, LogOut, BarChart3, Users, ListOrdered, PlusCircle } from "lucide-react";
+import { QrCode, LogOut, BarChart3, Users, ListOrdered, PlusCircle, User } from "lucide-react";
+import { auth } from "../../lib/firebase";
 import MenuButton from "./MenuButton";
 
 interface DashboardHeaderProps {
@@ -10,6 +11,7 @@ interface DashboardHeaderProps {
   onQRCode: () => void;
   onWorkerStats: () => void;
   onAnalytics: () => void;
+  onProfile: () => void;
   onLayoutToggle: () => void;
   onLogout: () => void;
 }
@@ -23,6 +25,7 @@ export default function DashboardHeader({
   onQRCode,
   onWorkerStats,
   onAnalytics,
+  onProfile,
   onLayoutToggle,
   onLogout,
 }: DashboardHeaderProps) {
@@ -64,9 +67,10 @@ export default function DashboardHeader({
               <div className="absolute right-0 mt-2 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-zinc-800">
                   <p className="text-sm font-medium text-white">{cartName}</p>
-                  <p className="text-xs text-zinc-500 truncate">Chef Dashboard</p>
+                  <p className="text-xs text-zinc-500 truncate">{auth.currentUser?.email || "Chef Dashboard"}</p>
                 </div>
                 <div className="py-1">
+                  <MenuButton icon={<User className="w-4 h-4" />} label="Profile" onClick={onProfile} />
                   <MenuButton icon={<QrCode className="w-4 h-4" />} label="QR Code" onClick={onQRCode} />
                   <MenuButton icon={<Users className="w-4 h-4" />} label="Worker Stats" onClick={onWorkerStats} />
                   <MenuButton icon={<BarChart3 className="w-4 h-4" />} label="Analytics" onClick={onAnalytics} />
