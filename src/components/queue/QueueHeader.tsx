@@ -25,7 +25,7 @@ export default function QueueHeader({ cartName }: QueueHeaderProps) {
             {cartName && (
               <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-[10px] font-semibold text-zinc-300 uppercase tracking-wider w-fit">
                 <img
-                  src="/src/assets/restaurant.svg"
+                  src="/restaurant.svg"
                   alt="Restaurant"
                   className="w-3 h-3"
                   

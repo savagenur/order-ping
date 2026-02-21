@@ -80,13 +80,13 @@ const NumpadInput = memo(function NumpadInput({
         )}
 
         <div
-          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center cursor-pointer"
+          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center cursor-pointer relative"
           onDoubleClick={handleDoubleClick}
         >
-          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 font-semibold">
+          <p className={`text-xs text-zinc-500 uppercase tracking-wider mb-1 font-semibold ${successFlash ? 'opacity-0' : 'opacity-100'}`} style={{ transition: 'none' }}>
             Order Number
           </p>
-          <div className="font-mono font-extrabold text-5xl text-white min-h-14 flex items-center justify-center">
+          <div className={`font-mono font-extrabold text-5xl text-white min-h-14 flex items-center justify-center ${successFlash ? 'opacity-0' : 'opacity-100'}`} style={{ transition: 'none' }}>
             {currentInput ? (
               <span>#{currentInput}</span>
             ) : (
