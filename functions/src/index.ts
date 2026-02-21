@@ -158,5 +158,42 @@ export const makeMeAdmin = onCall(
   },
 );
 
+/**
+ * registerDeviceToken — maps an anonymous userId to an FCM token.
+ * Called by the PWA on launch after push permission is granted.
+ * Writes to /device_tokens/{userId}.
+ */
+export const registerDeviceToken = onCall(
+  {
+    region: "us-west1",
+    cors: [
+      "http://localhost:5173",
+      "https://order-pingx.web.app",
+      "https://order-pingx.firebaseapp.com",
+    ],
+  },
+  async (request) => {
+    const { userId, fcmToken, userAgent } = request.data;
+
+    if (!userId || !fcmToken) {
+      throw new HttpsError("invalid-argument", "userId and fcmToken are required");
+    }
+
+    const db = admin.firestore();
+    await db.collection("device_tokens").doc(userId).set(
+      {
+        fcmToken,
+        userId,
+        userAgent: userAgent || null,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    console.log(`[registerDeviceToken] Registered token for userId: ${userId}`);
+    return { success: true };
+  },
+);
+
 // Re-export notification functions
 export { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications };

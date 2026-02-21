@@ -13,11 +13,12 @@ import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
 import { getNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
-import { ACTIVE_CART_KEY } from "../lib/pwaUtils";
+import { ACTIVE_CART_KEY, USER_ID_KEY } from "../lib/pwaUtils";
 
 const PINNED_KEY = "orderping_pinned_order";
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
 const BRAND_URL = "/about";
+const currentUserId = localStorage.getItem(USER_ID_KEY) ?? undefined;
 
 export default function Queue() {
   const navigate = useNavigate();
@@ -172,7 +173,7 @@ export default function Queue() {
           
           // Then subscribe to the new order
           console.log(`🔔 [QUEUE] Subscribing to new order: ${orderId}`);
-          const subscribeResult = await subscribeToOrderNotifications(orderId);
+          const subscribeResult = await subscribeToOrderNotifications(orderId, currentUserId);
           console.log(`🔔 [QUEUE] Subscribe result:`, subscribeResult);
           
           if (subscribeResult.success) {
@@ -311,7 +312,7 @@ export default function Queue() {
               
               // Then subscribe to the new order
               console.log(`🔔 [MODAL] Subscribing to new order: ${selectedOrder}`);
-              const subscribeResult = await subscribeToOrderNotifications(selectedOrder);
+              const subscribeResult = await subscribeToOrderNotifications(selectedOrder, currentUserId);
               console.log(`🔔 [MODAL] Subscribe result:`, subscribeResult);
               
               if (subscribeResult.success) {

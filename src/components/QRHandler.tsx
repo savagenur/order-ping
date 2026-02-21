@@ -1,21 +1,19 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ACTIVE_CART_KEY, isStandalone } from '../lib/pwaUtils';
-import { getDeviceFingerprint } from '../utils/fingerprint';
-import { writeBridgeSync } from '../lib/bridgeSync';
+import { ACTIVE_CART_KEY, USER_ID_KEY } from '../lib/pwaUtils';
+import { writeUserDoc } from '../lib/userSync';
 
 /**
- * QRHandler — mounts inside the Router, intercepts any route that carries a
- * ?cart=<id> query parameter, persists the value to localStorage, then
- * redirects to the clean /queue URL so the parameter never stays visible.
+ * QRHandler — intercepts any route carrying ?cart=<id> (and optionally ?user=<id>).
  *
- * Also handles the "restaurant switch" edge case: if the incoming cart ID
- * differs from the one already stored, it overwrites localStorage so the
- * Queue page immediately re-subscribes to the new cart's Firestore feed.
- *
- * Safari Broadcaster: when running in browser mode (not standalone PWA),
- * additionally writes a bridge_sync/{fingerprint} document to Firestore so
- * the installed PWA can pick up the new cartId on its next focus event.
+ * Safari entry point:
+ *   1. Extracts cartId and userId from the URL.
+ *   2. If userId is missing, generates a new UUID.
+ *   3. Persists both to localStorage.
+ *   4. Writes { currentCartId, lastActive } to /users/{userId} in Firestore
+ *      so the installed PWA picks it up instantly via its onSnapshot listener.
+ *   5. Cleans the URL to /queue?user=<userId> — cartId is removed from the
+ *      address bar but lives in the cloud and localStorage.
  */
 export default function QRHandler() {
   const [searchParams] = useSearchParams();
@@ -29,48 +27,28 @@ export default function QRHandler() {
       return;
     }
 
-    const stored = localStorage.getItem(ACTIVE_CART_KEY);
-    console.log('🔍 QRHandler: stored cartId =', stored);
-    console.log('🔍 QRHandler: isStandalone =', isStandalone());
-    
-    if (stored !== incomingCart) {
-      console.log('🔍 QRHandler: Updating localStorage from', stored, 'to', incomingCart);
-      localStorage.setItem(ACTIVE_CART_KEY, incomingCart);
-    } else {
-      console.log('🔍 QRHandler: localStorage already has correct cartId');
-    }
+    // Resolve userId: URL param → localStorage → new UUID
+    const urlUserId = searchParams.get('user');
+    const storedUserId = localStorage.getItem(USER_ID_KEY);
+    const userId = urlUserId || storedUserId || crypto.randomUUID();
+    console.log('🔍 QRHandler: userId =', userId);
 
-    // Safari Broadcaster: write to Firestore bridge so the PWA can sync.
-    // Only fires in browser (non-standalone) mode — the PWA handles its own
-    // cartId directly via localStorage.
-    if (!isStandalone()) {
-      console.log('🔍 QRHandler: Generating fingerprint for bridge sync...');
-      // Fire-and-forget bridge sync - never block navigation
-      getDeviceFingerprint()
-        .then((fingerprint) => {
-          console.log('🔍 QRHandler: Generated fingerprint =', fingerprint);
-          console.log('🔍 QRHandler: Writing to bridge_sync...');
-          return writeBridgeSync(fingerprint, incomingCart);
-        })
-        .then(() => {
-          console.log('🔍 QRHandler: Bridge sync write completed');
-        })
-        .catch((error) => {
-          console.log('🔍 QRHandler: Bridge sync failed (error resilience):', error);
-          // Error resilience: bridge sync failures never block the QR flow
-        });
-    } else {
-      console.log('🔍 QRHandler: PWA mode, skipping bridge sync');
-    }
+    // Persist userId and cartId to localStorage
+    localStorage.setItem(USER_ID_KEY, userId);
+    localStorage.setItem(ACTIVE_CART_KEY, incomingCart);
+    console.log('🔍 QRHandler: Saved cartId =', incomingCart, 'userId =', userId);
 
-    // Navigate to clean URL
-    console.log('🔍 QRHandler: Navigating to /queue...');
-    navigate('/queue', { replace: true });
-    
-    // Trigger immediate data refresh by dispatching a focus event
-    // This ensures Queue's existing listeners re-fetch fresh data
+    // Fire-and-forget: write to /users/{userId} so PWA onSnapshot fires instantly
+    writeUserDoc(userId, incomingCart).catch((error) => {
+      console.warn('🔍 QRHandler: userSync write failed (non-blocking):', error);
+    });
+
+    // Clean URL: keep only ?user= (cartId lives in cloud + localStorage)
+    console.log('🔍 QRHandler: Navigating to /queue?user=', userId);
+    navigate(`/queue?user=${encodeURIComponent(userId)}`, { replace: true });
+
+    // Trigger immediate data refresh
     setTimeout(() => {
-      console.log('🔍 QRHandler: Dispatching focus event');
       window.dispatchEvent(new Event('focus'));
     }, 0);
   }, [searchParams, navigate]);

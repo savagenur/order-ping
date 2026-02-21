@@ -1,4 +1,5 @@
 import { httpsCallable } from 'firebase/functions';
+import { writeUserFcmToken } from './userSync';
 import { functions } from './firebase';
 
 export interface NotificationSubscriptionResult {
@@ -223,7 +224,8 @@ export async function updateOrderSubscription(
  * Subscribe to order notifications via backend Cloud Function
  */
 export async function subscribeToOrderNotifications(
-  orderId: string
+  orderId: string,
+  userId?: string
 ): Promise<NotificationSubscriptionResult> {
   try {
     console.log(`🔔 [SUBSCRIBE] Starting subscription for order: ${orderId}`);
@@ -244,7 +246,8 @@ export async function subscribeToOrderNotifications(
     console.log(`🔔 [SUBSCRIBE] Calling Cloud Function for order ${orderId}`);
     const result = await subscribeToNotifications({
       orderId,
-      fcmToken: permissionResult.token
+      fcmToken: permissionResult.token,
+      userId: userId ?? null,
     });
 
     const data = result.data as { success: boolean; message?: string };
@@ -421,4 +424,24 @@ export function isPWA(): boolean {
  */
 export function isIOSSafari(): boolean {
   return isIOS() && !isPWA();
+}
+
+/**
+ * Register the FCM token for a given userId into /users/{userId}.
+ * Called automatically on PWA launch after push permission is granted.
+ * Idempotent — safe to call on every launch.
+ */
+export async function registerDeviceToken(userId: string): Promise<void> {
+  try {
+    const token = await getCachedFCMToken();
+    if (!token) {
+      console.warn('🔔 [DEVICE_TOKEN] No FCM token available, skipping registration');
+      return;
+    }
+
+    await writeUserFcmToken(userId, token);
+    console.log('🔔 [DEVICE_TOKEN] Registered FCM token for userId:', userId);
+  } catch (error) {
+    console.error('🔔 [DEVICE_TOKEN] Failed to register device token:', error);
+  }
 }

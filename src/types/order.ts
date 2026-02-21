@@ -10,6 +10,7 @@ export interface Order {
   status: 'pending' | 'ready' | 'completed';
   cartId: string;
   cartName: string;
+  userId?: string;
   createdAt: Date | Timestamp;
   readyAt?: Date | Timestamp;
   completedAt?: Date | Timestamp;

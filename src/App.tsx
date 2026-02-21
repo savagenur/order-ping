@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
-import { useBridgeSync } from './hooks/useBridgeSync';
+import { useUserSync } from './hooks/useUserSync';
+import { getOrCreateUserId } from './lib/pwaUtils';
 import QRHandler from './components/QRHandler';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
@@ -59,12 +60,12 @@ function App() {
     [queryClient],
   );
 
-  const handleNoCart = useCallback(() => {
-    console.log(' App: handleNoCart called');
-    // Queue already renders <WelcomePage /> when cartId is null — nothing to do.
-  }, []);
+  // Resolve the persistent anonymous userId (URL → localStorage → new UUID)
+  const userId = getOrCreateUserId();
 
-  useBridgeSync({ onCartChanged: handleCartChanged, onNoCart: handleNoCart });
+  // Real-time listener on /users/{userId}: fires whenever Safari writes a new
+  // currentCartId (QR scan), instantly updating the PWA queue view.
+  useUserSync({ userId, onCartChanged: handleCartChanged });
 
   return (
     <Router>
