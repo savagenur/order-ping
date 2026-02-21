@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
+import QRHandler from './components/QRHandler';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
 import About from './pages/About';
@@ -44,6 +45,8 @@ function App() {
 
   return (
     <Router>
+      {/* Intercepts ?cart=<id> on any URL, saves to localStorage, redirects to /queue */}
+      <QRHandler />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<About />} />

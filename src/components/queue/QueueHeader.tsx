@@ -1,10 +1,15 @@
 import Logo from '../ui/Logo';
+import { ACTIVE_CART_KEY } from '../../lib/pwaUtils';
 
 interface QueueHeaderProps {
   cartName: string;
 }
 
 export default function QueueHeader({ cartName }: QueueHeaderProps) {
+  const handleDebugClearCart = () => {
+    localStorage.removeItem(ACTIVE_CART_KEY);
+    window.location.reload(); // Reload to trigger WelcomePage
+  };
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/80">
       {/* Subtle top accent line */}
@@ -36,18 +41,31 @@ export default function QueueHeader({ cartName }: QueueHeaderProps) {
           </div>
         </div>
 
-        {/* Right: live badge */}
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/8"
-          style={{ backgroundColor: "rgba(16,185,129,0.06)" }}
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
-            Live
-          </span>
+        {/* Right: live badge + debug button */}
+        <div className="flex items-center gap-2">
+          {/* Debug button - only visible in development */}
+          {import.meta.env.DEV && (
+            <button
+              onClick={handleDebugClearCart}
+              className="text-[10px] px-2 py-1 rounded bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors"
+              title="Debug: Clear cart and return to welcome page"
+            >
+              Clear Cart
+            </button>
+          )}
+          
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/8"
+            style={{ backgroundColor: "rgba(16,185,129,0.06)" }}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
+              Live
+            </span>
+          </div>
         </div>
 
       </div>

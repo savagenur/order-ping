@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQueueOrders } from "../hooks/useQueueOrders";
 import { useCartSettings } from "../hooks/useCartSettings";
+import { useQueryClient } from "@tanstack/react-query";
 import { Zap } from "lucide-react";
 import WelcomePage from "../components/WelcomePage";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -12,6 +13,7 @@ import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
 import { getNotificationPermission, subscribeToOrderNotifications } from "../lib/notifications";
+import { ACTIVE_CART_KEY } from "../lib/pwaUtils";
 
 const PINNED_KEY = "orderping_pinned_order";
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
@@ -19,8 +21,13 @@ const BRAND_URL = "/about";
 
 export default function Queue() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const cartId = searchParams.get("cart");
+  const queryClient = useQueryClient();
+
+  // Resolve cartId: always read from localStorage (QRHandler writes it before
+  // redirecting here, so the URL is already clean by the time this renders).
+  const [cartId, setCartId] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_CART_KEY)
+  );
 
   const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(() =>
     localStorage.getItem(PINNED_KEY),
@@ -29,14 +36,48 @@ export default function Queue() {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+
+  // Keep cartId in sync if localStorage changes in another tab or after a
+  // same-tab restaurant switch (storage event fires cross-tab only, so we
+  // also poll on focus for the same-tab case).
+  useEffect(() => {
+    const sync = () => {
+      const stored = localStorage.getItem(ACTIVE_CART_KEY);
+      setCartId((prev) => {
+        if (prev !== stored) {
+          // Clear old query data when cartId changes
+          if (prev) {
+            queryClient.invalidateQueries({ queryKey: ['queue-orders', prev] });
+            queryClient.invalidateQueries({ queryKey: ['cart-settings', prev] });
+          }
+          
+          // Clear state when switching carts
+          setPinnedOrderId(null);
+          localStorage.removeItem(PINNED_KEY);
+          setShowAuthModal(false);
+          setSelectedOrder(null);
+          
+          return stored;
+        }
+        return prev;
+      });
+    };
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, [queryClient]);
+
   // TanStack Query - realtime queue orders via Firestore onSnapshot
   const { data, isLoading } = useQueueOrders(cartId);
   
   // Fetch cart settings for footer
   const { data: cartSettings } = useCartSettings(cartId);
 
-  const pendingOrders = data?.pendingOrders ?? [];
-  const readyOrders = data?.readyOrders ?? [];
+  const pendingOrders = useMemo(() => data?.pendingOrders ?? [], [data]);
+  const readyOrders = useMemo(() => data?.readyOrders ?? [], [data]);
   const cartName = data?.cartName ?? "";
 
   const allOrders = useMemo(() => [...pendingOrders, ...readyOrders], [pendingOrders, readyOrders]);
@@ -178,6 +219,7 @@ export default function Queue() {
         }}
         orderId={selectedOrder}
       />
+
 
       {/* Original footer content - now hidden since we have the fixed footer */}
       <div className="sr-only">
