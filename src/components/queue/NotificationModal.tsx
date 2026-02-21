@@ -238,7 +238,7 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
                             <Icon className="w-4 h-4 text-white" />
                           </div>
                           <p className="text-sm text-zinc-300">
-                            {label}{" "}
+                            {step}. {label}{" "}
                             <span className="text-white font-semibold">{highlight}</span>
                             {suffix ? ` ${suffix}` : ""}
                           </p>
