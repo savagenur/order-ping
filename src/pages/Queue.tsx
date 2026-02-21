@@ -149,15 +149,13 @@ export default function Queue() {
 
       {/* Branding - positioned above the fixed footer */}
       <div className="pb-32">
-        <a
-          href={BRAND_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-8 opacity-60 hover:opacity-100 transition-all duration-300 text-[10px] tracking-widest text-zinc-500 hover:text-blue-400 font-semibold"
+        <button
+          onClick={() => navigate(BRAND_URL)}
+          className="flex items-center justify-center gap-2 py-8 w-full opacity-50 hover:opacity-90 transition-opacity duration-300 text-[10px] tracking-widest text-zinc-500 hover:text-blue-400 font-semibold cursor-pointer"
         >
           <Zap className="w-3 h-3" />
           POWERED BY ORDERPING
-        </a>
+        </button>
       </div>
 
       <QueueFooter 

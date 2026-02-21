@@ -10,9 +10,10 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.cartId == cartId;
     }
     
-    // Carts - Admin only
+    // Carts - Admin write, public read (settings needed by queue page)
     match /carts/{cartId} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     // Workers - Admin only (relaxed for development)

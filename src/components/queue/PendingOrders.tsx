@@ -53,12 +53,28 @@ export default function PendingOrders({
                     layout
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                    exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 26 }}
                     onClick={() => onSelectOrder(order.id)}
-                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3 min-h-10 cursor-pointer active:scale-[0.98] transition-transform text-left relative"
-                    style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
+                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3 min-h-10 cursor-pointer active:scale-[0.98] transition-transform text-left relative overflow-hidden"
+                    style={{ borderLeftWidth: 4, borderLeftColor: color.hex, willChange: "transform" }}
                   >
+                    {/* Shimmer sweep on each card */}
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: `linear-gradient(105deg, transparent 35%, ${color.hex}0D 50%, transparent 65%)`,
+                        willChange: "transform",
+                      }}
+                      animate={{ x: ["-100%", "200%"] }}
+                      transition={{
+                        duration: 2.8,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        repeatDelay: 1.2 + index * 0.3,
+                        delay: index * 0.15,
+                      }}
+                    />
                     <NotificationBell isSubscribed={order.isSubscribed} />
                     <span className="font-mono font-extrabold text-xl sm:text-2xl text-white shrink-0 w-14 sm:w-16 text-center">
                       #{order.orderNumber}
@@ -77,10 +93,27 @@ export default function PendingOrders({
                         </p>
                       )}
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className="px-2 py-1 bg-zinc-800 text-zinc-300 rounded-lg text-[10px] sm:text-xs font-bold">
-                        Position {position} of {pendingOrders.length}
+                        #{position} of {pendingOrders.length}
                       </span>
+                      {/* Tiny processing dots */}
+                      <div className="flex items-center gap-0.5">
+                        {[0, 1, 2].map((d) => (
+                          <motion.span
+                            key={d}
+                            className="block w-1 h-1 rounded-full bg-zinc-600"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              delay: d * 0.18,
+                              ease: "easeInOut",
+                            }}
+                            style={{ willChange: "opacity" }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </motion.button>
                 );

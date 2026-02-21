@@ -1,31 +1,42 @@
-import { useQuery } from '@tanstack/react-query';
-import { getDocs, collection, query, where } from 'firebase/firestore';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Cart } from '../types/admin';
 
-async function fetchCartSettings(cartId: string): Promise<Cart['settings']> {
-  const cartsQuery = query(
-    collection(db, 'carts'),
-    where('cartId', '==', cartId)
-  );
-  
-  const cartsSnapshot = await getDocs(cartsQuery);
-  
-  if (cartsSnapshot.empty) {
-    return {};
-  }
-  
-  const cartDoc = cartsSnapshot.docs[0];
-  const data = cartDoc.data();
-  
-  return data.settings || {};
-}
-
 export function useCartSettings(cartId: string | null) {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!cartId) return;
+
+    const cartsQuery = query(
+      collection(db, 'carts'),
+      where('cartId', '==', cartId)
+    );
+
+    const unsubscribe = onSnapshot(
+      cartsQuery,
+      (snapshot) => {
+        if (snapshot.empty) {
+          queryClient.setQueryData<Cart['settings']>(['cart-settings', cartId], {});
+          return;
+        }
+        const data = snapshot.docs[0].data();
+        queryClient.setQueryData<Cart['settings']>(['cart-settings', cartId], data.settings || {});
+      },
+      (error) => {
+        console.error('Error fetching cart settings:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [cartId, queryClient]);
+
+  return useQuery<Cart['settings']>({
     queryKey: ['cart-settings', cartId],
-    queryFn: () => fetchCartSettings(cartId!),
+    queryFn: () => Promise.resolve({}),
     enabled: !!cartId,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: Infinity,
   });
 }
