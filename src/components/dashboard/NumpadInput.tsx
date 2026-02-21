@@ -61,11 +61,11 @@ const NumpadInput = memo(function NumpadInput({
   const canSubmit = currentInput.length > 0 && !loading;
 
   return (
-    <div className="h-full flex flex-col px-4 py-3 gap-2">
+    <div className="h-full flex flex-col px-4 py-3 gap-3">
       {/* Big Display */}
-      <div className="shrink-0">
+      <div className="shrink-0 relative">
         {successFlash && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-emerald-500/20 border-2 border-emerald-500 rounded-2xl">
             <span className="text-emerald-400 text-4xl font-bold mb-2">
               ✓ Added!
             </span>
@@ -80,13 +80,13 @@ const NumpadInput = memo(function NumpadInput({
         )}
 
         <div
-          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center cursor-pointer"
+          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center cursor-pointer"
           onDoubleClick={handleDoubleClick}
         >
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 font-semibold">
             Order Number
           </p>
-          <div className="font-mono font-extrabold text-3xl text-white min-h-10 flex items-center justify-center">
+          <div className="font-mono font-extrabold text-5xl text-white min-h-14 flex items-center justify-center">
             {currentInput ? (
               <span>#{currentInput}</span>
             ) : (
@@ -103,38 +103,32 @@ const NumpadInput = memo(function NumpadInput({
             <button
               key={color.name}
               onClick={() => setSelectedColor(color.name)}
-              className={`h-14 rounded-lg border-2 transition-all cursor-pointer ${
+              className={`h-12 rounded-lg border-2 cursor-pointer ${
                 selectedColor === color.name
-                  ? "border-white scale-105 shadow-lg"
-                  : "border-zinc-700 opacity-60 hover:opacity-80"
+                  ? "border-white"
+                  : "border-zinc-700 opacity-50"
               }`}
-              style={{
-                backgroundColor: color.hex,
-                boxShadow:
-                  selectedColor === color.name
-                    ? `0 0 16px -2px ${color.hex}`
-                    : undefined,
-              }}
+              style={{ backgroundColor: color.hex }}
               aria-label={color.name}
             />
           ))}
         </div>
-        <p className="text-center text-xs text-zinc-400 mt-2 font-medium">
+        <p className="text-center text-sm text-zinc-300 mt-2 font-semibold">
           {selectedColor}
         </p>
       </div>
 
       {/* Numpad Grid */}
-      <div className="flex-1 grid grid-cols-3 gap-1.5 min-h-0">
+      <div className="flex-1 grid grid-cols-3 gap-2 min-h-0">
         {NUMPAD_KEYS.map((key) => {
           const isAction = key === "C" || key === "⌫";
           return (
             <button
               key={key}
               onClick={() => handleKey(key)}
-              className={`h-full rounded-lg text-base font-bold flex items-center justify-center cursor-pointer select-none ${
+              className={`h-full rounded-xl text-2xl font-bold flex items-center justify-center cursor-pointer select-none ${
                 isAction
-                  ? "bg-zinc-800 text-zinc-400 border border-zinc-700 active:bg-zinc-700"
+                  ? "bg-zinc-800 text-zinc-300 border border-zinc-700 active:bg-zinc-600"
                   : "bg-zinc-900 text-white border border-zinc-800 active:bg-blue-600 active:border-blue-500"
               }`}
               style={{ WebkitTapHighlightColor: "transparent" }}
@@ -149,11 +143,12 @@ const NumpadInput = memo(function NumpadInput({
       <button
         onClick={canSubmit ? onSubmit : undefined}
         disabled={!canSubmit}
-        className={`w-full py-8 rounded-lg text-base font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+        className={`w-full py-6 rounded-xl text-lg font-bold uppercase tracking-wider cursor-pointer shrink-0 ${
           canSubmit
-            ? "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20"
+            ? "bg-blue-600 text-white active:bg-blue-700"
             : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
         }`}
+        style={{ WebkitTapHighlightColor: "transparent" }}
       >
         {loading ? "Adding..." : "Add to Queue"}
       </button>

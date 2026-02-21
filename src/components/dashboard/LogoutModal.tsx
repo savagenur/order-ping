@@ -15,7 +15,7 @@ export default function LogoutModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 z-60">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl max-w-sm w-full p-6">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-500/20 mb-4">
             <svg
@@ -42,13 +42,15 @@ export default function LogoutModal({
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition font-medium"
+              className="flex-1 px-4 py-4 bg-zinc-800 text-zinc-300 rounded-xl font-semibold cursor-pointer active:bg-zinc-700"
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
+              className="flex-1 px-4 py-4 bg-red-600 text-white rounded-xl font-semibold cursor-pointer active:bg-red-700"
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
               Logout
             </button>

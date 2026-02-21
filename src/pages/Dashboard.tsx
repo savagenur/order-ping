@@ -300,10 +300,10 @@ export default function Dashboard() {
                               }
                             }}
                             disabled={bulkActionLoading.markingAllReady}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all border-2 ${
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
                               buttonState.readyConfirm
-                                ? "bg-amber-500 text-white border-amber-400 hover:bg-amber-400 active:bg-amber-600"
-                                : "bg-transparent text-emerald-400 border-emerald-400 hover:bg-emerald-400 hover:text-white active:bg-emerald-500"
+                                ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
+                                : "bg-transparent text-emerald-400 border-emerald-400 active:bg-emerald-500 active:text-white"
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ WebkitTapHighlightColor: "transparent" }}
                           >
@@ -370,10 +370,10 @@ export default function Dashboard() {
                               }
                             }}
                             disabled={bulkActionLoading.markingAllCompleted}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all border-2 ${
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
                               buttonState.completedConfirm
-                                ? "bg-amber-500 text-white border-amber-400 hover:bg-amber-400 active:bg-amber-600"
-                                : "bg-transparent text-zinc-400 border-zinc-400 hover:bg-zinc-400 hover:text-white active:bg-zinc-500"
+                                ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
+                                : "bg-transparent text-zinc-400 border-zinc-400 active:bg-zinc-500 active:text-white"
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ WebkitTapHighlightColor: "transparent" }}
                           >

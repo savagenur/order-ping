@@ -50,11 +50,7 @@ export default function QRCodeModal({
           <div className="bg-zinc-800/50 border border-zinc-700 p-4 rounded-lg inline-block relative w-75 h-75">
             {!qrLoaded && !qrError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <svg className="w-8 h-8 animate-spin text-zinc-600" viewBox="0 0 20 20" fill="none">
-                  <circle cx="10" cy="10" r="8" stroke="rgba(255,255,255,0.08)" strokeWidth="2.5" />
-                  <path d="M10 2a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-                <span className="text-xs text-zinc-600 mt-2 uppercase tracking-wider">Loading QR</span>
+                <span className="text-xs text-zinc-500 uppercase tracking-wider">Loading QR...</span>
               </div>
             )}
             {qrError && (
@@ -74,7 +70,7 @@ export default function QRCodeModal({
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(getQRCodeUrl())}`}
               alt="QR Code"
-              className={`w-full h-full object-contain ${qrLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+              className={`w-full h-full object-contain ${qrLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setQrLoaded(true)}
               onError={() => {
                 setQrError(true);
@@ -93,13 +89,15 @@ export default function QRCodeModal({
           <div className="space-y-3">
             <button
               onClick={downloadQRCode}
-              className="w-full px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+              className="w-full px-4 py-4 bg-blue-600 text-white font-semibold rounded-xl active:bg-blue-700 cursor-pointer"
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
               Download QR Code
             </button>
             <button
               onClick={() => navigate(`/queue?cart=${cartId}`)}
-              className="w-full px-4 py-2 bg-zinc-700 text-white font-semibold rounded-xl hover:bg-zinc-600 transition-colors duration-300"
+              className="w-full px-4 py-4 bg-zinc-700 text-white font-semibold rounded-xl active:bg-zinc-600 cursor-pointer"
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
               View Queue Page
             </button>

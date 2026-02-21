@@ -14,11 +14,12 @@ export default function MenuButton({
   return (
     <button
       onClick={onClick}
-      className={`w-full px-4 py-2.5 text-sm flex items-center gap-2.5 transition cursor-pointer ${
+      className={`w-full px-4 py-3.5 text-sm flex items-center gap-3 cursor-pointer ${
         danger
-          ? "text-red-400 hover:bg-red-500/10"
-          : "text-zinc-300 hover:bg-zinc-800"
+          ? "text-red-400 active:bg-red-500/10"
+          : "text-zinc-300 active:bg-zinc-800"
       }`}
+      style={{ WebkitTapHighlightColor: "transparent" }}
     >
       {icon}
       {label}

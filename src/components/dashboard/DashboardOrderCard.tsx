@@ -18,16 +18,12 @@ export default function DashboardOrderCard({
 
   return (
     <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 ${color.glow}`}
-      style={{ 
-        borderLeftWidth: 4, 
-        borderLeftColor: color.hex,
-        boxShadow: `0 0 20px -5px var(--tw-shadow-color)`
-      }}
+      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+      style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
     >
       {/* Order Number + Color Badge */}
       <div className="shrink-0 flex flex-col items-start gap-1">
-        <span className="font-mono font-extrabold text-3xl text-white">
+        <span className="font-mono font-extrabold text-4xl text-white leading-none">
           #{order.orderNumber}
         </span>
         <span
@@ -40,17 +36,17 @@ export default function DashboardOrderCard({
       {/* Info */}
       <div className="flex-1 min-w-0">
         {order.customerName && (
-          <p className="text-zinc-400 text-sm truncate">{order.customerName}</p>
+          <p className="text-zinc-300 text-sm truncate font-medium">{order.customerName}</p>
         )}
         {order.orderDetails && (
-          <p className="text-zinc-600 text-xs truncate">{order.orderDetails}</p>
+          <p className="text-zinc-500 text-xs truncate mt-0.5">{order.orderDetails}</p>
         )}
       </div>
 
       {/* Action Button */}
       <button
         onClick={onAction}
-        className={`shrink-0 px-5 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
+        className={`shrink-0 px-6 py-4 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
         {actionLabel}

@@ -63,10 +63,10 @@ const OrderList = memo(function OrderList({
                   }
                 }}
                 disabled={bulkActionLoading.markingAllReady}
-                className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all border-2 ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
                   buttonState.readyConfirm
-                    ? "bg-amber-500 text-white border-amber-400 hover:bg-amber-400 active:bg-amber-600"
-                    : "bg-transparent text-emerald-400 border-emerald-400 hover:bg-emerald-400 hover:text-white active:bg-emerald-500"
+                    ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
+                    : "bg-transparent text-emerald-400 border-emerald-400 active:bg-emerald-500 active:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
@@ -123,10 +123,10 @@ const OrderList = memo(function OrderList({
                   }
                 }}
                 disabled={bulkActionLoading.markingAllCompleted}
-                className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all border-2 ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
                   buttonState.completedConfirm
-                    ? "bg-amber-500 text-white border-amber-400 hover:bg-amber-400 active:bg-amber-600"
-                    : "bg-transparent text-zinc-400 border-zinc-400 hover:bg-zinc-400 hover:text-white active:bg-zinc-500"
+                    ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
+                    : "bg-transparent text-zinc-400 border-zinc-400 active:bg-zinc-500 active:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {bulkActionLoading.markingAllCompleted
@@ -181,16 +181,12 @@ function OrderCard({
 
   return (
     <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 ${color.glow}`}
-      style={{ 
-        borderLeftWidth: 4, 
-        borderLeftColor: color.hex,
-        boxShadow: `0 0 20px -5px var(--tw-shadow-color)`
-      }}
+      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+      style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
     >
       {/* Order Number + Color Badge */}
       <div className="shrink-0 flex flex-col items-start gap-1">
-        <span className="font-mono font-extrabold text-3xl text-white">
+        <span className="font-mono font-extrabold text-4xl text-white leading-none">
           #{order.orderNumber}
         </span>
         <span
@@ -203,17 +199,17 @@ function OrderCard({
       {/* Info */}
       <div className="flex-1 min-w-0">
         {order.customerName && (
-          <p className="text-zinc-400 text-sm truncate">{order.customerName}</p>
+          <p className="text-zinc-300 text-sm truncate font-medium">{order.customerName}</p>
         )}
         {order.orderDetails && (
-          <p className="text-zinc-600 text-xs truncate">{order.orderDetails}</p>
+          <p className="text-zinc-500 text-xs truncate mt-0.5">{order.orderDetails}</p>
         )}
       </div>
 
       {/* Action Button */}
       <button
         onClick={onAction}
-        className={`shrink-0 px-5 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
+        className={`shrink-0 px-6 py-4 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
         {actionLabel}
