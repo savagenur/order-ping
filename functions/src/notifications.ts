@@ -95,6 +95,86 @@ export const subscribeToNotifications = onCall(
   }
 });
 
+export const unsubscribeFromNotifications = onCall(
+  {
+    region: "us-west1",
+    cors: [
+      "http://localhost:5173", 
+      "https://order-pingx.web.app", 
+      "https://order-pingx.firebaseapp.com"
+    ],
+  },
+  async (request) => {
+    const data = request.data;
+    const context = request.auth ? { auth: request.auth } : { auth: null };
+    
+    // Allow both authenticated and anonymous users
+    if (context.auth) {
+      console.log(`Authenticated user ${context.auth.uid} unsubscribing from notifications`);
+    } else {
+      console.log('Anonymous user unsubscribing from notifications');
+    }
+
+    const { orderId, fcmToken } = data;
+
+    if (!orderId || !fcmToken) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "orderId and fcmToken are required"
+      );
+    }
+
+    try {
+      // Get the order document
+      const orderDoc = await admin.firestore().collection("orders").doc(orderId).get();
+      
+      if (!orderDoc.exists) {
+        throw new functions.https.HttpsError(
+          "not-found",
+          "Order not found"
+        );
+      }
+
+      const orderData = orderDoc.data();
+      const existingSubscribers = orderData?.notificationSubscribers || [];
+      
+      // Find and remove the subscriber with this fcmToken
+      const subscriberToRemove = existingSubscribers.find((subscriber: any) => subscriber.fcmToken === fcmToken);
+      
+      if (subscriberToRemove) {
+        // Remove the subscriber from the array
+        await admin.firestore().collection("orders").doc(orderId).update({
+          notificationSubscribers: admin.firestore.FieldValue.arrayRemove(subscriberToRemove),
+          subscribedCount: Math.max(0, existingSubscribers.length - 1),
+          isSubscribed: existingSubscribers.length > 1
+        });
+        
+        console.log(`Successfully unsubscribed token ${fcmToken} from order ${orderId}`);
+        
+        return {
+          success: true,
+          message: "Successfully unsubscribed from notifications"
+        };
+      } else {
+        // Token not found in subscribers array
+        console.log(`Token ${fcmToken} not found in subscribers for order ${orderId}`);
+        
+        return {
+          success: true,
+          message: "Token was not subscribed"
+        };
+      }
+
+    } catch (error) {
+      console.error("Error unsubscribing from notifications:", error);
+      throw new functions.https.HttpsError(
+        "internal",
+        "Failed to unsubscribe from notifications"
+      );
+    }
+  }
+);
+
 export const sendOrderReadyNotification = onDocumentUpdated(
   {
     document: "orders/{orderId}",

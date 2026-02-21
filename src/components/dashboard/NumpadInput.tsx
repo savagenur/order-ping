@@ -1,6 +1,6 @@
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { ORDER_COLOR_OPTIONS } from "../../lib/orderColors";
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 
 interface NumpadInputProps {
   onSubmit: () => void;
@@ -28,6 +28,8 @@ const NumpadInput = memo(function NumpadInput({
   loading,
   initialOrderNumber,
 }: NumpadInputProps) {
+  const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
+
   const {
     currentInput,
     selectedColor,
@@ -58,7 +60,23 @@ const NumpadInput = memo(function NumpadInput({
     }
   };
 
-  const canSubmit = currentInput.length > 0 && !loading;
+  const canSubmit = currentInput.length > 0 && !loading && !isButtonDisabled;
+
+  useEffect(() => {
+    if (isButtonDisabled) {
+      const timer = setTimeout(() => {
+        setIsButtonDisabled(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isButtonDisabled]);
+
+  const handleSubmit = () => {
+    if (canSubmit) {
+      onSubmit();
+      setIsButtonDisabled(true);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col px-4 py-3 gap-3">
@@ -141,7 +159,7 @@ const NumpadInput = memo(function NumpadInput({
 
       {/* ADD TO QUEUE Button */}
       <button
-        onClick={canSubmit ? onSubmit : undefined}
+        onClick={handleSubmit}
         disabled={!canSubmit}
         className={`w-full py-6 rounded-xl text-lg font-bold uppercase tracking-wider cursor-pointer shrink-0 ${
           canSubmit
@@ -150,7 +168,7 @@ const NumpadInput = memo(function NumpadInput({
         }`}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        {loading ? "Adding..." : "Add to Queue"}
+        {isButtonDisabled ? "Wait..." : loading ? "Adding..." : "Add to Queue"}
       </button>
     </div>
   );

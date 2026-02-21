@@ -12,7 +12,7 @@ import ReadyOrders from "../components/queue/ReadyOrders";
 import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
-import { getNotificationPermission, subscribeToOrderNotifications } from "../lib/notifications";
+import { getNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
 import { ACTIVE_CART_KEY } from "../lib/pwaUtils";
 
 const PINNED_KEY = "orderping_pinned_order";
@@ -35,6 +35,12 @@ export default function Queue() {
 
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [lastSubscribedOrder, setLastSubscribedOrder] = useState<string | null>(() => {
+    // Restore from localStorage if available
+    return localStorage.getItem('orderping_last_subscribed');
+  });
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
 
 
   // Keep cartId in sync if localStorage changes in another tab or after a
@@ -119,57 +125,116 @@ export default function Queue() {
     
     if (!order) return;
     
-    // Check if order status is "preparing" (pending in current codebase)
-    if (order.status === 'pending') {
-      setSelectedOrder(orderId);
-      
-      // Check if notification has already been shown for this order in this session
-      const notificationShown = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}`);
-      
-      if (!notificationShown) {
-        // Check if notification permission is already granted
-        const permission = getNotificationPermission();
-        
-        if (permission === 'granted') {
-          // Automatically subscribe without showing modal
-          try {
-            const result = await subscribeToOrderNotifications(orderId);
-            if (result.success) {
-              // Successfully subscribed to notifications
-            } else {
-              console.error('Auto-subscription failed:', result.error);
-            }
-          } catch (error) {
-            console.error('Error auto-subscribing to notifications:', error);
-          }
-        } else if (permission === 'default') {
-          // Check if user has previously dismissed the notification modal
-          const modalDismissed = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}_dismissed`);
-          if (!modalDismissed) {
-            // Show modal to ask for permission
-            setTimeout(() => {
-              setShowAuthModal(true);
-            }, 1000);
-          }
-        }
-        // If permission is denied, do nothing
-        
-        // Mark that notification has been processed for this order in this session
-        sessionStorage.setItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}`, 'true');
-      }
+    // Debounce: prevent rapid clicks within 1 second
+    const now = Date.now();
+    if (now - lastClickTime < 1000) {
+      console.log(`🔔 [QUEUE] Click too rapid, skipping for ${orderId}`);
+      return;
     }
+    setLastClickTime(now);
     
     // Still allow normal order selection for all orders
     setPinnedOrderId(orderId);
     localStorage.setItem(PINNED_KEY, orderId);
+    
+    // Check if order status is "preparing" (pending in current codebase)
+    if (order.status === 'pending') {
+      setSelectedOrder(orderId);
+      
+      // Prevent multiple subscription attempts in quick succession
+      if (isSubscribing) {
+        console.log(`🔔 [QUEUE] Subscription already in progress, skipping for ${orderId}`);
+        return;
+      }
+      
+      // Check if notification permission is already granted
+      const permission = getNotificationPermission();
+      
+      if (permission === 'granted') {
+        // Set flag to prevent concurrent subscription attempts
+        setIsSubscribing(true);
+        
+        try {
+          // IMPORTANT: First unsubscribe from previous order if it exists and is different
+          if (lastSubscribedOrder && lastSubscribedOrder !== orderId) {
+            console.log(`🔔 [QUEUE] Unsubscribing from previous order: ${lastSubscribedOrder}`);
+            try {
+              const unsubscribeResult = await unsubscribeFromOrderNotifications(lastSubscribedOrder);
+              console.log(`🔔 [QUEUE] Unsubscribe result:`, unsubscribeResult);
+            } catch (unsubError) {
+              console.error(`🔔 [QUEUE] Unsubscribe error caught:`, unsubError);
+              // Continue even if unsubscribe fails
+            }
+            
+            // Small delay to ensure unsubscribe completes before subscribe
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
+          // Then subscribe to the new order
+          console.log(`🔔 [QUEUE] Subscribing to new order: ${orderId}`);
+          const subscribeResult = await subscribeToOrderNotifications(orderId);
+          console.log(`🔔 [QUEUE] Subscribe result:`, subscribeResult);
+          
+          if (subscribeResult.success) {
+            // Only update last subscribed order if subscription was successful
+            setLastSubscribedOrder(orderId);
+            console.log(`🔔 [QUEUE] Successfully subscribed to order: ${orderId}`);
+            
+            // Store in localStorage to persist across page refreshes
+            localStorage.setItem('orderping_last_subscribed', orderId);
+          } else {
+            console.error(`🔔 [QUEUE] Failed to subscribe to order ${orderId}:`, subscribeResult.error);
+          }
+        } catch (error) {
+          console.error(`🔔 [QUEUE] Error in notification flow for ${orderId}:`, error);
+        } finally {
+          // Always reset the subscribing flag
+          setIsSubscribing(false);
+        }
+      } else if (permission === 'default') {
+        // Check if user has previously dismissed the notification modal
+        const modalDismissed = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}_dismissed`);
+        if (!modalDismissed) {
+          // Show modal to ask for permission
+          setTimeout(() => {
+            setShowAuthModal(true);
+          }, 500);
+        }
+      }
+      // If permission is denied, do nothing
+    }
+    
+    // Scroll to top after selection
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [allOrders]);
+  }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime]);
 
   // Filter pinned order out of the section lists to avoid duplication
   const filteredReadyOrders = readyOrders.filter(
     (o) => o.id !== pinnedOrderId,
   );
   // Keep pinned order in pending list so it remains visible
+
+  // Cleanup: unsubscribe from notifications when cart changes or component unmounts
+  useEffect(() => {
+    // Only run cleanup if we have a valid cart and last subscribed order
+    if (!cartId || !lastSubscribedOrder) return;
+    
+    return () => {
+      // Only unsubscribe if we're switching to a different cart or unmounting
+      if (lastSubscribedOrder) {
+        console.log(`🔔 [CLEANUP] Unsubscribing from ${lastSubscribedOrder}`);
+        unsubscribeFromOrderNotifications(lastSubscribedOrder)
+          .then(result => {
+            console.log(`🔔 [CLEANUP] Unsubscribe result:`, result);
+            // Clear localStorage on successful unsubscribe
+            localStorage.removeItem('orderping_last_subscribed');
+          })
+          .catch(error => {
+            console.error(`🔔 [CLEANUP] Error unsubscribing:`, error);
+          });
+      }
+    };
+  }, [cartId, lastSubscribedOrder]);
 
   // RENDER LOGIC
   if (!cartId) {
@@ -223,8 +288,49 @@ export default function Queue() {
             sessionStorage.setItem(`${NOTIFICATION_SHOWN_KEY}_${selectedOrder}_dismissed`, 'true');
           }
         }}
-        onNotify={() => {
-          // Handle notification logic here (e.g., subscribe to notifications)
+        onNotify={async () => {
+          // Handle notification subscription with improved reliability
+          if (selectedOrder && !isSubscribing) {
+            setIsSubscribing(true);
+            
+            try {
+              // IMPORTANT: First unsubscribe from previous order if it exists and is different
+              if (lastSubscribedOrder && lastSubscribedOrder !== selectedOrder) {
+                console.log(`🔔 [MODAL] Unsubscribing from previous order: ${lastSubscribedOrder}`);
+                try {
+                  const unsubscribeResult = await unsubscribeFromOrderNotifications(lastSubscribedOrder);
+                  console.log(`🔔 [MODAL] Unsubscribe result:`, unsubscribeResult);
+                } catch (unsubError) {
+                  console.error(`🔔 [MODAL] Unsubscribe error caught:`, unsubError);
+                  // Continue even if unsubscribe fails
+                }
+                
+                // Small delay to ensure unsubscribe completes before subscribe
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+              
+              // Then subscribe to the new order
+              console.log(`🔔 [MODAL] Subscribing to new order: ${selectedOrder}`);
+              const subscribeResult = await subscribeToOrderNotifications(selectedOrder);
+              console.log(`🔔 [MODAL] Subscribe result:`, subscribeResult);
+              
+              if (subscribeResult.success) {
+                // Only update last subscribed order if subscription was successful
+                setLastSubscribedOrder(selectedOrder);
+                console.log(`🔔 [MODAL] Successfully subscribed to order: ${selectedOrder}`);
+                
+                // Store in localStorage to persist across page refreshes
+                localStorage.setItem('orderping_last_subscribed', selectedOrder);
+              } else {
+                console.error(`🔔 [MODAL] Failed to subscribe to order ${selectedOrder}:`, subscribeResult.error);
+              }
+            } catch (error) {
+              console.error(`🔔 [MODAL] Error in notification flow for ${selectedOrder}:`, error);
+            } finally {
+              // Always reset the subscribing flag
+              setIsSubscribing(false);
+            }
+          }
         }}
         orderId={selectedOrder}
       />

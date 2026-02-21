@@ -7,6 +7,86 @@ export interface NotificationSubscriptionResult {
   token?: string;
 }
 
+// Cache for FCM token to avoid repeated requests
+let cachedFCMToken: string | null = null;
+let tokenPromise: Promise<string | null> | null = null;
+
+// Store token in localStorage for persistence
+const FCM_TOKEN_KEY = 'orderping_fcm_token';
+
+/**
+ * Get cached FCM token or fetch new one with caching
+ */
+async function getCachedFCMToken(forceRefresh = false): Promise<string | null> {
+  // Force refresh if requested
+  if (forceRefresh) {
+    cachedFCMToken = null;
+    tokenPromise = null;
+    localStorage.removeItem(FCM_TOKEN_KEY);
+  }
+  
+  // Return cached token if available
+  if (cachedFCMToken) {
+    return cachedFCMToken;
+  }
+  
+  // Check localStorage for persistent token
+  const storedToken = localStorage.getItem(FCM_TOKEN_KEY);
+  if (storedToken && !forceRefresh) {
+    cachedFCMToken = storedToken;
+    return storedToken;
+  }
+  
+  // If token request is in progress, return the existing promise
+  if (tokenPromise) {
+    return tokenPromise;
+  }
+  
+  // Create new token request promise
+  tokenPromise = (async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const { getToken } = await import('firebase/messaging');
+      const { getMessaging } = await import('firebase/messaging');
+      
+      const messaging = getMessaging();
+      const token = await getToken(messaging, {
+        vapidKey: "BEe09hbvQNef0u4fgmfMN_pRuhFsGY9W9QQQyR5OYs-YcriXv7O4dR1YSWa1kGo05aZR0IbdxTDHF9gMX5bqeaI",
+        serviceWorkerRegistration: registration
+      });
+      
+      if (token) {
+        cachedFCMToken = token;
+        // Store in localStorage for persistence
+        localStorage.setItem(FCM_TOKEN_KEY, token);
+        console.log('🔔 [TOKEN] New FCM token generated and cached');
+      } else {
+        console.error('🔔 [TOKEN] Failed to get FCM token');
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('🔔 [TOKEN] Error getting FCM token:', error);
+      return null;
+    } finally {
+      // Clear the promise after completion
+      tokenPromise = null;
+    }
+  })();
+  
+  return tokenPromise;
+}
+
+/**
+ * Clear cached token (call when token becomes invalid)
+ */
+export function clearCachedFCMToken(): void {
+  cachedFCMToken = null;
+  tokenPromise = null;
+  localStorage.removeItem(FCM_TOKEN_KEY);
+  console.log('🔔 [TOKEN] FCM token cache cleared');
+}
+
 /**
  * Request notification permission and get FCM token
  */
@@ -23,7 +103,7 @@ export async function requestNotificationPermission(): Promise<NotificationSubsc
     // Check if permission is already granted
     const currentPermission = Notification.permission;
     if (currentPermission === 'granted') {
-      // Permission already granted, proceed to get token
+      // Permission already granted, get cached token
     } else if (currentPermission === 'denied') {
       return {
         success: false,
@@ -41,26 +121,8 @@ export async function requestNotificationPermission(): Promise<NotificationSubsc
       }
     }
 
-    // Get FCM token using service worker with timeout
-    const registration = await navigator.serviceWorker.ready;
-    
-    // Import getToken dynamically to avoid SSR issues
-    const { getToken } = await import('firebase/messaging');
-    const { getMessaging } = await import('firebase/messaging');
-    
-    const messaging = getMessaging();
-    
-    // Add timeout to prevent hanging
-    const tokenPromise = getToken(messaging, {
-      vapidKey: "BEe09hbvQNef0u4fgmfMN_pRuhFsGY9W9QQQyR5OYs-YcriXv7O4dR1YSWa1kGo05aZR0IbdxTDHF9gMX5bqeaI",
-      serviceWorkerRegistration: registration
-    });
-    
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Token request timeout')), 10000);
-    });
-    
-    const token = await Promise.race([tokenPromise, timeoutPromise]);
+    // Get cached FCM token
+    const token = await getCachedFCMToken();
 
     if (!token) {
       return {
@@ -109,22 +171,77 @@ export async function requestNotificationPermission(): Promise<NotificationSubsc
 }
 
 /**
+ * Batch subscribe/unsubscribe to order notifications (optimized for quota)
+ * This replaces multiple individual calls with a single batch operation
+ */
+export async function updateOrderSubscription(
+  subscribeOrderId: string | null,
+  unsubscribeOrderId: string | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const token = await getCachedFCMToken();
+    
+    if (!token) {
+      return {
+        success: false,
+        error: 'No notification token available.'
+      };
+    }
+
+    // Call backend Cloud Function for batch operation
+    const updateSubscription = httpsCallable(functions, 'updateOrderSubscription');
+    
+    const result = await updateSubscription({
+      subscribeOrderId,
+      unsubscribeOrderId,
+      fcmToken: token
+    });
+
+    const data = result.data as { success: boolean; message?: string };
+
+    if (data.success) {
+      return {
+        success: true
+      };
+    } else {
+      return {
+        success: false,
+        error: data.message || 'Failed to update subscription.'
+      };
+    }
+
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    return {
+      success: false,
+      error: 'Failed to update notification subscription.'
+    };
+  }
+}
+
+/**
  * Subscribe to order notifications via backend Cloud Function
  */
 export async function subscribeToOrderNotifications(
   orderId: string
 ): Promise<NotificationSubscriptionResult> {
   try {
-    // Step 1: Request permission and get token
+    console.log(`🔔 [SUBSCRIBE] Starting subscription for order: ${orderId}`);
+    
+    // Step 1: Request permission and get token (uses cached token)
     const permissionResult = await requestNotificationPermission();
     
     if (!permissionResult.success || !permissionResult.token) {
+      console.error(`🔔 [SUBSCRIBE] Permission failed:`, permissionResult.error);
       return permissionResult;
     }
+
+    console.log(`🔔 [SUBSCRIBE] Permission granted, token obtained`);
 
     // Step 2: Call backend Cloud Function
     const subscribeToNotifications = httpsCallable(functions, 'subscribeToNotifications');
     
+    console.log(`🔔 [SUBSCRIBE] Calling Cloud Function for order ${orderId}`);
     const result = await subscribeToNotifications({
       orderId,
       fcmToken: permissionResult.token
@@ -133,11 +250,13 @@ export async function subscribeToOrderNotifications(
     const data = result.data as { success: boolean; message?: string };
 
     if (data.success) {
+      console.log(`🔔 [SUBSCRIBE] Successfully subscribed to order ${orderId}`);
       return {
         success: true,
         token: permissionResult.token
       };
     } else {
+      console.error(`🔔 [SUBSCRIBE] Failed to subscribe to order ${orderId}:`, data.message);
       return {
         success: false,
         error: data.message || 'Failed to subscribe to notifications.'
@@ -145,7 +264,16 @@ export async function subscribeToOrderNotifications(
     }
 
   } catch (error) {
-    console.error('Error subscribing to notifications:', error);
+    console.error(`🔔 [SUBSCRIBE] Error subscribing to order ${orderId}:`, error);
+    
+    // Handle AbortError specifically - this happens when requests are cancelled
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn(`🔔 [SUBSCRIBE] Request was aborted for order ${orderId}`);
+      return {
+        success: false,
+        error: 'Request was aborted. Please try again.'
+      };
+    }
     
     // Handle specific Firebase Functions errors
     const firebaseError = error as { code?: string; message?: string };
@@ -187,6 +315,76 @@ export async function subscribeToOrderNotifications(
 }
 
 /**
+ * Unsubscribe from order notifications via backend Cloud Function
+ */
+export async function unsubscribeFromOrderNotifications(
+  orderId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`🔔 [UNSUBSCRIBE] Starting unsubscription for order: ${orderId}`);
+    
+    // Get cached FCM token (no need to request permission for unsubscribe)
+    const token = await getCachedFCMToken();
+
+    if (!token) {
+      console.error(`🔔 [UNSUBSCRIBE] No FCM token available for order ${orderId}`);
+      // Try to get a fresh token as fallback
+      const freshToken = await getCachedFCMToken(true);
+      if (!freshToken) {
+        console.error(`🔔 [UNSUBSCRIBE] Failed to get fresh token for order ${orderId}`);
+        return {
+          success: false,
+          error: 'No notification token found.'
+        };
+      }
+      console.log(`🔔 [UNSUBSCRIBE] Got fresh token for order ${orderId}`);
+    }
+
+    // Call backend Cloud Function to unsubscribe
+    console.log(`🔔 [UNSUBSCRIBE] Calling Cloud Function for order ${orderId}`);
+    const unsubscribeFromNotifications = httpsCallable(functions, 'unsubscribeFromNotifications');
+    
+    const result = await unsubscribeFromNotifications({
+      orderId,
+      fcmToken: token
+    });
+
+    const data = result.data as { success: boolean; message?: string };
+
+    if (data.success) {
+      console.log(`🔔 [UNSUBSCRIBE] Successfully unsubscribed from order ${orderId}`);
+      return {
+        success: true
+      };
+    } else {
+      console.error(`🔔 [UNSUBSCRIBE] Failed to unsubscribe from order ${orderId}:`, data.message);
+      return {
+        success: false,
+        error: data.message || 'Failed to unsubscribe from notifications.'
+      };
+    }
+
+  } catch (error) {
+    console.error(`🔔 [UNSUBSCRIBE] Error unsubscribing from order ${orderId}:`, error);
+    
+    // Handle AbortError specifically - this happens when requests are cancelled
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn(`🔔 [UNSUBSCRIBE] Request was aborted for order ${orderId}, treating as success`);
+      return {
+        success: true,
+        error: 'Request aborted but continuing with new subscription.'
+      };
+    }
+    
+    // Try to continue even if unsubscribe fails
+    return {
+      success: true,
+      error: 'Unsubscribe error, but continuing with new subscription.'
+    };
+  }
+}
+
+/**
  * Check if notifications are supported
  */
 export function isNotificationSupported(): boolean {
@@ -215,7 +413,7 @@ export function isIOS(): boolean {
  */
 export function isPWA(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || 
-         (window.navigator as any).standalone === true;
+         (window.navigator as { standalone?: boolean }).standalone === true;
 }
 
 /**
