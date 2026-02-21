@@ -25,9 +25,9 @@ export default function Queue() {
 
   // Resolve cartId: always read from localStorage (QRHandler writes it before
   // redirecting here, so the URL is already clean by the time this renders).
-  const [cartId, setCartId] = useState<string | null>(
-    () => localStorage.getItem(ACTIVE_CART_KEY)
-  );
+  const initialCartId = localStorage.getItem(ACTIVE_CART_KEY);
+  console.log('🔍 Queue: Initial cartId from localStorage =', initialCartId);
+  const [cartId, setCartId] = useState<string | null>(initialCartId);
 
   const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(() =>
     localStorage.getItem(PINNED_KEY),
@@ -42,11 +42,17 @@ export default function Queue() {
   // also poll on focus for the same-tab case).
   useEffect(() => {
     const sync = () => {
+      console.log('🔍 Queue: sync() triggered');
       const stored = localStorage.getItem(ACTIVE_CART_KEY);
+      console.log('🔍 Queue: localStorage cartId =', stored, 'current cartId =', cartId);
+      
       setCartId((prev) => {
+        console.log('🔍 Queue: setCartId callback, prev =', prev, 'stored =', stored);
         if (prev !== stored) {
+          console.log('🔍 Queue: CartId changed, updating state');
           // Clear old query data when cartId changes
           if (prev) {
+            console.log('🔍 Queue: Invalidating queries for', prev);
             queryClient.invalidateQueries({ queryKey: ['queue-orders', prev] });
             queryClient.invalidateQueries({ queryKey: ['cart-settings', prev] });
           }
@@ -59,16 +65,19 @@ export default function Queue() {
           
           return stored;
         }
+        console.log('🔍 Queue: CartId unchanged, keeping current value');
         return prev;
       });
     };
+    console.log('🔍 Queue: Adding storage and focus listeners');
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
     return () => {
+      console.log('🔍 Queue: Removing listeners');
       window.removeEventListener('storage', sync);
       window.removeEventListener('focus', sync);
     };
-  }, [queryClient]);
+  }, [queryClient, cartId]);
 
   // TanStack Query - realtime queue orders via Firestore onSnapshot
   const { data, isLoading } = useQueueOrders(cartId);

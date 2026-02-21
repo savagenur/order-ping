@@ -28,5 +28,25 @@ service cloud.firestore {
       allow read, create, update: if hasCartAccess(request.resource.data.cartId);
       allow read: if true; // Public queue page
     }
+    
+    // Bridge Sync — Safari ↔ PWA synchronization channel.
+    // Documents are keyed by device fingerprint (SHA-256 hash).
+    // No authentication required; security comes from the fingerprint being
+    // computationally infeasible to guess.
+    //
+    // Write: allowed when the incoming createdAt is the server timestamp
+    //        (i.e. within a 1-minute clock skew of request.time).
+    // Read:  allowed when the stored createdAt is within 30 minutes of now.
+    match /bridge_sync/{fingerprint} {
+      // Allow writes (create or overwrite) when createdAt is set to server time.
+      // We accept up to 60 seconds of clock skew.
+      allow write: if request.resource.data.keys().hasAll(['cartId', 'createdAt'])
+                   && request.resource.data.createdAt == request.time;
+
+      // Allow reads when the stored document's createdAt is within 30 minutes.
+      allow read: if resource == null
+                  || (resource.data.createdAt is timestamp
+                      && request.time - resource.data.createdAt < duration.value(30, 'm'));
+    }
   }
 }

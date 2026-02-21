@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
+import { useBridgeSync } from './hooks/useBridgeSync';
 import QRHandler from './components/QRHandler';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
@@ -37,11 +39,32 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const initialize = useAuthStore((s) => s.initialize);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const unsubscribe = initialize();
     return () => unsubscribe();
   }, [initialize]);
+
+  const handleCartChanged = useCallback(
+    (newCartId: string) => {
+      console.log(' App: handleCartChanged called with', newCartId);
+      // Invalidate all cart-related queries so Queue re-fetches fresh data.
+      queryClient.invalidateQueries({ queryKey: ['queue-orders', newCartId] });
+      queryClient.invalidateQueries({ queryKey: ['cart-settings', newCartId] });
+      // Also fire a synthetic storage event so Queue.tsx sync() picks it up.
+      console.log(' App: Dispatching synthetic focus event');
+      window.dispatchEvent(new Event('focus'));
+    },
+    [queryClient],
+  );
+
+  const handleNoCart = useCallback(() => {
+    console.log(' App: handleNoCart called');
+    // Queue already renders <WelcomePage /> when cartId is null — nothing to do.
+  }, []);
+
+  useBridgeSync({ onCartChanged: handleCartChanged, onNoCart: handleNoCart });
 
   return (
     <Router>
