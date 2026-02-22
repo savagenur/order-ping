@@ -6,7 +6,7 @@ import * as admin from "firebase-admin";
 // import * as twilio from "twilio";
 
 // Import notification functions
-import { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications } from "./notifications";
+import { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications, cleanupUserOrderReference } from "./notifications";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -145,4 +145,4 @@ export const registerDeviceToken = onCall(
 );
 
 // Re-export notification functions
-export { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications };
+export { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications, cleanupUserOrderReference };

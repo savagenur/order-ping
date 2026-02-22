@@ -91,7 +91,6 @@ export const unsubscribeFromNotifications = onCall(
   },
   async (request) => {
     const data = request.data;
-    const context = request.auth ? { auth: request.auth } : { auth: null };
     
     // Allow both authenticated and anonymous users
 
@@ -281,9 +280,9 @@ export const sendOrderReadyNotification = onDocumentUpdated(
         data: {
           // Notification content
           title: `Order #${orderData.orderNumber} ${color} is Ready! 🎉 `,
-          body: orderData.customerName 
+          body:orderData.customerName 
             ? `${orderData.customerName}, your order is ready for pickup!` 
-            : `Order #${orderData.orderNumber} is ready for pickup!`,
+            : `Your order is ready! Please come to the counter for pickup. ✨`,
           // Order data
           orderId: String(orderId),
           orderNumber: String(orderData.orderNumber || ''),
@@ -350,5 +349,42 @@ export const sendOrderReadyNotification = onDocumentUpdated(
       
     }
     
+  }
+);
+
+export const cleanupUserOrderReference = onDocumentUpdated(
+  {
+    document: "orders/{orderId}",
+    region: "us-west1",
+  },
+  async (event) => {
+    const orderId = event.params.orderId;
+    const beforeData = event.data?.before?.data();
+    const orderData = event.data?.after?.data();
+
+    // Only process when status changes to "completed"
+    if (!orderData || !beforeData || beforeData.status === orderData.status) {
+      return;
+    }
+
+    if (orderData.status !== "completed" || beforeData?.status !== "ready") {
+      return;
+    }
+
+    const userId = orderData.userId;
+    if (!userId) {
+      return;
+    }
+
+    try {
+      // Clean up the user's selectedOrderId reference
+      await admin.firestore().collection('users').doc(userId).update({
+        selectedOrderId: admin.firestore.FieldValue.delete()
+      });
+      
+      console.log(`✅ [CLEANUP] Removed orderId ${orderId} from user ${userId}`);
+    } catch (error) {
+      console.error(`❌ [CLEANUP] Failed to cleanup user order reference:`, error);
+    }
   }
 );
