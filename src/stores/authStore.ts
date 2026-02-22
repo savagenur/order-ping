@@ -51,7 +51,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             loading: false,
           });
         } catch (error) {
-          console.error('Error getting token claims:', error);
           set({ user, loading: false });
         }
       } else {
@@ -71,7 +70,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const timeoutId = setTimeout(() => {
       const currentState = get();
       if (currentState.loading) {
-        console.warn('Auth loading timeout - forcing loading to false');
         set({ loading: false });
       }
     }, 10000); // 10 second timeout

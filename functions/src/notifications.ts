@@ -21,11 +21,6 @@ export const subscribeToNotifications = onCall(
     
     // Allow both authenticated and anonymous users
     // Optional: Log who is subscribing
-    if (context.auth) {
-      console.log(`Authenticated user ${context.auth.uid} subscribing to notifications`);
-    } else {
-      console.log('Anonymous user subscribing to notifications');
-    }
 
   const { orderId, fcmToken, userId } = data;
 
@@ -99,11 +94,6 @@ export const unsubscribeFromNotifications = onCall(
     const context = request.auth ? { auth: request.auth } : { auth: null };
     
     // Allow both authenticated and anonymous users
-    if (context.auth) {
-      console.log(`Authenticated user ${context.auth.uid} unsubscribing from notifications`);
-    } else {
-      console.log('Anonymous user unsubscribing from notifications');
-    }
 
     const { orderId, fcmToken } = data;
 
@@ -139,7 +129,6 @@ export const unsubscribeFromNotifications = onCall(
           isSubscribed: existingSubscribers.length > 1
         });
         
-        console.log(`Successfully unsubscribed token ${fcmToken} from order ${orderId}`);
         
         return {
           success: true,
@@ -147,7 +136,6 @@ export const unsubscribeFromNotifications = onCall(
         };
       } else {
         // Token not found in subscribers array
-        console.log(`Token ${fcmToken} not found in subscribers for order ${orderId}`);
         
         return {
           success: true,
@@ -177,10 +165,6 @@ export const sendOrderReadyNotificationDirect = onCall(
   async (request) => {
     const { orderData, userId, fcmToken } = request.data;
 
-    console.log(`[NOTIFY_DIRECT] ===== DIRECT NOTIFICATION REQUEST =====`);
-    console.log(`[NOTIFY_DIRECT] Order: ${orderData.orderNumber} (${orderData.id})`);
-    console.log(`[NOTIFY_DIRECT] User: ${userId}`);
-    console.log(`[NOTIFY_DIRECT] Token: ${fcmToken.substring(0, 20)}...`);
 
     if (!orderData || !userId || !fcmToken) {
       throw new functions.https.HttpsError(
@@ -220,26 +204,19 @@ export const sendOrderReadyNotificationDirect = onCall(
         }
       };
 
-      console.log(`[NOTIFY_DIRECT] Sending notification:`, JSON.stringify(message, null, 2));
 
       // Send the notification
-      const response = await admin.messaging().send(message);
+      await admin.messaging().send(message);
       
-      console.log(`[NOTIFY_DIRECT] ✅ Notification sent successfully!`);
-      console.log(`[NOTIFY_DIRECT] Response:`, JSON.stringify(response, null, 2));
 
       return { 
         success: true, 
-        messageId: response,
         message: "Notification sent successfully"
       };
 
     } catch (error) {
       console.error(`[NOTIFY_DIRECT] ❌ Error sending notification:`, error);
       
-      if (error instanceof Error) {
-        console.error(`[NOTIFY_DIRECT] Error details:`, error.message);
-      }
 
       throw new functions.https.HttpsError(
         "internal",
@@ -271,45 +248,30 @@ export const sendOrderReadyNotification = onDocumentUpdated(
     }
 
     // Add timestamp to track when notifications are actually sent
-    const timestamp = new Date().toISOString();
-    console.log(`[NOTIFY] ===== NOTIFICATION TRIGGERED =====`);
-    console.log(`[NOTIFY] Timestamp: ${timestamp}`);
-    console.log(`[NOTIFY] Event ID: ${event.id}`);
-    console.log(`[NOTIFY] Order ID: ${orderId}`);
-    console.log(`[NOTIFY] Status change: "${beforeData?.status}" → "${orderData?.status}"`);
 
     const userId = orderData.userId;
     
     if (!userId) {
-      console.log(`[NOTIFY] No userId in order ${orderId}, skipping`);
-      console.log(`[NOTIFY] Available fields in order:`, Object.keys(orderData || {}));
       return;
     }
 
-    console.log(`[NOTIFY] Processing notification for userId: ${userId}`);
 
     try {
       // 1. Get user document to find PWA FCM token
-      console.log(`[NOTIFY] Step 1: Fetching user document for userId: ${userId}`);
       const userDoc = await admin.firestore().collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
-        console.log(`[NOTIFY] User ${userId} not found in Firestore`);
         return;
       }
 
       const userData = userDoc.data();
-      console.log(`[NOTIFY] User document data:`, JSON.stringify(userData, null, 2));
 
       const targetToken = userData?.fcmToken;
 
       if (!targetToken) {
-        console.log(`[NOTIFY] User ${userId} has no FCM token (PWA not installed)`);
-        console.log(`[NOTIFY] User document fields:`, Object.keys(userData || {}));
         return;
       }
 
-      console.log(`[NOTIFY] Found PWA token for user ${userId}: ${targetToken.substring(0, 20)}...`);
 
       // 2. Build data-only message for PWA (no notification field to prevent duplicates)
       // The service worker will handle showing the notification with full customization
@@ -342,24 +304,15 @@ export const sendOrderReadyNotification = onDocumentUpdated(
         }
       };
 
-      console.log(`[NOTIFY] Step 2: Built notification message:`, JSON.stringify(message, null, 2));
 
       // 3. Send notification to PWA
-      console.log(`[NOTIFY] Step 3: Sending push notification to token: ${targetToken.substring(0, 20)}...`);
-      
-      const response = await admin.messaging().send(message);
-      console.log(`[NOTIFY] ✅ Push notification sent successfully to PWA!`);
-      console.log(`[NOTIFY] Firebase response:`, JSON.stringify(response, null, 2));
-      console.log(`[NOTIFY] Message ID: ${response}`);
+      await admin.messaging().send(message);
       
     } catch (error) {
-      console.error(`[NOTIFY] ❌ Error sending notification to PWA:`, error);
-      console.error(`[NOTIFY] Error details:`, JSON.stringify(error, null, 2));
       
       // Check for specific Firebase Messaging errors
       const messagingError = error as any;
       if (messagingError.code === 'messaging/registration-token-not-registered') {
-        console.log(`[NOTIFY] 🧹 Token is no longer registered, cleaning up stale token`);
         
         // Get the stale token from the user document before cleanup
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
@@ -370,9 +323,7 @@ export const sendOrderReadyNotification = onDocumentUpdated(
           await admin.firestore().collection('users').doc(userId).update({
             fcmToken: admin.firestore.FieldValue.delete()
           });
-          console.log(`[NOTIFY] ✅ Cleaned up stale token for user ${userId}`);
         } catch (cleanupError) {
-          console.error(`[NOTIFY] ❌ Failed to clean up stale token:`, cleanupError);
         }
         
         // Also remove from order subscribers if present
@@ -390,28 +341,14 @@ export const sendOrderReadyNotification = onDocumentUpdated(
                   subscribedCount: Math.max(0, subscribers.length - 1),
                   isSubscribed: subscribers.length > 1
                 });
-                console.log(`[NOTIFY] ✅ Removed stale subscriber from order ${orderId}`);
               }
             }
           } catch (orderCleanupError) {
-            console.error(`[NOTIFY] ❌ Failed to clean up order subscriber:`, orderCleanupError);
           }
         }
       }
       
-      // Log specific error types
-      if (error instanceof Error) {
-        console.error(`[NOTIFY] Error name: ${error.name}`);
-        console.error(`[NOTIFY] Error message: ${error.message}`);
-        console.error(`[NOTIFY] Error stack: ${error.stack}`);
-      }
-      
-      if (messagingError.code) {
-        console.error(`[NOTIFY] Firebase error code: ${messagingError.code}`);
-        console.error(`[NOTIFY] Firebase error info:`, messagingError.errorInfo);
-      }
     }
     
-    console.log(`[NOTIFY] ===== NOTIFICATION PROCESS COMPLETE =====`);
   }
 );

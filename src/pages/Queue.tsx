@@ -31,7 +31,6 @@ export default function Queue() {
   // Resolve cartId: always read from localStorage (QRHandler writes it before
   // redirecting here, so the URL is already clean by the time this renders).
   const initialCartId = localStorage.getItem(ACTIVE_CART_KEY);
-  console.log('🔍 Queue: Initial cartId from localStorage =', initialCartId);
   const [cartId, setCartId] = useState<string | null>(initialCartId);
 
   const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(null); // This will be controlled by cloud sync
@@ -49,7 +48,6 @@ export default function Queue() {
   useEffect(() => {
     if (currentUserId) {
       readSelectedOrder(currentUserId).then((cloudOrderId) => {
-        console.log('🔍 Queue: Selected order from cloud:', cloudOrderId);
         setPinnedOrderId(cloudOrderId); // pinned order always reflects cloud selection
       });
     }
@@ -57,7 +55,6 @@ export default function Queue() {
 
   // Handle real-time selected order changes from Safari/PWA sync
   const handleOrderChanged = useCallback((orderId: string | null) => {
-    console.log('🔍 Queue: Real-time selected order change from cloud:', orderId);
     setPinnedOrderId(orderId); // Update UI to match cloud state
   }, []);
 
@@ -74,17 +71,12 @@ export default function Queue() {
   // also poll on focus for the same-tab case).
   useEffect(() => {
     const sync = () => {
-      console.log('🔍 Queue: sync() triggered');
       const stored = localStorage.getItem(ACTIVE_CART_KEY);
-      console.log('🔍 Queue: localStorage cartId =', stored, 'current cartId =', cartId);
       
       setCartId((prev) => {
-        console.log('🔍 Queue: setCartId callback, prev =', prev, 'stored =', stored);
         if (prev !== stored) {
-          console.log('🔍 Queue: CartId changed, updating state');
           // Clear old query data when cartId changes
           if (prev) {
-            console.log('🔍 Queue: Invalidating queries for', prev);
             queryClient.invalidateQueries({ queryKey: ['queue-orders', prev] });
             queryClient.invalidateQueries({ queryKey: ['cart-settings', prev] });
           }
@@ -98,15 +90,12 @@ export default function Queue() {
           
           return stored;
         }
-        console.log('🔍 Queue: CartId unchanged, keeping current value');
         return prev;
       });
     };
-    console.log('🔍 Queue: Adding storage and focus listeners');
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
     return () => {
-      console.log('🔍 Queue: Removing listeners');
       window.removeEventListener('storage', sync);
       window.removeEventListener('focus', sync);
     };
@@ -157,7 +146,6 @@ export default function Queue() {
     // Debounce: prevent rapid clicks within 1 second
     const now = Date.now();
     if (now - lastClickTime < 1000) {
-      console.log(`🔔 [QUEUE] Click too rapid, skipping for ${orderId}`);
       return;
     }
     setLastClickTime(now);
@@ -173,7 +161,6 @@ export default function Queue() {
       
       // Prevent multiple subscription attempts in quick succession
       if (isSubscribing) {
-        console.log(`🔔 [QUEUE] Subscription already in progress, skipping for ${orderId}`);
         return;
       }
       
@@ -187,12 +174,9 @@ export default function Queue() {
         try {
           // IMPORTANT: First unsubscribe from previous order if it exists and is different
           if (lastSubscribedOrder && lastSubscribedOrder !== orderId) {
-            console.log(`🔔 [QUEUE] Unsubscribing from previous order: ${lastSubscribedOrder}`);
             try {
-              const unsubscribeResult = await unsubscribeFromOrderNotifications(lastSubscribedOrder);
-              console.log(`🔔 [QUEUE] Unsubscribe result:`, unsubscribeResult);
+              await unsubscribeFromOrderNotifications(lastSubscribedOrder);
             } catch (unsubError) {
-              console.error(`🔔 [QUEUE] Unsubscribe error caught:`, unsubError);
               // Continue even if unsubscribe fails
             }
             
@@ -201,22 +185,19 @@ export default function Queue() {
           }
           
           // Then subscribe to the new order
-          console.log(`🔔 [QUEUE] Subscribing to new order: ${orderId}`);
           const subscribeResult = await subscribeToOrderNotifications(orderId, currentUserId);
-          console.log(`🔔 [QUEUE] Subscribe result:`, subscribeResult);
           
           if (subscribeResult.success) {
             // Only update last subscribed order if subscription was successful
             setLastSubscribedOrder(orderId);
-            console.log(`🔔 [QUEUE] Successfully subscribed to order: ${orderId}`);
             
             // Store in localStorage to persist across page refreshes
             localStorage.setItem('orderping_last_subscribed', orderId);
           } else {
-            console.error(`🔔 [QUEUE] Failed to subscribe to order ${orderId}:`, subscribeResult.error);
+            // Subscription failed
           }
         } catch (error) {
-          console.error(`🔔 [QUEUE] Error in notification flow for ${orderId}:`, error);
+          // Error in notification flow
         } finally {
           // Always reset the subscribing flag
           setIsSubscribing(false);
@@ -258,15 +239,13 @@ export default function Queue() {
     return () => {
       // Only unsubscribe if we're switching to a different cart or unmounting
       if (lastSubscribedOrder) {
-        console.log(`🔔 [CLEANUP] Unsubscribing from ${lastSubscribedOrder}`);
         unsubscribeFromOrderNotifications(lastSubscribedOrder)
-          .then(result => {
-            console.log(`🔔 [CLEANUP] Unsubscribe result:`, result);
+          .then(() => {
             // Clear localStorage on successful unsubscribe
             localStorage.removeItem('orderping_last_subscribed');
           })
-          .catch(error => {
-            console.error(`🔔 [CLEANUP] Error unsubscribing:`, error);
+          .catch(() => {
+            // Error unsubscribing
           });
       }
     };
@@ -366,12 +345,9 @@ export default function Queue() {
             try {
               // IMPORTANT: First unsubscribe from previous order if it exists and is different
               if (lastSubscribedOrder && lastSubscribedOrder !== selectedOrder) {
-                console.log(`🔔 [MODAL] Unsubscribing from previous order: ${lastSubscribedOrder}`);
                 try {
-                  const unsubscribeResult = await unsubscribeFromOrderNotifications(lastSubscribedOrder);
-                  console.log(`🔔 [MODAL] Unsubscribe result:`, unsubscribeResult);
+                  await unsubscribeFromOrderNotifications(lastSubscribedOrder);
                 } catch (unsubError) {
-                  console.error(`🔔 [MODAL] Unsubscribe error caught:`, unsubError);
                   // Continue even if unsubscribe fails
                 }
                 
@@ -380,35 +356,29 @@ export default function Queue() {
               }
               
               // Request permission first - this will show the browser dialog if needed
-              console.log(`🔔 [MODAL] Requesting notification permission`);
               const permissionResult = await requestNotificationPermission(currentUserId);
               
               if (!permissionResult.success) {
-                console.error(`🔔 [MODAL] Permission failed:`, permissionResult.error);
                 // Throw error so modal can catch it and show error state
                 throw new Error(permissionResult.error || 'Permission denied');
               }
               
-              console.log(`🔔 [MODAL] Permission granted, now subscribing to order`);
               
               // Then subscribe to the new order (permission already granted, so no dialog)
               const subscribeResult = await subscribeToOrderNotifications(selectedOrder, currentUserId);
-              console.log(`🔔 [MODAL] Subscribe result:`, subscribeResult);
               
               if (subscribeResult.success) {
                 // Only update last subscribed order if subscription was successful
                 setLastSubscribedOrder(selectedOrder);
-                console.log(`🔔 [MODAL] Successfully subscribed to order: ${selectedOrder}`);
                 
                 // Store in localStorage to persist across page refreshes
                 localStorage.setItem('orderping_last_subscribed', selectedOrder);
               } else {
-                console.error(`🔔 [MODAL] Failed to subscribe to order ${selectedOrder}:`, subscribeResult.error);
                 // Throw error so modal can show error state
                 throw new Error(subscribeResult.error || 'Subscription failed');
               }
             } catch (error) {
-              console.error(`🔔 [MODAL] Error in notification flow for ${selectedOrder}:`, error);
+              // Error in notification flow
             } finally {
               // Always reset the subscribing flag
               setIsSubscribing(false);
