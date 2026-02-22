@@ -64,8 +64,12 @@ function App() {
   const userId = getOrCreateUserId();
 
   // Real-time listener on /users/{userId}: fires whenever Safari writes a new
-  // currentCartId (QR scan), instantly updating the PWA queue view.
-  useUserSync({ userId, onCartChanged: handleCartChanged });
+  // currentCartId (QR scan) or selectedOrderId changes, instantly updating the PWA.
+  useUserSync({ 
+    userId, 
+    onCartChanged: handleCartChanged
+    // onOrderChanged is handled by Queue component directly
+  });
 
   return (
     <Router>

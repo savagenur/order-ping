@@ -21,6 +21,7 @@ import { db } from './firebase';
 export interface UserDoc {
   currentCartId: string;
   fcmToken?: string;
+  selectedOrderId?: string;
   lastActive: { toMillis: () => number } | null;
 }
 
@@ -89,17 +90,64 @@ export async function writeUserFcmToken(
 }
 
 /**
+ * Write the selected order ID to the user document.
+ * Called when user pins/selects an order for notifications.
+ */
+export async function writeSelectedOrder(
+  userId: string,
+  orderId: string,
+): Promise<void> {
+  console.log('👤 [USER_SYNC] Writing selected order:', userId, 'orderId:', orderId);
+  const ref = doc(db, 'users', userId);
+  await setDoc(
+    ref,
+    {
+      selectedOrderId: orderId,
+      lastActive: serverTimestamp(),
+    },
+    { merge: true },
+  );
+  console.log('👤 [USER_SYNC] Selected order written');
+}
+
+/**
+ * One-time read of the selected order ID.
+ * Returns the selectedOrderId or null if missing/not found.
+ */
+export async function readSelectedOrder(userId: string): Promise<string | null> {
+  console.log('👤 [USER_SYNC] Reading selected order for userId:', userId);
+  try {
+    const ref = doc(db, 'users', userId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      console.log('👤 [USER_SYNC] No user doc found');
+      return null;
+    }
+    const data = snap.data() as UserDoc;
+    const selectedOrderId = data.selectedOrderId ?? null;
+    console.log('👤 [USER_SYNC] Got selectedOrderId:', selectedOrderId);
+    return selectedOrderId;
+  } catch (error) {
+    console.error('👤 [USER_SYNC] Read selected order failed:', error);
+    return null;
+  }
+}
+
+/**
  * Subscribe to real-time changes on /users/{userId}.
  * Calls onCartChanged whenever currentCartId changes.
+ * Calls onOrderChanged whenever selectedOrderId changes.
  * Returns the unsubscribe function.
  */
 export function subscribeUserDoc(
   userId: string,
   onCartChanged: (cartId: string) => void,
+  onOrderChanged?: (orderId: string | null) => void,
 ): Unsubscribe {
   console.log('👤 [USER_SYNC] Subscribing to user doc:', userId);
   const ref = doc(db, 'users', userId);
   let lastKnownCartId: string | null = null;
+  let lastKnownOrderId: string | null = null;
 
   return onSnapshot(
     ref,
@@ -110,11 +158,17 @@ export function subscribeUserDoc(
       }
       const data = snap.data() as UserDoc;
       const cartId = data.currentCartId ?? null;
-      console.log('👤 [USER_SYNC] Snapshot received, currentCartId:', cartId);
+      const orderId = data.selectedOrderId ?? null;
+      console.log('👤 [USER_SYNC] Snapshot received, currentCartId:', cartId, 'selectedOrderId:', orderId);
 
       if (cartId && cartId !== lastKnownCartId) {
         lastKnownCartId = cartId;
         onCartChanged(cartId);
+      }
+
+      if (onOrderChanged && orderId !== lastKnownOrderId) {
+        lastKnownOrderId = orderId;
+        onOrderChanged(orderId);
       }
     },
     (error) => {

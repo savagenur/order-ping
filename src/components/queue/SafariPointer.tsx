@@ -96,10 +96,10 @@ export default function SafariPointer({ isVisible }: SafariPointerProps) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.3 }}
-            className="bg-amber-500 border border-amber-600 rounded-lg px-3 py-2 mb-3 shadow-lg"
-            style={{ backgroundColor: '#F59E0B' }}
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 mb-3 shadow-lg"
+            style={{ backgroundColor: '#F3F4F6' }}
           >
-            <p className="text-xs font-medium text-white">
+            <p className="text-xs font-medium text-gray-700">
               Tap Share to install
             </p>
           </motion.div>
@@ -127,8 +127,8 @@ export default function SafariPointer({ isVisible }: SafariPointerProps) {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute inset-0 bg-amber-500 rounded-full"
-              style={{ backgroundColor: '#F59E0B' }}
+              className="absolute inset-0 bg-gray-400 rounded-full"
+              style={{ backgroundColor: '#9CA3AF' }}
             />
             
             {/* Second ping ring for enhanced effect */}
@@ -143,12 +143,12 @@ export default function SafariPointer({ isVisible }: SafariPointerProps) {
                 ease: "easeInOut",
                 delay: 0.5
               }}
-              className="absolute inset-0 bg-amber-400 rounded-full"
-              style={{ backgroundColor: '#F59E0B' }}
+              className="absolute inset-0 bg-gray-300 rounded-full"
+              style={{ backgroundColor: '#D1D5DB' }}
             />
             
             {/* Arrow icon */}
-            <div className="relative bg-amber-500 rounded-full p-2 shadow-lg border-2 border-amber-600" style={{ backgroundColor: '#F59E0B' }}>
+            <div className="relative bg-gray-500 rounded-full p-2 shadow-lg border-2 border-gray-600 pr-8" style={{ backgroundColor: '#6B7280', paddingRight: '30px' }}>
               <ChevronDown className="w-5 h-5 text-white" />
             </div>
           </motion.div>

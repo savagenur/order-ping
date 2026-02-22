@@ -15,12 +15,15 @@ import { readUserDoc, subscribeUserDoc } from '../lib/userSync';
 interface UseUserSyncOptions {
   userId: string | null;
   onCartChanged: (cartId: string) => void;
+  onOrderChanged?: (orderId: string | null) => void;
 }
 
-export function useUserSync({ userId, onCartChanged }: UseUserSyncOptions) {
+export function useUserSync({ userId, onCartChanged, onOrderChanged }: UseUserSyncOptions) {
   const onCartChangedRef = useRef(onCartChanged);
+  const onOrderChangedRef = useRef(onOrderChanged);
   useLayoutEffect(() => {
     onCartChangedRef.current = onCartChanged;
+    onOrderChangedRef.current = onOrderChanged;
   });
 
   useEffect(() => {
@@ -38,15 +41,22 @@ export function useUserSync({ userId, onCartChanged }: UseUserSyncOptions) {
       });
     }
 
-    // Real-time listener: fires on every currentCartId change.
-    const unsubscribe = subscribeUserDoc(userId, (cartId) => {
-      const current = localStorage.getItem(ACTIVE_CART_KEY);
-      if (cartId !== current) {
-        console.log('👤 [USER_SYNC] Real-time: cartId changed to', cartId);
-        localStorage.setItem(ACTIVE_CART_KEY, cartId);
-        onCartChangedRef.current(cartId);
-      }
-    });
+    // Real-time listener: fires on every currentCartId or selectedOrderId change.
+    const unsubscribe = subscribeUserDoc(
+      userId,
+      (cartId) => {
+        const current = localStorage.getItem(ACTIVE_CART_KEY);
+        if (cartId !== current) {
+          console.log('👤 [USER_SYNC] Real-time: cartId changed to', cartId);
+          localStorage.setItem(ACTIVE_CART_KEY, cartId);
+          onCartChangedRef.current(cartId);
+        }
+      },
+      (orderId) => {
+        console.log('👤 [USER_SYNC] Real-time: selectedOrderId changed to', orderId);
+        onOrderChangedRef.current?.(orderId);
+      },
+    );
 
     return () => unsubscribe();
   }, [userId]);

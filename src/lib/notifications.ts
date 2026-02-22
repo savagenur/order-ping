@@ -91,7 +91,7 @@ export function clearCachedFCMToken(): void {
 /**
  * Request notification permission and get FCM token
  */
-export async function requestNotificationPermission(): Promise<NotificationSubscriptionResult> {
+export async function requestNotificationPermission(userId?: string): Promise<NotificationSubscriptionResult> {
   try {
     // Check if notifications are supported
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
@@ -122,14 +122,46 @@ export async function requestNotificationPermission(): Promise<NotificationSubsc
       }
     }
 
-    // Get cached FCM token
-    const token = await getCachedFCMToken();
+    // Get cached FCM token with potential force refresh if stale
+    let token = await getCachedFCMToken();
+    
+    // If we have a userId but no token in Firestore, force refresh
+    if (userId && token) {
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('./firebase');
+        
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        const userData = userDoc.data();
+        const firestoreToken = userData?.fcmToken;
+        
+        // If token in localStorage doesn't match Firestore, or Firestore has no token, force refresh
+        if (!firestoreToken || firestoreToken !== token) {
+          console.log('🔔 [PERMISSION] Token mismatch detected, force refreshing token');
+          token = await getCachedFCMToken(true); // Force refresh
+        }
+      } catch (checkError) {
+        console.warn('🔔 [PERMISSION] Could not verify token freshness:', checkError);
+      }
+    }
 
     if (!token) {
       return {
         success: false,
         error: 'Failed to get notification token. Please ensure you have a stable internet connection and try again.'
       };
+    }
+
+    // Save FCM token to user document if userId is provided
+    if (userId && token) {
+      try {
+        console.log('🔔 [PERMISSION] Saving FCM token to user document for userId:', userId);
+        await writeUserFcmToken(userId, token);
+        console.log('🔔 [PERMISSION] FCM token saved to user document successfully');
+      } catch (error) {
+        console.error('🔔 [PERMISSION] Failed to save FCM token to user document:', error);
+        // Don't fail the permission request if token save fails, just log it
+      }
     }
 
     return {
@@ -231,7 +263,8 @@ export async function subscribeToOrderNotifications(
     console.log(`🔔 [SUBSCRIBE] Starting subscription for order: ${orderId}`);
     
     // Step 1: Request permission and get token (uses cached token)
-    const permissionResult = await requestNotificationPermission();
+    // This also saves the FCM token to user document if userId is provided
+    const permissionResult = await requestNotificationPermission(userId);
     
     if (!permissionResult.success || !permissionResult.token) {
       console.error(`🔔 [SUBSCRIBE] Permission failed:`, permissionResult.error);
@@ -424,6 +457,148 @@ export function isPWA(): boolean {
  */
 export function isIOSSafari(): boolean {
   return isIOS() && !isPWA();
+}
+
+/**
+ * Setup periodic token refresh check for PWA users
+ * Since onTokenRefresh is not available in new Firebase SDK, we'll check periodically
+ */
+export async function setupTokenRefreshListener(userId: string): Promise<void> {
+  console.log('🔔 [TOKEN_REFRESH] Setting up periodic token refresh check');
+  
+  // Check token every 24 hours to ensure it's still valid
+  const checkTokenInterval = setInterval(async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const { getToken, getMessaging } = await import('firebase/messaging');
+      
+      const messaging = getMessaging();
+      const currentToken = await getToken(messaging, {
+        vapidKey: "BEe09hbvQNef0u4fgmfMN_pRuhFsGY9W9QQQyR5OYs-YcriXv7O4dR1YSWa1kGo05aZR0IbdxTDHF9gMX5bqeaI",
+        serviceWorkerRegistration: registration
+      });
+      
+      const storedToken = localStorage.getItem('orderping_fcm_token');
+      
+      if (currentToken && currentToken !== storedToken) {
+        console.log('🔔 [TOKEN_REFRESH] Token changed, updating Firestore');
+        localStorage.setItem('orderping_fcm_token', currentToken);
+        await writeUserFcmToken(userId, currentToken);
+      }
+    } catch (error) {
+      console.error('🔔 [TOKEN_REFRESH] Failed to check token:', error);
+    }
+  }, 24 * 60 * 60 * 1000); // 24 hours
+  
+  // Store interval ID for cleanup
+  (window as Window & { _tokenRefreshInterval?: number })._tokenRefreshInterval = checkTokenInterval;
+}
+
+/**
+ * Generate and register FCM token for PWA users
+ * Only called after user interaction (not automatically on load)
+ */
+export async function generateAndRegisterFCMToken(userId: string): Promise<NotificationSubscriptionResult> {
+  try {
+    // Only proceed if in standalone PWA mode
+    if (!isPWA()) {
+      return {
+        success: false,
+        error: 'Push notifications are only available in the installed app.'
+      };
+    }
+
+    console.log('🔔 [TOKEN_GEN] Starting FCM token generation for userId:', userId);
+
+    // Check if notifications are supported
+    if (!isNotificationSupported()) {
+      return {
+        success: false,
+        error: 'Notifications are not supported in your browser. Please try a modern browser.'
+      };
+    }
+
+    // Check current permission status
+    const currentPermission = Notification.permission;
+    if (currentPermission === 'denied') {
+      return {
+        success: false,
+        error: 'Notification permission was previously denied. Please enable notifications in your browser settings.'
+      };
+    }
+
+    // Request permission if not granted
+    let permission: NotificationPermission = currentPermission;
+    if (permission === 'default') {
+      console.log('🔔 [TOKEN_GEN] Requesting notification permission');
+      permission = await Notification.requestPermission();
+      
+      if (permission !== 'granted') {
+        return {
+          success: false,
+          error: 'Notification permission denied. Please enable notifications in your browser settings.'
+        };
+      }
+    }
+
+    // Generate FCM token
+    const registration = await navigator.serviceWorker.ready;
+    const { getToken, getMessaging } = await import('firebase/messaging');
+    
+    const messaging = getMessaging();
+    const token = await getToken(messaging, {
+      vapidKey: "BEe09hbvQNef0u4fgmfMN_pRuhFsGY9W9QQQyR5OYs-YcriXv7O4dR1YSWa1kGo05aZR0IbdxTDHF9gMX5bqeaI",
+      serviceWorkerRegistration: registration
+    });
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Failed to generate notification token. Please ensure you have a stable internet connection and try again.'
+      };
+    }
+
+    console.log('🔔 [TOKEN_GEN] FCM token generated successfully');
+
+    // Immediately save token to Firestore
+    await writeUserFcmToken(userId, token);
+    console.log('🔔 [TOKEN_GEN] Token saved to Firestore for userId:', userId);
+
+    // Cache token locally
+    localStorage.setItem('orderping_fcm_token', token);
+
+    // Setup token refresh listener after successful token generation
+    await setupTokenRefreshListener(userId);
+
+    return {
+      success: true,
+      token
+    };
+
+  } catch (error) {
+    console.error('🔔 [TOKEN_GEN] Error generating FCM token:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('push service error')) {
+        return {
+          success: false,
+          error: 'Push service registration failed. This might be due to browser restrictions or network issues.'
+        };
+      }
+      
+      if (error.message.includes('AbortError')) {
+        return {
+          success: false,
+          error: 'Token generation was aborted. Please try again.'
+        };
+      }
+    }
+    
+    return {
+      success: false,
+      error: 'Failed to generate notification token. Please check your internet connection and try again.'
+    };
+  }
 }
 
 /**

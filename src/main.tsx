@@ -9,10 +9,7 @@ import {
   injectUserIdIntoUrl,
   isStandalone,
 } from "./lib/pwaUtils";
-import {
-  requestNotificationPermission,
-  registerDeviceToken,
-} from "./lib/notifications";
+import { setupTokenRefreshListener } from "./lib/notifications";
 
 // ─── 1. User ID Bootstrap ────────────────────────────────────────────────────
 // Resolve userId (URL → localStorage → new UUID). Only inject into URL on
@@ -57,24 +54,12 @@ if ("serviceWorker" in navigator) {
 
       // ─── 3. PWA Auto Push Registration ──────────────────────────────────
       // When launched in standalone (PWA) mode, immediately register for push
-      // notifications and map the fcmToken to this userId in /device_tokens.
+      // Setup token refresh listener for PWA - handles automatic token updates
       if (isStandalone()) {
         console.log(
-          "👤 [BOOTSTRAP] Standalone PWA detected — auto-registering push",
+          "👤 [BOOTSTRAP] Standalone PWA detected — setting up token refresh listener",
         );
-        requestNotificationPermission().then((result) => {
-          if (result.success) {
-            console.log(
-              "👤 [BOOTSTRAP] Push permission granted, registering device token",
-            );
-            registerDeviceToken(currentUserId);
-          } else {
-            console.log(
-              "👤 [BOOTSTRAP] Push permission not granted:",
-              result.error,
-            );
-          }
-        });
+        setupTokenRefreshListener(currentUserId);
       }
     })
     .catch((error) => {

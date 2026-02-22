@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useQueueOrders } from "../hooks/useQueueOrders";
 import { useCartSettings } from "../hooks/useCartSettings";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,15 +13,18 @@ import ReadyOrders from "../components/queue/ReadyOrders";
 import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
-import { getNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
+import { getNotificationPermission, requestNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
 import { ACTIVE_CART_KEY, USER_ID_KEY } from "../lib/pwaUtils";
+import { writeSelectedOrder, readSelectedOrder } from "../lib/userSync";
+import { useUserSync } from "../hooks/useUserSync";
 
-const PINNED_KEY = "orderping_pinned_order";
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
+const SESSION_NOTIFICATION_SHOWN_KEY = "orderping_session_notification_shown";
 const BRAND_URL = "/about";
-const currentUserId = localStorage.getItem(USER_ID_KEY) ?? undefined;
 
 export default function Queue() {
+  const currentUserIdRef = useRef<string | undefined>(localStorage.getItem(USER_ID_KEY) ?? undefined);
+  const currentUserId = currentUserIdRef.current;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -30,9 +34,7 @@ export default function Queue() {
   console.log('🔍 Queue: Initial cartId from localStorage =', initialCartId);
   const [cartId, setCartId] = useState<string | null>(initialCartId);
 
-  const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(() =>
-    localStorage.getItem(PINNED_KEY),
-  );
+  const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(null); // This will be controlled by cloud sync
 
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -42,6 +44,29 @@ export default function Queue() {
   });
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
+
+  // Bootstrap and sync selected order from cloud - this is the single source of truth
+  useEffect(() => {
+    if (currentUserId) {
+      readSelectedOrder(currentUserId).then((cloudOrderId) => {
+        console.log('🔍 Queue: Selected order from cloud:', cloudOrderId);
+        setPinnedOrderId(cloudOrderId); // pinned order always reflects cloud selection
+      });
+    }
+  }, []); // currentUserId is a ref-like value, not a dependency
+
+  // Handle real-time selected order changes from Safari/PWA sync
+  const handleOrderChanged = useCallback((orderId: string | null) => {
+    console.log('🔍 Queue: Real-time selected order change from cloud:', orderId);
+    setPinnedOrderId(orderId); // Update UI to match cloud state
+  }, []);
+
+  // Subscribe to order changes from cloud
+  useUserSync({ 
+    userId: currentUserId || null, 
+    onCartChanged: () => {}, // Cart changes handled by App-level useUserSync
+    onOrderChanged: handleOrderChanged 
+  });
 
 
   // Keep cartId in sync if localStorage changes in another tab or after a
@@ -64,9 +89,10 @@ export default function Queue() {
             queryClient.invalidateQueries({ queryKey: ['cart-settings', prev] });
           }
           
-          // Clear state when switching carts
-          setPinnedOrderId(null);
-          localStorage.removeItem(PINNED_KEY);
+          // Clear selection in cloud when switching carts
+          if (currentUserId) {
+            writeSelectedOrder(currentUserId, '').catch(console.error);
+          }
           setShowAuthModal(false);
           setSelectedOrder(null);
           
@@ -117,9 +143,11 @@ export default function Queue() {
   }, [pinnedOrderId, pinnedOrder, isLoading, allOrders.length]);
 
   const handleClearPinned = useCallback(() => {
-    setPinnedOrderId(null);
-    localStorage.removeItem(PINNED_KEY);
-  }, []);
+    // Clear selection by writing empty string to cloud
+    if (currentUserId) {
+      writeSelectedOrder(currentUserId, '').catch(console.error);
+    }
+  }, []); // currentUserId is ref-like, not a dependency
 
   const handleCardClick = useCallback(async (orderId: string) => {
     const order = allOrders.find(o => o.id === orderId);
@@ -134,9 +162,10 @@ export default function Queue() {
     }
     setLastClickTime(now);
     
-    // Still allow normal order selection for all orders
-    setPinnedOrderId(orderId);
-    localStorage.setItem(PINNED_KEY, orderId);
+    // Always write selection to cloud - UI will update via real-time sync
+    if (currentUserId) {
+      writeSelectedOrder(currentUserId, orderId).catch(console.error);
+    }
     
     // Check if order status is "preparing" (pending in current codebase)
     if (order.status === 'pending') {
@@ -193,9 +222,15 @@ export default function Queue() {
           setIsSubscribing(false);
         }
       } else if (permission === 'default') {
-        // Check if user has previously dismissed the notification modal
+        // Check if notification has already been shown in this session
+        const sessionNotificationShown = sessionStorage.getItem(SESSION_NOTIFICATION_SHOWN_KEY);
+        // Check if user has previously dismissed the notification modal for this specific order
         const modalDismissed = sessionStorage.getItem(`${NOTIFICATION_SHOWN_KEY}_${orderId}_dismissed`);
-        if (!modalDismissed) {
+        
+        // Only show modal if: 1) Not shown in current session AND 2) Not dismissed for this specific order
+        if (!sessionNotificationShown && !modalDismissed) {
+          // Mark that notification has been shown in this session
+          sessionStorage.setItem(SESSION_NOTIFICATION_SHOWN_KEY, 'true');
           // Show modal to ask for permission
           setTimeout(() => {
             setShowAuthModal(true);
@@ -249,6 +284,40 @@ export default function Queue() {
   return (
     <div className="min-h-screen min-w-screen bg-zinc-950 pt-16 pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <QueueHeader cartName={cartName} />
+
+      {/* Contextual hint - shows only when no order is selected */}
+      {!pinnedOrderId && (
+        <motion.div
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-4 mt-4 mb-6"
+        >
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-500/20 via-purple-500/15 to-blue-600/20 border border-blue-400/40 rounded-2xl px-6 py-4 shadow-lg shadow-blue-500/10">
+            {/* Animated gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
+            
+            {/* Content */}
+            <div className="relative">
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="flex items-center justify-center gap-3"
+              >
+                <img 
+                  src="/pointer.svg" 
+                  alt="Pointer" 
+                  className="w-8 h-8 drop-shadow-lg"
+                />
+                <p className="text-blue-200 font-semibold text-base tracking-wide">
+                  Select your order to get notified when it's ready
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <PinnedOrder order={pinnedOrder} onClear={handleClearPinned} queuePosition={queuePosition} />
 
@@ -310,8 +379,19 @@ export default function Queue() {
                 await new Promise(resolve => setTimeout(resolve, 500));
               }
               
-              // Then subscribe to the new order
-              console.log(`🔔 [MODAL] Subscribing to new order: ${selectedOrder}`);
+              // Request permission first - this will show the browser dialog if needed
+              console.log(`🔔 [MODAL] Requesting notification permission`);
+              const permissionResult = await requestNotificationPermission(currentUserId);
+              
+              if (!permissionResult.success) {
+                console.error(`🔔 [MODAL] Permission failed:`, permissionResult.error);
+                // Throw error so modal can catch it and show error state
+                throw new Error(permissionResult.error || 'Permission denied');
+              }
+              
+              console.log(`🔔 [MODAL] Permission granted, now subscribing to order`);
+              
+              // Then subscribe to the new order (permission already granted, so no dialog)
               const subscribeResult = await subscribeToOrderNotifications(selectedOrder, currentUserId);
               console.log(`🔔 [MODAL] Subscribe result:`, subscribeResult);
               
@@ -324,6 +404,8 @@ export default function Queue() {
                 localStorage.setItem('orderping_last_subscribed', selectedOrder);
               } else {
                 console.error(`🔔 [MODAL] Failed to subscribe to order ${selectedOrder}:`, subscribeResult.error);
+                // Throw error so modal can show error state
+                throw new Error(subscribeResult.error || 'Subscription failed');
               }
             } catch (error) {
               console.error(`🔔 [MODAL] Error in notification flow for ${selectedOrder}:`, error);

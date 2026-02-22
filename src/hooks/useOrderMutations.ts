@@ -6,10 +6,35 @@ import {
   doc,
   Timestamp,
   writeBatch,
+  query,
+  where,
+  getDocs,
+  limit,
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { getNextOrderNumber } from '../types/orderUtils';
 import type { Order, OrderInput } from '../types/order';
+
+async function getCustomerUserIdForCart(cartId: string): Promise<string | null> {
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('currentCartId', '==', cartId),
+      limit(1),
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const userId = snap.docs[0].id;
+      console.log(`[ORDER] Found customer userId for cart ${cartId}:`, userId);
+      return userId;
+    }
+    console.log(`[ORDER] No customer found for cart ${cartId}`);
+    return null;
+  } catch (err) {
+    console.error('[ORDER] Failed to lookup customer userId:', err);
+    return null;
+  }
+}
 
 export function useAddOrder() {
   return useMutation({
@@ -19,6 +44,7 @@ export function useAddOrder() {
       cartName: string;
     }) => {
       const orderNumber = await getNextOrderNumber(input.cartId);
+      const customerUserId = await getCustomerUserIdForCart(input.cartId);
 
       await addDoc(collection(db, 'orders'), {
         orderNumber,
@@ -28,6 +54,7 @@ export function useAddOrder() {
         status: 'pending',
         cartId: input.cartId,
         cartName: input.cartName,
+        userId: customerUserId, // Customer's userId for PWA notification lookup
         createdAt: Timestamp.now(),
       });
     },
@@ -42,6 +69,8 @@ export function useAddNumpadOrder() {
       cartId: string;
       cartName: string;
     }) => {
+      const customerUserId = await getCustomerUserIdForCart(input.cartId);
+
       await addDoc(collection(db, 'orders'), {
         orderNumber: input.orderNumber,
         customerName: '',
@@ -51,6 +80,7 @@ export function useAddNumpadOrder() {
         status: 'pending',
         cartId: input.cartId,
         cartName: input.cartName,
+        userId: customerUserId, // Customer's userId for PWA notification lookup
         createdAt: Timestamp.now(),
       });
     },

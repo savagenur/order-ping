@@ -1,13 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Bell, CheckCircle, PlusSquare, Share2, Smartphone, X } from "lucide-react";
 import { useState } from "react";
-import { isNotificationSupported, subscribeToOrderNotifications } from "../../lib/notifications";
 import SafariPointer from "./SafariPointer";
 
 interface NotificationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onNotify: () => void;
+  onNotify: () => Promise<void>;
   orderId: string | null;
 }
 
@@ -43,29 +42,32 @@ export default function NotificationModal({ isOpen, onClose, onNotify, orderId }
     setError(null);
     
     try {
-      if (!isNotificationSupported()) {
-        setError('Notifications are not supported in your browser. Please try a modern browser.');
-        return;
-      }
-
-      const result = await subscribeToOrderNotifications(orderId);
+      // Wait for onNotify to complete (includes browser dialog and permission)
+      await onNotify();
       
-      if (result.success) {
-        setSuccess(true);
-        onNotify();
-        
+      // Only show success if permission was granted
+      // The onNotify function will throw an error or handle denial internally
+      setSuccess(true);
+      
+      setTimeout(() => {
+        onClose();
         setTimeout(() => {
-          onClose();
-          setTimeout(() => {
-            setSuccess(false);
-            setError(null);
-          }, 300);
-        }, 1800);
-      } else {
-        setError(result.error || 'Failed to enable notifications.');
-      }
+          setSuccess(false);
+          setError(null);
+        }, 300);
+      }, 1800);
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      // If permission was denied or error occurred, show error and close modal
+      setError('Notification permission was denied. You can enable notifications in your browser settings.');
+      
+      // Close modal after showing error briefly
+      setTimeout(() => {
+        onClose();
+        setTimeout(() => {
+          setSuccess(false);
+          setError(null);
+        }, 300);
+      }, 2500);
     } finally {
       setIsLoading(false);
     }

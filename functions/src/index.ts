@@ -1,4 +1,3 @@
-import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 // TODO: Uncomment when ready to use Twilio
@@ -28,57 +27,7 @@ admin.initializeApp();
 // }
 
 /**
- * 1. Send SMS when order is READY
- */
-export const sendOrderReadySMS = onDocumentUpdated(
-  {
-    document: "orders/{orderId}",
-    region: "us-west1",
-    // secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
-  },
-  async (event) => {
-    const newData = event.data?.after.data();
-    const previousData = event.data?.before.data();
-
-    if (!newData || !previousData) return null;
-
-    if (newData.status === "ready" && previousData.status !== "ready") {
-      // try {
-      //   const client = twilio.default(
-      //     twilioAccountSid.value(),
-      //     twilioAuthToken.value(),
-      //   );
-      //   const formattedPhone = toE164(newData.phoneNumber);
-
-      //   const message = newData.orderNumber
-      //     ? `Hi ${newData.customerName}! Order #${newData.orderNumber} is ready at ${newData.cartName || "the cart"}! 🎉`
-      //     : `Hi ${newData.customerName}! Your order is ready for pickup! 🎉`;
-
-      //   const result = await client.messages.create({
-      //     body: message,
-      //     from: twilioPhoneNumber.value(),
-      //     to: formattedPhone,
-      //   });
-
-      //   await event.data?.after.ref.update({
-      //     smsSent: true,
-      //     smsSentAt: admin.firestore.FieldValue.serverTimestamp(),
-      //     smsId: result.sid,
-      //   });
-      // } catch (error: any) {
-      //   console.error("SMS Error:", error.message);
-      //   await event.data?.after.ref.update({
-      //     smsSent: false,
-      //     smsError: error.message,
-      //   });
-      // }
-    }
-    return null;
-  },
-);
-
-/**
- * 2. Scheduled Cleanup (Daily at 2 AM)
+ * 1. Scheduled Cleanup (Daily at 2 AM)
  */
 export const cleanupOldOrders = onSchedule(
   {

@@ -34,7 +34,6 @@ try {
       const title = payload.data?.title;
       const body = payload.data?.body;
       
-      
       const notificationTitle = title || payload.notification?.title || 'OrderPing';
       const notificationOptions = {
         body: body || payload.notification?.body || 'Your order status has been updated.',
@@ -43,7 +42,8 @@ try {
         tag: payload.data?.tag || payload.data?.orderId || 'order-update',
         renotify: payload.data?.renotify === 'true',
         requireInteraction: payload.data?.requireInteraction === 'true',
-        actions: [
+        // Parse actions from JSON string if provided
+        actions: payload.data?.actions ? JSON.parse(payload.data.actions) : [
           {
             action: 'view-order',
             title: 'View Order'
@@ -58,20 +58,19 @@ try {
           orderNumber: payload.data?.orderNumber,
           customerName: payload.data?.customerName,
           cartName: payload.data?.cartName,
-          type: payload.data?.type || 'order_ready'
+          type: payload.data?.type || 'order_ready',
+          cartId: payload.data?.cartName // Use cartName for navigation
         }
       };
 
-
-      // Show the notification
-      console.log('🎯 Showing notification:', notificationTitle, notificationOptions);
+      console.log('🎯 Showing enhanced notification:', notificationTitle, notificationOptions);
       
       try {
         const notificationResult = self.registration.showNotification(notificationTitle, notificationOptions);
-        console.log('✅ Notification show result:', notificationResult);
+        console.log('✅ Enhanced notification show result:', notificationResult);
         return notificationResult;
       } catch (error) {
-        console.error('❌ Error showing notification:', error);
+        console.error('❌ Error showing enhanced notification:', error);
         throw error;
       }
     });
@@ -88,6 +87,8 @@ try {
 
 // Handle notification clicks (works even if Firebase fails)
 self.addEventListener('notificationclick', (event) => {
+  console.log('🔔 Notification clicked:', event);
+  console.log('📊 Notification data:', event.notification.data);
 
   event.notification.close();
 
@@ -95,9 +96,21 @@ self.addEventListener('notificationclick', (event) => {
   if (event.action === 'view-order') {
     // Open the app to the cart queue
     const cartId = event.notification.data?.cartId;
+    const orderId = event.notification.data?.orderId;
     
-    // Build URL with cart parameter only
-    const urlToOpen = cartId ? `/?cart=${cartId}` : '/';
+    console.log('🎯 Opening app with cartId:', cartId, 'orderId:', orderId);
+    
+    // Build URL with cart parameter
+    let urlToOpen = '/';
+    if (cartId) {
+      urlToOpen = `/?cart=${cartId}`;
+      // If we have an orderId, we could also scroll to that order
+      if (orderId) {
+        urlToOpen += `#order-${orderId}`;
+      }
+    }
+    
+    console.log('🚀 Opening URL:', urlToOpen);
     
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -105,29 +118,35 @@ self.addEventListener('notificationclick', (event) => {
           // Focus on existing window if available
           for (const client of clientList) {
             if (client.url.includes(urlToOpen.split('?')[0]) && 'focus' in client) {
+              console.log('📱 Focusing existing client:', client.url);
               return client.focus();
             }
           }
           // Otherwise open new window
           if (clients.openWindow) {
+            console.log('🪟 Opening new window:', urlToOpen);
             return clients.openWindow(urlToOpen);
           }
         })
     );
   } else if (event.action === 'dismiss') {
     // Just close the notification
+    console.log('🚫 Dismissed notification');
     return;
   } else {
     // Default action - open the app
+    console.log('🏠 Default action - opening app');
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then((clientList) => {
           for (const client of clientList) {
             if ('focus' in client) {
+              console.log('📱 Focusing existing client for default action');
               return client.focus();
             }
           }
           if (clients.openWindow) {
+            console.log('🪟 Opening new window for default action');
             return clients.openWindow('/');
           }
         })
