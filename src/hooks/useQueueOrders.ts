@@ -43,6 +43,7 @@ export function useQueueOrders(cartId: string | null) {
     const ordersQuery = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
+      where('status', 'in', ['preparing', 'ready']),
       orderBy('createdAt', 'asc'),
     );
 
