@@ -59,14 +59,27 @@ export const subscribeToNotifications = onCall(
       };
       updateData.notificationSubscribers = admin.firestore.FieldValue.arrayUnion(newSubscriber);
       updateData.isSubscribed = true;
-      updateData.subscribedCount = existingSubscribers.length + 1;
     }
 
-    // Write userId onto the order so sendOrderReadyNotification can look up
-    // the FCM token from /users/{userId} — the primary push notification path.
+    // Add userId to selectedUserIds array for proper tracking across all platforms
     if (userId) {
-      updateData.userId = userId;
+      updateData.selectedUserIds = admin.firestore.FieldValue.arrayUnion(userId);
     }
+
+    // Calculate total subscribed count: notificationSubscribers + selectedUserIds (excluding duplicates)
+    const currentSelectedUserIds = orderData?.selectedUserIds || [];
+    const currentNotificationSubscribers = orderData?.notificationSubscribers || [];
+    const uniqueUserIds = new Set([
+      ...currentSelectedUserIds,
+      ...currentNotificationSubscribers.map((s: any) => s.subscribedBy).filter(Boolean)
+    ]);
+    
+    // Add the new userId to the count if it's not already included
+    if (userId && !uniqueUserIds.has(userId)) {
+      uniqueUserIds.add(userId);
+    }
+    
+    updateData.subscribedCount = uniqueUserIds.size;
 
     if (Object.keys(updateData).length > 0) {
       await admin.firestore().collection("orders").doc(orderId).update(updateData);
@@ -94,7 +107,7 @@ export const unsubscribeFromNotifications = onCall(
     
     // Allow both authenticated and anonymous users
 
-    const { orderId, fcmToken } = data;
+    const { orderId, fcmToken, userId } = data;
 
     if (!orderId || !fcmToken) {
       throw new functions.https.HttpsError(
@@ -116,29 +129,53 @@ export const unsubscribeFromNotifications = onCall(
 
       const orderData = orderDoc.data();
       const existingSubscribers = orderData?.notificationSubscribers || [];
+      const existingSelectedUserIds = orderData?.selectedUserIds || [];
       
       // Find and remove the subscriber with this fcmToken
       const subscriberToRemove = existingSubscribers.find((subscriber: any) => subscriber.fcmToken === fcmToken);
       
+      const updateData: any = {};
+      
       if (subscriberToRemove) {
         // Remove the subscriber from the array
-        await admin.firestore().collection("orders").doc(orderId).update({
-          notificationSubscribers: admin.firestore.FieldValue.arrayRemove(subscriberToRemove),
-          subscribedCount: Math.max(0, existingSubscribers.length - 1),
-          isSubscribed: existingSubscribers.length > 1
-        });
+        updateData.notificationSubscribers = admin.firestore.FieldValue.arrayRemove(subscriberToRemove);
+      }
+      
+      // Remove userId from selectedUserIds if provided
+      if (userId && existingSelectedUserIds.includes(userId)) {
+        updateData.selectedUserIds = admin.firestore.FieldValue.arrayRemove(userId);
+      }
+      
+      // Recalculate subscribed count
+      if (Object.keys(updateData).length > 0) {
+        // Calculate new count after removals
+        const remainingSubscribers = subscriberToRemove 
+          ? existingSubscribers.filter((s: any) => s.fcmToken !== fcmToken)
+          : existingSubscribers;
+          
+        const remainingSelectedUserIds = userId && existingSelectedUserIds.includes(userId)
+          ? existingSelectedUserIds.filter((id: string) => id !== userId)
+          : existingSelectedUserIds;
+          
+        const uniqueUserIds = new Set([
+          ...remainingSelectedUserIds,
+          ...remainingSubscribers.map((s: any) => s.subscribedBy).filter(Boolean)
+        ]);
         
+        updateData.subscribedCount = uniqueUserIds.size;
+        updateData.isSubscribed = uniqueUserIds.size > 0;
+        
+        await admin.firestore().collection("orders").doc(orderId).update(updateData);
         
         return {
           success: true,
           message: "Successfully unsubscribed from notifications"
         };
       } else {
-        // Token not found in subscribers array
-        
+        // No changes needed - token not found and userId not in selectedUserIds
         return {
           success: true,
-          message: "Token was not subscribed"
+          message: "No subscription changes needed"
         };
       }
 

@@ -15,7 +15,7 @@ import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
 import { getNotificationPermission, requestNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
 import { ACTIVE_CART_KEY, USER_ID_KEY } from "../lib/pwaUtils";
-import { writeSelectedOrder, readSelectedOrder } from "../lib/userSync";
+import { writeSelectedOrder, readSelectedOrder, writeSelectedOrderWithTransition } from "../lib/userSync";
 import { useUserSync } from "../hooks/useUserSync";
 
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
@@ -151,11 +151,11 @@ export default function Queue() {
   }, [pinnedOrderId, pinnedOrder, isLoading, allOrders.length]);
 
   const handleClearPinned = useCallback(() => {
-    // Clear selection by writing empty string to cloud
+    // Clear selection with transition to remove userId from current order
     if (currentUserId) {
-      writeSelectedOrder(currentUserId, '').catch(console.error);
+      writeSelectedOrderWithTransition(currentUserId, '', pinnedOrderId).catch(console.error);
     }
-  }, []); // currentUserId is ref-like, not a dependency
+  }, [pinnedOrderId]); // currentUserId is ref-like, pinnedOrderId is needed for transition
 
   const handleCardClick = useCallback(async (orderId: string) => {
     const order = allOrders.find(o => o.id === orderId);
@@ -171,9 +171,12 @@ export default function Queue() {
     // Show loading state immediately
     setClickingOrderId(orderId);
     
-    // Always write selection to cloud - UI will update via real-time sync
+    // Track previous order before making the transition
+    const currentPreviousOrderId = pinnedOrderId;
+    
+    // Always write selection to cloud with transition - UI will update via real-time sync
     if (currentUserId) {
-      writeSelectedOrder(currentUserId, orderId).catch(console.error);
+      writeSelectedOrderWithTransition(currentUserId, orderId, currentPreviousOrderId).catch(console.error);
     }
     
     // Clear loading state when order gets pinned (monitored via useEffect below)
@@ -198,7 +201,7 @@ export default function Queue() {
           // IMPORTANT: First unsubscribe from previous order if it exists and is different
           if (lastSubscribedOrder && lastSubscribedOrder !== orderId) {
             try {
-              await unsubscribeFromOrderNotifications(lastSubscribedOrder);
+              await unsubscribeFromOrderNotifications(lastSubscribedOrder, currentUserId);
             } catch (unsubError) {
               // Continue even if unsubscribe fails
             }
@@ -246,7 +249,7 @@ export default function Queue() {
     
     // Scroll to top after selection
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime]);
+  }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime, currentUserId, pinnedOrderId]);
 
   // Filter pinned order out of the section lists to avoid duplication
   const filteredReadyOrders = readyOrders.filter(
@@ -262,7 +265,7 @@ export default function Queue() {
     return () => {
       // Only unsubscribe if we're switching to a different cart or unmounting
       if (lastSubscribedOrder) {
-        unsubscribeFromOrderNotifications(lastSubscribedOrder)
+        unsubscribeFromOrderNotifications(lastSubscribedOrder, currentUserId)
           .then(() => {
             // Clear localStorage on successful unsubscribe
             localStorage.removeItem('orderping_last_subscribed');
@@ -272,7 +275,7 @@ export default function Queue() {
           });
       }
     };
-  }, [cartId, lastSubscribedOrder]);
+  }, [cartId, lastSubscribedOrder, currentUserId]);
 
   // RENDER LOGIC
   if (!cartId) {
@@ -371,7 +374,7 @@ export default function Queue() {
               // IMPORTANT: First unsubscribe from previous order if it exists and is different
               if (lastSubscribedOrder && lastSubscribedOrder !== selectedOrder) {
                 try {
-                  await unsubscribeFromOrderNotifications(lastSubscribedOrder);
+                  await unsubscribeFromOrderNotifications(lastSubscribedOrder, currentUserId);
                 } catch (unsubError) {
                   // Continue even if unsubscribe fails
                 }

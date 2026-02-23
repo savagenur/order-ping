@@ -16,6 +16,7 @@ import {
   onSnapshot,
   serverTimestamp,
   arrayUnion,
+  arrayRemove,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -89,6 +90,67 @@ export async function writeUserFcmToken(
     { merge: true },
   );
   console.log('👤 [USER_SYNC] FCM token written');
+}
+
+/**
+ * Remove userId from order's selectedUserIds array.
+ * Called when user deselects an order or selects a different one.
+ */
+export async function removeUserFromOrder(
+  userId: string,
+  orderId: string,
+): Promise<void> {
+  console.log('👤 [USER_SYNC] Removing userId from order:', userId, 'orderId:', orderId);
+  
+  const orderRef = doc(db, 'orders', orderId);
+  await updateDoc(orderRef, {
+    selectedUserIds: arrayRemove(userId),
+  });
+  console.log('👤 [USER_SYNC] Removed userId from order selectedUserIds:', orderId);
+}
+
+/**
+ * Handle order selection transition: remove userId from previous order and add to new order.
+ * Called when user selects a new order or clears selection.
+ */
+export async function writeSelectedOrderWithTransition(
+  userId: string,
+  newOrderId: string,
+  previousOrderId: string | null,
+): Promise<void> {
+  console.log('👤 [USER_SYNC] Handling order transition:', userId, 'from:', previousOrderId, 'to:', newOrderId);
+  
+  // Remove userId from previous order if it exists and is different from new order
+  if (previousOrderId && previousOrderId !== newOrderId) {
+    try {
+      await removeUserFromOrder(userId, previousOrderId);
+    } catch (error) {
+      console.error('👤 [USER_SYNC] Failed to remove userId from previous order:', error);
+      // Continue with new order selection even if removal fails
+    }
+  }
+  
+  // Update user document with selected order
+  const userRef = doc(db, 'users', userId);
+  await setDoc(
+    userRef,
+    {
+      selectedOrderId: newOrderId,
+      lastActive: serverTimestamp(),
+    },
+    { merge: true },
+  );
+  
+  // Add userId to the new order's selectedUserIds array (only if newOrderId is not empty)
+  if (newOrderId) {
+    const orderRef = doc(db, 'orders', newOrderId);
+    await updateDoc(orderRef, {
+      selectedUserIds: arrayUnion(userId),
+    });
+    console.log('👤 [USER_SYNC] Added userId to new order selectedUserIds:', newOrderId);
+  }
+  
+  console.log('👤 [USER_SYNC] Order transition completed');
 }
 
 /**

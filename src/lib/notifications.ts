@@ -354,7 +354,8 @@ export async function subscribeToOrderNotifications(
  * Unsubscribe from order notifications via backend Cloud Function
  */
 export async function unsubscribeFromOrderNotifications(
-  orderId: string
+  orderId: string,
+  userId?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`🔔 [UNSUBSCRIBE] Starting unsubscription for order: ${orderId}`);
@@ -382,7 +383,8 @@ export async function unsubscribeFromOrderNotifications(
     
     const result = await unsubscribeFromNotifications({
       orderId,
-      fcmToken: token
+      fcmToken: token,
+      userId: userId ?? null
     });
 
     const data = result.data as { success: boolean; message?: string };
