@@ -248,105 +248,95 @@ export const sendOrderReadyNotification = onDocumentUpdated(
 
     // Add timestamp to track when notifications are actually sent
 
-    const userId = orderData.userId;
+    const selectedUserIds = orderData.selectedUserIds || [];
     
-    if (!userId) {
+    if (selectedUserIds.length === 0) {
       return;
     }
 
 
     try {
-      // 1. Get user document to find PWA FCM token
-      const userDoc = await admin.firestore().collection('users').doc(userId).get();
-      
-      if (!userDoc.exists) {
-        return;
-      }
-
-      const userData = userDoc.data();
-
-      const targetToken = userData?.fcmToken;
-
-      if (!targetToken) {
-        return;
-      }
-
-
-      // 2. Build data-only message for PWA (no notification field to prevent duplicates)
-      // The service worker will handle showing the notification with full customization
+      // Build notification message template
       const color = orderData.color || '';
-      const message = {
-        token: targetToken, // Send directly to PWA token
-        data: {
-          // Notification content
-          title: `Order #${orderData.orderNumber} ${color} is Ready! 🎉 `,
-          body:orderData.customerName 
-            ? `${orderData.customerName}, your order is ready for pickup!` 
-            : `Your order is ready! Please come to the counter for pickup. ✨`,
-          // Order data
-          orderId: String(orderId),
-          orderNumber: String(orderData.orderNumber || ''),
-          customerName: String(orderData.customerName || ''),
-          cartName: String(orderData.cartName || ''),
-          type: 'order_ready',
-          // Rich notification data for service worker
-          icon: '/logox-small.png',
-          badge: '/logox-small.png',
-          tag: `order-${orderId}`, // Unique tag to prevent duplicates
-          renotify: 'true',
-          requireInteraction: 'true',
-          // Actions data
-          actions: JSON.stringify([
-            { action: 'view-order', title: 'View Order' },
-            { action: 'dismiss', title: 'Dismiss' }
-          ])
-        }
+      const notificationData = {
+        // Notification content
+        title: `Order #${orderData.orderNumber} ${color} is Ready! 🎉 `,
+        body: orderData.customerName 
+          ? `${orderData.customerName}, your order is ready for pickup!` 
+          : `Your order is ready! Please come to the counter for pickup. ✨`,
+        // Order data
+        orderId: String(orderId),
+        orderNumber: String(orderData.orderNumber || ''),
+        customerName: String(orderData.customerName || ''),
+        cartName: String(orderData.cartName || ''),
+        type: 'order_ready',
+        // Rich notification data for service worker
+        icon: '/logox-small.png',
+        badge: '/logox-small.png',
+        tag: `order-${orderId}`, // Unique tag to prevent duplicates
+        renotify: 'true',
+        requireInteraction: 'true',
+        // Actions data
+        actions: JSON.stringify([
+          { action: 'view-order', title: 'View Order' },
+          { action: 'dismiss', title: 'Dismiss' }
+        ])
       };
 
-
-      // 3. Send notification to PWA
-      await admin.messaging().send(message);
-      
-    } catch (error) {
-      
-      // Check for specific Firebase Messaging errors
-      const messagingError = error as any;
-      if (messagingError.code === 'messaging/registration-token-not-registered') {
-        
-        // Get the stale token from the user document before cleanup
-        const userDoc = await admin.firestore().collection('users').doc(userId).get();
-        const staleToken = userDoc.data()?.fcmToken;
-        
-        // Remove stale token from user document
+      // Send notifications to all selected users
+      const notificationPromises = selectedUserIds.map(async (userId: string) => {
         try {
-          await admin.firestore().collection('users').doc(userId).update({
-            fcmToken: admin.firestore.FieldValue.delete()
-          });
-        } catch (cleanupError) {
-        }
-        
-        // Also remove from order subscribers if present
-        if (staleToken) {
-          try {
-            const orderDoc = await admin.firestore().collection('orders').doc(orderId).get();
-            if (orderDoc.exists) {
-              const orderData = orderDoc.data();
-              const subscribers = orderData?.notificationSubscribers || [];
-              const staleSubscriber = subscribers.find((sub: any) => sub.fcmToken === staleToken);
-              
-              if (staleSubscriber) {
-                await admin.firestore().collection('orders').doc(orderId).update({
-                  notificationSubscribers: admin.firestore.FieldValue.arrayRemove(staleSubscriber),
-                  subscribedCount: Math.max(0, subscribers.length - 1),
-                  isSubscribed: subscribers.length > 1
-                });
-              }
+          // 1. Get user document to find PWA FCM token
+          const userDoc = await admin.firestore().collection('users').doc(userId).get();
+          
+          if (!userDoc.exists) {
+            console.log(`[NOTIFY] User ${userId} not found`);
+            return;
+          }
+
+          const userData = userDoc.data();
+          const targetToken = userData?.fcmToken;
+
+          if (!targetToken) {
+            console.log(`[NOTIFY] No FCM token for user ${userId}`);
+            return;
+          }
+
+          // 2. Build message for this user
+          const message = {
+            token: targetToken,
+            data: notificationData
+          };
+
+          // 3. Send notification to PWA
+          await admin.messaging().send(message);
+          console.log(`[NOTIFY] ✅ Sent notification to user ${userId}`);
+          
+        } catch (error) {
+          // Check for specific Firebase Messaging errors
+          const messagingError = error as any;
+          if (messagingError.code === 'messaging/registration-token-not-registered') {
+            console.log(`[NOTIFY] Stale token for user ${userId}, cleaning up`);
+            
+            // Remove stale token from user document
+            try {
+              await admin.firestore().collection('users').doc(userId).update({
+                fcmToken: admin.firestore.FieldValue.delete()
+              });
+            } catch (cleanupError) {
+              console.error(`[NOTIFY] Failed to cleanup token for user ${userId}:`, cleanupError);
             }
-          } catch (orderCleanupError) {
+          } else {
+            console.error(`[NOTIFY] Error sending to user ${userId}:`, error);
           }
         }
-      }
+      });
+
+      // Wait for all notifications to be sent
+      await Promise.all(notificationPromises);
       
+    } catch (error) {
+      console.error(`[NOTIFY] Error in sendOrderReadyNotification:`, error);
     }
     
   }
