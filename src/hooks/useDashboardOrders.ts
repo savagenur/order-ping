@@ -39,6 +39,7 @@ export function useDashboardOrders(cartId: string | null) {
     const q = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
+      where('status', 'in', ['preparing', 'ready']),
       orderBy('createdAt', 'asc'),
     );
 
