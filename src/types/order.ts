@@ -11,6 +11,7 @@ export interface Order {
   cartId: string;
   cartName: string;
   userId?: string;
+  selectedUserIds?: string[]; // Track all users who selected/pinned this order
   createdAt: Date | Timestamp;
   readyAt?: Date | Timestamp;
   completedAt?: Date | Timestamp;

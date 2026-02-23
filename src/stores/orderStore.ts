@@ -79,7 +79,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     const ordersQuery = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
-      where('status', 'in', ['preparing', 'ready']),
+      where('status', 'in', ['pending', 'ready']),
       where('createdAt', '>=', Timestamp.fromDate(twentyFourHoursAgo)),
       orderBy('createdAt', 'asc'),
       limit(50)
@@ -90,23 +90,23 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     const unsubscribeFn = onSnapshot(
       ordersQuery,
       (snapshot) => {
-        // Only process confirmed data from server, not pending writes
-        if (snapshot.metadata.hasPendingWrites) {
-          return;
-        }
+        // Process all snapshots including local writes for immediate UI updates
 
         const allOrders: Order[] = snapshot.docs.map((doc) => mapDoc(doc));
         const cartName = allOrders.length > 0 ? allOrders[0].cartName : '';
 
-        // Shallow comparison to prevent redundant state updates
+        // Enhanced comparison to detect status changes, not just ID changes
         const currentOrderIds = allOrders.map(o => o.id);
+        const currentOrderStatuses = allOrders.map(o => ({ id: o.id, status: o.status }));
+        const lastOrderStatuses = get().orders.map(o => ({ id: o.id, status: o.status }));
+        
         const hasChanged = 
           lastOrderIds.length !== currentOrderIds.length ||
-          JSON.stringify(lastOrderIds) !== JSON.stringify(currentOrderIds);
+          JSON.stringify(lastOrderIds) !== JSON.stringify(currentOrderIds) ||
+          JSON.stringify(lastOrderStatuses) !== JSON.stringify(currentOrderStatuses);
 
         if (hasChanged) {
           lastOrderIds = currentOrderIds;
-          console.log('📦 [ORDER_STORE] Orders updated, count:', allOrders.length);
           set({ 
             orders: allOrders, 
             cartName, 

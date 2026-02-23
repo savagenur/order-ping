@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Logo from '../ui/Logo';
 
 const stats = [
   { value: '< 30s', label: 'Setup time' },
@@ -53,17 +52,14 @@ export default function HeroSection() {
           <span className="text-xs sm:text-sm text-blue-300 font-medium tracking-wide">Real-time queue management for food carts</span>
         </motion.div>
 
-        {/* Logo + Brand */}
+        {/* Brand */}
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="flex items-center justify-center gap-3 mb-6"
+          className="flex items-center justify-center "
         >
-          <div className="w-10 h-10 sm:w-14 sm:h-14 drop-shadow-[0_0_24px_rgba(59,130,246,0.6)]">
-            <Logo />
-          </div>
-          <span className="text-4xl sm:text-5xl md:text-7xl font-black bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent tracking-tight">
+          <span className="text-4xl sm:text-5xl md:text-7xl font-black bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent tracking-tight pb-6">
             OrderPing
           </span>
         </motion.div>

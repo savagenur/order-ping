@@ -14,9 +14,10 @@ import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
 import { getNotificationPermission, requestNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
-import { ACTIVE_CART_KEY, USER_ID_KEY } from "../lib/pwaUtils";
+import { ACTIVE_CART_KEY, USER_ID_KEY, PWA_BANNER_DISMISSED_KEY, isStandalone, isIOSDevice, isAndroidDevice } from "../lib/pwaUtils";
 import { writeSelectedOrder, readSelectedOrder } from "../lib/userSync";
 import { useUserSync } from "../hooks/useUserSync";
+import PWABanner from "../components/queue/PWABanner";
 
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
 const SESSION_NOTIFICATION_SHOWN_KEY = "orderping_session_notification_shown";
@@ -43,6 +44,9 @@ export default function Queue() {
   });
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
+
+  // PWA Banner state - show when user selects pending order
+  const [showPWABanner, setShowPWABanner] = useState(false);
 
   // Bootstrap and sync selected order from cloud - this is the single source of truth
   useEffect(() => {
@@ -159,6 +163,19 @@ export default function Queue() {
     if (order.status === 'pending') {
       setSelectedOrder(orderId);
       
+      // Show PWA banner for mobile users when selecting pending order (once per session)
+      if (!isStandalone() && (isIOSDevice() || isAndroidDevice())) {
+        const sessionDismissed = sessionStorage.getItem('pwa_banner_session_dismissed');
+        const permanentlyDismissed = localStorage.getItem(PWA_BANNER_DISMISSED_KEY);
+        
+        if (!sessionDismissed && !permanentlyDismissed) {
+          // Show banner after a short delay
+          setTimeout(() => {
+            setShowPWABanner(true);
+          }, 1000);
+        }
+      }
+      
       // Prevent multiple subscription attempts in quick succession
       if (isSubscribing) {
         return;
@@ -225,6 +242,13 @@ export default function Queue() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime]);
 
+  // Handle PWA banner dismiss
+  const handlePWABannerDismiss = useCallback(() => {
+    setShowPWABanner(false);
+    // Mark as dismissed for this session
+    sessionStorage.setItem('pwa_banner_session_dismissed', 'true');
+  }, []);
+
   // Filter pinned order out of the section lists to avoid duplication
   const filteredReadyOrders = readyOrders.filter(
     (o) => o.id !== pinnedOrderId,
@@ -262,6 +286,9 @@ export default function Queue() {
 
   return (
     <div className="min-h-screen min-w-screen bg-zinc-950 pt-16 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      {/* PWA Install Banner - shows when user selects pending order */}
+      <PWABanner isVisible={showPWABanner} onDismiss={handlePWABannerDismiss} />
+      
       <QueueHeader cartName={cartName} />
 
       {/* Contextual hint - shows only when no order is selected */}

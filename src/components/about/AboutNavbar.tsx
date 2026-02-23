@@ -18,7 +18,7 @@ export default function AboutNavbar({ scrollToContact }: AboutNavbarProps) {
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-8 py-3">
         {/* Logo + brand name */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 group-hover:drop-shadow-[0_0_12px_rgba(59,130,246,0.7)] transition-all duration-300">
+          <div className="flex items-center justify-center group-hover:drop-shadow-[0_0_12px_rgba(59,130,246,0.7)] transition-all duration-300">
             <Logo />
           </div>
           <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">

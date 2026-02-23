@@ -201,7 +201,7 @@ subscribeToOrders: (cartId: string) => {
   const q = query(
     collection(db, "orders"),
     where("cartId", "==", cartId),
-    where("status", "in", ["preparing", "ready"]),
+    where("status", "in", ["pending", "ready"]),
     where("createdAt", ">=", Timestamp.fromDate(twentyFourHoursAgo)),
     orderBy("createdAt", "asc"),
     limit(50)

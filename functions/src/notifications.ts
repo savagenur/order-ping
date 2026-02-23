@@ -371,20 +371,28 @@ export const cleanupUserOrderReference = onDocumentUpdated(
       return;
     }
 
-    const userId = orderData.userId;
-    if (!userId) {
+    const selectedUserIds = orderData.selectedUserIds || [];
+    if (selectedUserIds.length === 0) {
+      console.log(`🧹 [CLEANUP] No users selected order ${orderId}`);
       return;
     }
 
     try {
-      // Clean up the user's selectedOrderId reference
-      await admin.firestore().collection('users').doc(userId).update({
-        selectedOrderId: admin.firestore.FieldValue.delete()
+      // Clean up selectedOrderId from ALL users who selected this order
+      const batch = admin.firestore().batch();
+      
+      selectedUserIds.forEach((userId: string) => {
+        const userRef = admin.firestore().collection('users').doc(userId);
+        batch.update(userRef, {
+          selectedOrderId: admin.firestore.FieldValue.delete()
+        });
       });
       
-      console.log(`✅ [CLEANUP] Removed orderId ${orderId} from user ${userId}`);
+      await batch.commit();
+      
+      console.log(`✅ [CLEANUP] Removed orderId ${orderId} from ${selectedUserIds.length} users:`, selectedUserIds);
     } catch (error) {
-      console.error(`❌ [CLEANUP] Failed to cleanup user order reference:`, error);
+      console.error(`❌ [CLEANUP] Failed to cleanup user order references:`, error);
     }
   }
 );

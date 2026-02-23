@@ -12,8 +12,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  updateDoc,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -92,21 +94,34 @@ export async function writeUserFcmToken(
 /**
  * Write the selected order ID to the user document.
  * Called when user pins/selects an order for notifications.
+ * Also adds userId to the order document for proper tracking.
  */
 export async function writeSelectedOrder(
   userId: string,
   orderId: string,
 ): Promise<void> {
   console.log('👤 [USER_SYNC] Writing selected order:', userId, 'orderId:', orderId);
-  const ref = doc(db, 'users', userId);
+  
+  // Update user document with selected order
+  const userRef = doc(db, 'users', userId);
   await setDoc(
-    ref,
+    userRef,
     {
       selectedOrderId: orderId,
       lastActive: serverTimestamp(),
     },
     { merge: true },
   );
+  
+  // Also add userId to the order's selectedUserIds array (only if orderId is not empty)
+  if (orderId) {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, {
+      selectedUserIds: arrayUnion(userId),
+    });
+    console.log('👤 [USER_SYNC] Added userId to order selectedUserIds:', orderId);
+  }
+  
   console.log('👤 [USER_SYNC] Selected order written');
 }
 
