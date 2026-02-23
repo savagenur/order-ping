@@ -86,7 +86,7 @@ export default function SafariPointer({ isVisible }: SafariPointerProps) {
           style={{ 
             position: 'fixed',
             bottom: `${viewportOffset}px`,
-            right: '25px',
+            right: '20px',
             zIndex: 70 // Higher than bottom sheet
           }}
           className="flex flex-col items-center"
@@ -148,7 +148,7 @@ export default function SafariPointer({ isVisible }: SafariPointerProps) {
             />
             
             {/* Arrow icon */}
-            <div className="relative bg-gray-500 rounded-full p-2 shadow-lg border-2 border-gray-600 pr-8" style={{ backgroundColor: '#6B7280', paddingRight: '30px' }}>
+            <div className="relative bg-gray-500 rounded-full p-2 shadow-lg border-2 border-gray-600 pr-8" style={{ backgroundColor: '#6B7280', paddingRight: '15px',paddingLeft: '15px' }}>
               <ChevronDown className="w-5 h-5 text-white" />
             </div>
           </motion.div>
