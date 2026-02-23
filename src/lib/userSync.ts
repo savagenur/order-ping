@@ -152,6 +152,11 @@ export function subscribeUserDoc(
   return onSnapshot(
     ref,
     (snap) => {
+      // Only process confirmed data from server, not pending writes
+      if (snap.metadata.hasPendingWrites) {
+        return;
+      }
+
       if (!snap.exists()) {
         console.log('👤 [USER_SYNC] User doc does not exist yet');
         return;

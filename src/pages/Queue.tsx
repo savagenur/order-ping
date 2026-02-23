@@ -101,8 +101,8 @@ export default function Queue() {
     };
   }, [queryClient, cartId]);
 
-  // TanStack Query - realtime queue orders via Firestore onSnapshot
-  const { data, isLoading } = useQueueOrders(cartId);
+  // Consume orders from global centralized store
+  const { data, isLoading } = useQueueOrders();
   
   // Fetch cart settings for footer
   const { data: cartSettings } = useCartSettings(cartId);

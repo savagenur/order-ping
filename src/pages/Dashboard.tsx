@@ -35,8 +35,8 @@ export default function Dashboard() {
   const { activeTab, setActiveTab, currentInput, selectedColor, setInput, showSuccess } =
     useDashboardStore();
 
-  // TanStack Query - realtime orders via Firestore onSnapshot
-  const { data: orders = [] } = useDashboardOrders(cartId);
+  // Consume orders from global centralized store
+  const { data: orders = [] } = useDashboardOrders();
   
   // Get next order number for initial input
   const { data: nextOrderNumber } = useNextOrderNumber();

@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
+import { useOrderStore } from './stores/orderStore';
 import { useUserSync } from './hooks/useUserSync';
-import { getOrCreateUserId } from './lib/pwaUtils';
+import { getOrCreateUserId, ACTIVE_CART_KEY } from './lib/pwaUtils';
 import QRHandler from './components/QRHandler';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
@@ -41,20 +42,71 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const initialize = useAuthStore((s) => s.initialize);
   const queryClient = useQueryClient();
+  const subscribeToOrders = useOrderStore((s) => s.subscribeToOrders);
+  const unsubscribeFromOrders = useOrderStore((s) => s.unsubscribeFromOrders);
+
+  // Track active cartId for global subscription
+  const [activeCartId, setActiveCartId] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_CART_KEY)
+  );
 
   useEffect(() => {
     const unsubscribe = initialize();
     return () => unsubscribe();
   }, [initialize]);
 
+  // Global order subscription - singleton pattern
+  useEffect(() => {
+    if (activeCartId) {
+      console.log(' [APP] Initializing global order subscription for cart:', activeCartId);
+      subscribeToOrders(activeCartId);
+    } else {
+      console.log(' [APP] No active cart, unsubscribing from orders');
+      unsubscribeFromOrders();
+    }
+
+    return () => {
+      // Cleanup on unmount
+      unsubscribeFromOrders();
+    };
+  }, [activeCartId, subscribeToOrders, unsubscribeFromOrders]);
+
+  // Listen for cart changes from localStorage (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newCartId = localStorage.getItem(ACTIVE_CART_KEY);
+      if (newCartId !== activeCartId) {
+        console.log(' [APP] Cart changed via storage event:', newCartId);
+        setActiveCartId(newCartId);
+      }
+    };
+
+    const handleFocusChange = () => {
+      const newCartId = localStorage.getItem(ACTIVE_CART_KEY);
+      if (newCartId !== activeCartId) {
+        console.log(' [APP] Cart changed via focus event:', newCartId);
+        setActiveCartId(newCartId);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocusChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocusChange);
+    };
+  }, [activeCartId]);
+
   const handleCartChanged = useCallback(
     (newCartId: string) => {
-      console.log(' App: handleCartChanged called with', newCartId);
-      // Invalidate all cart-related queries so Queue re-fetches fresh data.
-      queryClient.invalidateQueries({ queryKey: ['queue-orders', newCartId] });
+      console.log(' [APP] handleCartChanged called with', newCartId);
+      // Update active cart which will trigger subscription change
+      setActiveCartId(newCartId);
+      // Invalidate cart settings query
       queryClient.invalidateQueries({ queryKey: ['cart-settings', newCartId] });
-      // Also fire a synthetic storage event so Queue.tsx sync() picks it up.
-      console.log(' App: Dispatching synthetic focus event');
+      // Fire synthetic focus event for any remaining listeners
+      console.log(' [APP] Dispatching synthetic focus event');
       window.dispatchEvent(new Event('focus'));
     },
     [queryClient],
