@@ -43,6 +43,7 @@ export default function Queue() {
   });
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
+  const [clickingOrderId, setClickingOrderId] = useState<string | null>(null);
 
   // Bootstrap and sync selected order from cloud - this is the single source of truth
   useEffect(() => {
@@ -123,6 +124,24 @@ export default function Queue() {
     ? pendingOrders.findIndex((o) => o.id === pinnedOrderId) + 1 
     : undefined;
 
+  // Clear loading state when order gets pinned and add fallback timeout
+  useEffect(() => {
+    if (clickingOrderId && pinnedOrderId === clickingOrderId) {
+      // Order successfully pinned, clear loading state
+      setClickingOrderId(null);
+    }
+  }, [clickingOrderId, pinnedOrderId]);
+
+  // Fallback timeout to clear loading state if something goes wrong
+  useEffect(() => {
+    if (clickingOrderId) {
+      const timeout = setTimeout(() => {
+        setClickingOrderId(null);
+      }, 3000); // 3 second fallback
+      return () => clearTimeout(timeout);
+    }
+  }, [clickingOrderId]);
+
   // Auto-clear pinned order if it's been completed (no longer in active lists)
   useEffect(() => {
     if (pinnedOrderId && !isLoading && allOrders.length > 0 && !pinnedOrder) {
@@ -140,20 +159,24 @@ export default function Queue() {
 
   const handleCardClick = useCallback(async (orderId: string) => {
     const order = allOrders.find(o => o.id === orderId);
-    
     if (!order) return;
-    
-    // Debounce: prevent rapid clicks within 1 second
+
+    // Prevent rapid double-clicks (debounce)
     const now = Date.now();
-    if (now - lastClickTime < 1000) {
+    if (now - lastClickTime < 500) {
       return;
     }
     setLastClickTime(now);
+    
+    // Show loading state immediately
+    setClickingOrderId(orderId);
     
     // Always write selection to cloud - UI will update via real-time sync
     if (currentUserId) {
       writeSelectedOrder(currentUserId, orderId).catch(console.error);
     }
+    
+    // Clear loading state when order gets pinned (monitored via useEffect below)
     
     // Check if order status is "preparing" (pending in current codebase)
     if (order.status === 'pending') {
@@ -303,12 +326,14 @@ export default function Queue() {
       <ReadyOrders
         readyOrders={filteredReadyOrders}
         onSelectOrder={handleCardClick}
+        clickingOrderId={clickingOrderId}
       />
 
       <PendingOrders
         pendingOrders={pendingOrders}
         onSelectOrder={handleCardClick}
         isLoading={isLoading}
+        clickingOrderId={clickingOrderId}
       />
 
       {/* Branding - positioned above the fixed footer */}

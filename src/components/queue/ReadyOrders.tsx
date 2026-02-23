@@ -1,15 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
+import { Loader2 } from "lucide-react";
 
 interface ReadyOrdersProps {
   readyOrders: Order[];
   onSelectOrder: (orderId: string) => void;
+  clickingOrderId?: string | null;
 }
 
 export default function ReadyOrders({
   readyOrders,
   onSelectOrder,
+  clickingOrderId = null,
 }: ReadyOrdersProps) {
   if (readyOrders.length === 0) return null;
 
@@ -53,7 +56,8 @@ export default function ReadyOrders({
                     delay: index * 0.05,
                   }}
                   onClick={() => onSelectOrder(order.id)}
-                  className="relative flex flex-col items-center justify-center gap-2 rounded-2xl p-4 cursor-pointer text-center bg-zinc-900 border-2 border-emerald-500/40 active:scale-95"
+                  disabled={clickingOrderId === order.id}
+                  className="relative flex flex-col items-center justify-center gap-2 rounded-2xl p-4 cursor-pointer text-center bg-zinc-900 border-2 border-emerald-500/40 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
                   style={{
                     boxShadow: `0 0 24px -6px ${color.hex}, 0 0 0 0 rgba(16,185,129,0)`,
                     willChange: "transform",
@@ -67,20 +71,31 @@ export default function ReadyOrders({
                     style={{ animationDuration: "2s" }}
                   />
 
-                  {/* Checkmark badge */}
-                  <motion.span
-                    className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white text-sm font-bold shrink-0"
-                    animate={{ scale: [1, 1.12, 1] }}
-                    transition={{
-                      duration: 1.6,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: index * 0.2,
-                    }}
-                    style={{ willChange: "transform" }}
-                  >
-                    ✓
-                  </motion.span>
+                  {/* Checkmark badge or Loading spinner */}
+                  {clickingOrderId === order.id ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1, rotate: 360 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500 shrink-0"
+                    >
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    </motion.div>
+                  ) : (
+                    <motion.span
+                      className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white text-sm font-bold shrink-0"
+                      animate={{ scale: [1, 1.12, 1] }}
+                      transition={{
+                        duration: 1.6,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: index * 0.2,
+                      }}
+                      style={{ willChange: "transform" }}
+                    >
+                      ✓
+                    </motion.span>
+                  )}
 
                   {/* Order number */}
                   <span

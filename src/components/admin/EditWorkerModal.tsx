@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import type { Worker, Cart } from '../../types/admin';
+import { useAuthStore } from '../../stores/authStore';
 
 interface EditWorkerModalProps {
   show: boolean;
@@ -24,6 +25,8 @@ export default function EditWorkerModal({
   onSubmit,
   submitting,
 }: EditWorkerModalProps) {
+  const { isSuperAdmin } = useAuthStore();
+  
   if (!show || !worker) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -119,7 +122,7 @@ export default function EditWorkerModal({
               >
                 <option value="worker">Worker</option>
                 <option value="admin">Admin</option>
-                <option value="superadmin">Super Admin</option>
+                {isSuperAdmin && <option value="superadmin">Super Admin</option>}
               </select>
             </div>
           </div>

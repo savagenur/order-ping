@@ -1,4 +1,4 @@
-import { QrCode, LogOut, BarChart3, Users, ListOrdered, PlusCircle, User, Settings } from "lucide-react";
+import { QrCode, LogOut, ListOrdered, PlusCircle, User, Settings } from "lucide-react";
 import { auth } from "../../lib/firebase";
 import { useAuthStore } from "../../stores/authStore";
 import MenuButton from "./MenuButton";
@@ -10,8 +10,6 @@ interface DashboardHeaderProps {
   onMenuToggle: () => void;
   onMenuClose: () => void;
   onQRCode: () => void;
-  onWorkerStats: () => void;
-  onAnalytics: () => void;
   onProfile: () => void;
   onAdminDashboard: () => void;
   onLayoutToggle: () => void;
@@ -25,8 +23,6 @@ export default function DashboardHeader({
   onMenuToggle,
   onMenuClose,
   onQRCode,
-  onWorkerStats,
-  onAnalytics,
   onProfile,
   onAdminDashboard,
   onLayoutToggle,
@@ -78,11 +74,7 @@ export default function DashboardHeader({
                   <MenuButton icon={<User className="w-4 h-4" />} label="Profile" onClick={onProfile} />
                   <MenuButton icon={<QrCode className="w-4 h-4" />} label="QR Code" onClick={onQRCode} />
                   {isAdmin && (
-                    <>
-                      <MenuButton icon={<Settings className="w-4 h-4" />} label="Admin Console" onClick={onAdminDashboard} />
-                      <MenuButton icon={<Users className="w-4 h-4" />} label="Worker Stats" onClick={onWorkerStats} />
-                      <MenuButton icon={<BarChart3 className="w-4 h-4" />} label="Analytics" onClick={onAnalytics} />
-                    </>
+                    <MenuButton icon={<Settings className="w-4 h-4" />} label="Admin Console" onClick={onAdminDashboard} />
                   )}
                   <div className="hidden md:block border-t border-zinc-800 my-1"></div>
                   <MenuButton 

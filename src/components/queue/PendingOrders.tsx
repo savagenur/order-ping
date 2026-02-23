@@ -2,17 +2,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
 import NotificationBell from "./NotificationBell";
+import { Loader2 } from "lucide-react";
 
 interface PendingOrdersProps {
   pendingOrders: Order[];
   onSelectOrder: (orderId: string) => void;
   isLoading?: boolean;
+  clickingOrderId?: string | null;
 }
 
 export default function PendingOrders({
   pendingOrders,
   onSelectOrder,
   isLoading = false,
+  clickingOrderId = null,
 }: PendingOrdersProps) {
   return (
     <section className="px-3 mt-6 pb-8">
@@ -56,7 +59,8 @@ export default function PendingOrders({
                     exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0 }}
                     transition={{ type: "spring", stiffness: 220, damping: 26 }}
                     onClick={() => onSelectOrder(order.id)}
-                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3 min-h-10 cursor-pointer active:scale-[0.98] transition-transform text-left relative overflow-hidden"
+                    disabled={clickingOrderId === order.id}
+                    className="w-full flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3 min-h-10 cursor-pointer active:scale-[0.98] transition-transform text-left relative overflow-hidden disabled:opacity-70 disabled:cursor-wait"
                     style={{ borderLeftWidth: 4, borderLeftColor: color.hex, willChange: "transform" }}
                   >
                     {/* Shimmer sweep on each card */}
@@ -75,7 +79,18 @@ export default function PendingOrders({
                         delay: index * 0.15,
                       }}
                     />
-                    <NotificationBell isSubscribed={order.isSubscribed} />
+                    {clickingOrderId === order.id ? (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1, rotate: 360 }}
+                        transition={{ duration: 0.3 }}
+                        className="shrink-0"
+                      >
+                        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+                      </motion.div>
+                    ) : (
+                      <NotificationBell isSubscribed={order.isSubscribed} />
+                    )}
                     <span className="font-mono font-extrabold text-xl sm:text-2xl text-white shrink-0 w-14 sm:w-16 text-center">
                       #{order.orderNumber}
                     </span>

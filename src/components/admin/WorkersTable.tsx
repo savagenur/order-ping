@@ -20,9 +20,9 @@ export default function WorkersTable({ workers, onDelete, onEdit }: WorkersTable
     return isSuperAdmin || worker.cartId === userCartId;
   };
 
-  // Only superadmins can edit workers
-  const canEditWorker = () => {
-    return isSuperAdmin;
+  // Admins and superadmins can edit workers
+  const canEditWorker = (worker: Worker) => {
+    return isSuperAdmin || worker.cartId === userCartId;
   };
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg overflow-hidden min-w-[90vw] md:min-w-[70vw]">
@@ -76,7 +76,7 @@ export default function WorkersTable({ workers, onDelete, onEdit }: WorkersTable
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                   <div className="flex justify-end space-x-2">
-                    {canEditWorker() && onEdit && (
+                    {canEditWorker(worker) && onEdit && (
                       <button
                         onClick={() => onEdit(worker)}
                         className="text-blue-400 hover:text-blue-300"
@@ -127,7 +127,7 @@ export default function WorkersTable({ workers, onDelete, onEdit }: WorkersTable
                 <p className="text-xs text-zinc-500">{worker.cartId}</p>
               </div>
               <div className="flex justify-end space-x-2">
-                {canEditWorker() && onEdit && (
+                {canEditWorker(worker) && onEdit && (
                   <button
                     onClick={() => onEdit(worker)}
                     className="text-blue-400 hover:text-blue-300 text-sm"

@@ -1,41 +1,88 @@
 import { Link } from 'react-router-dom';
-import { ORDER_COLOR_OPTIONS } from '../../lib/orderColors';
+import { motion } from 'framer-motion';
+import { ShoppingCart, Users, BarChart3, Settings, TrendingUp } from 'lucide-react';
+
+const actions = [
+  {
+    to: '/admin/carts',
+    icon: ShoppingCart,
+    title: 'Manage Carts',
+    description: 'Create and manage food carts',
+    color: 'blue',
+    gradient: 'from-blue-500/20 to-blue-600/20',
+    hoverBorder: 'hover:border-blue-500',
+  },
+  {
+    to: '/admin/workers',
+    icon: Users,
+    title: 'Manage Workers',
+    description: 'Create and assign workers',
+    color: 'orange',
+    gradient: 'from-orange-500/20 to-orange-600/20',
+    hoverBorder: 'hover:border-orange-500',
+  },
+  {
+    to: '/worker-stats',
+    icon: TrendingUp,
+    title: 'Worker Stats',
+    description: 'View worker performance',
+    color: 'teal',
+    gradient: 'from-teal-500/20 to-teal-600/20',
+    hoverBorder: 'hover:border-teal-500',
+  },
+  {
+    to: '/analytics',
+    icon: BarChart3,
+    title: 'Analytics',
+    description: 'View detailed analytics',
+    color: 'emerald',
+    gradient: 'from-emerald-500/20 to-emerald-600/20',
+    hoverBorder: 'hover:border-emerald-500',
+  },
+  {
+    to: '/profile',
+    icon: Settings,
+    title: 'Settings',
+    description: 'Configure your account',
+    color: 'purple',
+    gradient: 'from-purple-500/20 to-purple-600/20',
+    hoverBorder: 'hover:border-purple-500',
+  },
+];
 
 export default function QuickActions() {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg p-6 mb-8">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.3 }}
+      className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6"
+    >
       <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link
-          to="/admin/carts"
-          className="flex items-center p-4 border-2 border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-zinc-800 transition group"
-        >
-          <div className={`shrink-0 ${ORDER_COLOR_OPTIONS[0].bg} rounded-md p-3 group-hover:${ORDER_COLOR_OPTIONS[0].bg.replace('/20', '/30')}`}>
-            <svg className={`h-6 w-6 ${ORDER_COLOR_OPTIONS[0].text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <div className="ml-4">
-            <h3 className="text-lg font-medium text-white">Manage Carts</h3>
-            <p className="text-sm text-zinc-400">Create and manage food carts</p>
-          </div>
-        </Link>
-
-        <Link
-          to="/admin/workers"
-          className="flex items-center p-4 border-2 border-zinc-700 rounded-lg hover:border-orange-500 hover:bg-zinc-800 transition group"
-        >
-          <div className={`shrink-0 ${ORDER_COLOR_OPTIONS[1].bg} rounded-md p-3 group-hover:${ORDER_COLOR_OPTIONS[1].bg.replace('/20', '/30')}`}>
-            <svg className={`h-6 w-6 ${ORDER_COLOR_OPTIONS[1].text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-          <div className="ml-4">
-            <h3 className="text-lg font-medium text-white">Manage Workers</h3>
-            <p className="text-sm text-zinc-400">Create and assign workers to carts</p>
-          </div>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {actions.map((action, index) => {
+          const Icon = action.icon;
+          return (
+            <motion.div
+              key={action.to}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2, delay: 0.3 + index * 0.05 }}
+            >
+              <Link
+                to={action.to}
+                className={`flex flex-col items-center p-4 border-2 border-zinc-700 rounded-xl ${action.hoverBorder} hover:bg-zinc-800/50 transition-all group`}
+              >
+                <div className={`w-12 h-12 bg-linear-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <Icon className={`w-6 h-6 text-${action.color}-400`} />
+                </div>
+                <h3 className="text-sm font-medium text-white text-center mb-1">{action.title}</h3>
+                <p className="text-xs text-zinc-500 text-center">{action.description}</p>
+              </Link>
+            </motion.div>
+          );
+        })}
       </div>
-    </div>
+    </motion.div>
   );
 }

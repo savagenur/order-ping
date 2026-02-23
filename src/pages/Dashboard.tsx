@@ -216,8 +216,6 @@ export default function Dashboard() {
         onMenuToggle={() => setShowMenu(!showMenu)}
         onMenuClose={() => setShowMenu(false)}
         onQRCode={() => { setShowQR(true); setShowMenu(false); }}
-        onWorkerStats={() => { navigate("/worker-stats"); setShowMenu(false); }}
-        onAnalytics={() => { navigate("/analytics"); setShowMenu(false); }}
         onProfile={() => { navigate("/profile"); setShowMenu(false); }}
         onAdminDashboard={() => { navigate("/admin/dashboard"); setShowMenu(false); }}
         onLayoutToggle={() => { 

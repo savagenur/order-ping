@@ -7,6 +7,9 @@ import {
   doc,
   updateDoc,
   Timestamp,
+  query,
+  where,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, auth, functions } from '../lib/firebase';
@@ -19,40 +22,93 @@ interface AdminStats {
   totalWorkers: number;
   totalOrders: number;
   todayOrders: number;
+  weekOrders?: number;
+  monthOrders?: number;
+  activeOrders?: number;
+}
+
+const ADMIN_STATS_CACHE_KEY = 'admin_stats_cache_v1';
+const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+
+function getCachedAdminStats(): AdminStats | null {
+  try {
+    const cached = localStorage.getItem(ADMIN_STATS_CACHE_KEY);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    const age = Date.now() - timestamp;
+    
+    if (age < CACHE_DURATION) {
+      return data;
+    }
+    
+    localStorage.removeItem(ADMIN_STATS_CACHE_KEY);
+    return null;
+  } catch (error) {
+    console.error('Cache read error:', error);
+    return null;
+  }
+}
+
+function setCachedAdminStats(data: AdminStats) {
+  try {
+    localStorage.setItem(ADMIN_STATS_CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    }));
+  } catch (error) {
+    console.error('Cache write error:', error);
+  }
 }
 
 async function fetchAdminStats(): Promise<AdminStats> {
-  const [cartsSnapshot, workersSnapshot, ordersSnapshot] = await Promise.all([
-    getDocs(collection(db, 'carts')),
-    getDocs(collection(db, 'workers')),
-    getDocs(collection(db, 'orders')),
-  ]);
-
-  const activeCarts = cartsSnapshot.docs.filter((d) => d.data().active !== false);
-  const activeWorkers = workersSnapshot.docs.filter((d) => d.data().active !== false);
+  const cached = getCachedAdminStats();
+  if (cached) {
+    return cached;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayTimestamp = Timestamp.fromDate(today);
 
-  let todayCount = 0;
-  ordersSnapshot.forEach((d) => {
-    const createdAt = d.data().createdAt?.toDate();
-    if (createdAt && createdAt >= today) todayCount++;
-  });
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekTimestamp = Timestamp.fromDate(weekAgo);
 
-  return {
-    totalCarts: activeCarts.length,
-    totalWorkers: activeWorkers.length,
-    totalOrders: ordersSnapshot.size,
-    todayOrders: todayCount,
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthTimestamp = Timestamp.fromDate(monthAgo);
+
+  const [cartsCount, workersCount, ordersCount, todayOrdersCount, weekOrdersCount, monthOrdersCount, activeOrdersCount] = await Promise.all([
+    getCountFromServer(query(collection(db, 'carts'), where('active', '==', true))),
+    getCountFromServer(query(collection(db, 'workers'), where('active', '==', true))),
+    getCountFromServer(collection(db, 'orders')),
+    getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', todayTimestamp))),
+    getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', weekTimestamp))),
+    getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', monthTimestamp))),
+    getCountFromServer(query(collection(db, 'orders'), where('status', 'in', ['pending', 'ready']))),
+  ]);
+
+  const stats = {
+    totalCarts: cartsCount.data().count,
+    totalWorkers: workersCount.data().count,
+    totalOrders: ordersCount.data().count,
+    todayOrders: todayOrdersCount.data().count,
+    weekOrders: weekOrdersCount.data().count,
+    monthOrders: monthOrdersCount.data().count,
+    activeOrders: activeOrdersCount.data().count,
   };
+
+  setCachedAdminStats(stats);
+  return stats;
 }
 
 export function useAdminStats() {
   return useQuery({
     queryKey: ['admin-stats'],
     queryFn: fetchAdminStats,
-    staleTime: 1000 * 60 * 2,
+    staleTime: CACHE_DURATION,
+    gcTime: 1000 * 60 * 10,
   });
 }
 
@@ -102,46 +158,106 @@ async function fetchFilteredWorkers(cartId: string | null, isSuperAdmin: boolean
   return filteredWorkers;
 }
 
+function getRoleBasedCacheKey(cartId: string | null, isSuperAdmin: boolean): string {
+  return `role_stats_cache_v1_${isSuperAdmin ? 'super' : cartId}`;
+}
+
+function getCachedRoleStats(cartId: string | null, isSuperAdmin: boolean): AdminStats | null {
+  try {
+    const cacheKey = getRoleBasedCacheKey(cartId, isSuperAdmin);
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    const age = Date.now() - timestamp;
+    
+    if (age < CACHE_DURATION) {
+      return data;
+    }
+    
+    localStorage.removeItem(cacheKey);
+    return null;
+  } catch (error) {
+    console.error('Cache read error:', error);
+    return null;
+  }
+}
+
+function setCachedRoleStats(cartId: string | null, isSuperAdmin: boolean, data: AdminStats) {
+  try {
+    const cacheKey = getRoleBasedCacheKey(cartId, isSuperAdmin);
+    localStorage.setItem(cacheKey, JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    }));
+  } catch (error) {
+    console.error('Cache write error:', error);
+  }
+}
+
 async function fetchFilteredStats(cartId: string | null, isSuperAdmin: boolean): Promise<AdminStats> {
-  const [cartsSnapshot, workersSnapshot, ordersSnapshot] = await Promise.all([
-    getDocs(collection(db, 'carts')),
-    getDocs(collection(db, 'workers')),
-    getDocs(collection(db, 'orders')),
-  ]);
-
-  const activeCarts = cartsSnapshot.docs.filter((d) => d.data().active !== false);
-  const activeWorkers = workersSnapshot.docs.filter((d) => d.data().active !== false);
-
-  // Filter based on role
-  const filteredCarts = isSuperAdmin ? activeCarts : activeCarts.filter(d => d.data().cartId === cartId);
-  const filteredWorkers = isSuperAdmin ? activeWorkers : activeWorkers.filter(d => d.data().cartId === cartId);
+  const cached = getCachedRoleStats(cartId, isSuperAdmin);
+  if (cached) {
+    return cached;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayTimestamp = Timestamp.fromDate(today);
 
-  let todayCount = 0;
-  ordersSnapshot.forEach((d) => {
-    const createdAt = d.data().createdAt?.toDate();
-    if (createdAt && createdAt >= today) {
-      // For non-superadmins, only count orders from their carts
-      if (isSuperAdmin || d.data().cartId === cartId) {
-        todayCount++;
-      }
-    }
-  });
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekTimestamp = Timestamp.fromDate(weekAgo);
 
-  // For non-superadmins, only count orders from their carts
-  let totalOrders = ordersSnapshot.size;
-  if (!isSuperAdmin && cartId) {
-    totalOrders = ordersSnapshot.docs.filter(d => d.data().cartId === cartId).length;
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthTimestamp = Timestamp.fromDate(monthAgo);
+
+  let stats: AdminStats;
+
+  if (isSuperAdmin) {
+    const [cartsCount, workersCount, ordersCount, todayOrdersCount, weekOrdersCount, monthOrdersCount, activeOrdersCount] = await Promise.all([
+      getCountFromServer(query(collection(db, 'carts'), where('active', '==', true))),
+      getCountFromServer(query(collection(db, 'workers'), where('active', '==', true))),
+      getCountFromServer(collection(db, 'orders')),
+      getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', todayTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', weekTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('createdAt', '>=', monthTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('status', 'in', ['pending', 'ready']))),
+    ]);
+
+    stats = {
+      totalCarts: cartsCount.data().count,
+      totalWorkers: workersCount.data().count,
+      totalOrders: ordersCount.data().count,
+      todayOrders: todayOrdersCount.data().count,
+      weekOrders: weekOrdersCount.data().count,
+      monthOrders: monthOrdersCount.data().count,
+      activeOrders: activeOrdersCount.data().count,
+    };
+  } else {
+    const [workersCount, ordersCount, todayOrdersCount, weekOrdersCount, monthOrdersCount, activeOrdersCount] = await Promise.all([
+      getCountFromServer(query(collection(db, 'workers'), where('active', '==', true), where('cartId', '==', cartId))),
+      getCountFromServer(query(collection(db, 'orders'), where('cartId', '==', cartId))),
+      getCountFromServer(query(collection(db, 'orders'), where('cartId', '==', cartId), where('createdAt', '>=', todayTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('cartId', '==', cartId), where('createdAt', '>=', weekTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('cartId', '==', cartId), where('createdAt', '>=', monthTimestamp))),
+      getCountFromServer(query(collection(db, 'orders'), where('cartId', '==', cartId), where('status', 'in', ['pending', 'ready']))),
+    ]);
+
+    stats = {
+      totalCarts: 1,
+      totalWorkers: workersCount.data().count,
+      totalOrders: ordersCount.data().count,
+      todayOrders: todayOrdersCount.data().count,
+      weekOrders: weekOrdersCount.data().count,
+      monthOrders: monthOrdersCount.data().count,
+      activeOrders: activeOrdersCount.data().count,
+    };
   }
 
-  return {
-    totalCarts: filteredCarts.length,
-    totalWorkers: filteredWorkers.length,
-    totalOrders,
-    todayOrders: todayCount,
-  };
+  setCachedRoleStats(cartId, isSuperAdmin, stats);
+  return stats;
 }
 
 export function useRoleBasedCarts(cartId: string | null, isSuperAdmin: boolean) {
@@ -149,7 +265,8 @@ export function useRoleBasedCarts(cartId: string | null, isSuperAdmin: boolean) 
     queryKey: ['role-based-carts', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredCarts(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    gcTime: 1000 * 60 * 10,
+    enabled: !!cartId || isSuperAdmin,
   });
 }
 
@@ -158,7 +275,8 @@ export function useRoleBasedWorkers(cartId: string | null, isSuperAdmin: boolean
     queryKey: ['role-based-workers', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredWorkers(cartId, isSuperAdmin),
     staleTime: 1000 * 60 * 5,
-    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    gcTime: 1000 * 60 * 10,
+    enabled: !!cartId || isSuperAdmin,
   });
 }
 
@@ -166,8 +284,9 @@ export function useRoleBasedStats(cartId: string | null, isSuperAdmin: boolean) 
   return useQuery({
     queryKey: ['role-based-stats', cartId, isSuperAdmin],
     queryFn: () => fetchFilteredStats(cartId, isSuperAdmin),
-    staleTime: 1000 * 60 * 2,
-    enabled: !!cartId || isSuperAdmin, // Only enable if user has cartId or is superadmin
+    staleTime: CACHE_DURATION,
+    gcTime: 1000 * 60 * 10,
+    enabled: !!cartId || isSuperAdmin,
   });
 }
 
@@ -198,6 +317,7 @@ export function useAdminCarts() {
     queryKey: ['admin-carts'],
     queryFn: fetchCarts,
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 }
 
@@ -267,6 +387,7 @@ export function useAdminWorkers() {
     queryKey: ['admin-workers'],
     queryFn: fetchAdminWorkers,
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 }
 
