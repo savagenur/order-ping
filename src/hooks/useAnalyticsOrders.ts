@@ -14,6 +14,11 @@ import { db } from '../lib/firebase';
 import type { Order } from '../types/order';
 import { getStartDateForPeriod } from '../utils/dateUtils';
 
+// Cache configuration
+const METRICS_CACHE_KEY = 'analytics_metrics_cache';
+const CACHE_VERSION = 'v1';
+const CACHE_DURATION_MS = 1000 * 60 * 30; // 30 minutes for historical data
+
 interface UseAnalyticsOrdersOptions {
   cartId: string;
   selectedPeriod: string;
@@ -40,7 +45,57 @@ function transformOrderData(doc: QueryDocumentSnapshot): Order {
   };
 }
 
-async function fetchOrderMetricsOptimized(cartId: string, startDate: Date, now: Date) {
+// Cache helpers
+function getCacheKey(cartId: string, period: string): string {
+  return `${METRICS_CACHE_KEY}_${CACHE_VERSION}_${cartId}_${period}`;
+}
+
+function getCachedMetrics(cartId: string, period: string, startDate: Date) {
+  try {
+    const cacheKey = getCacheKey(cartId, period);
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return null;
+    
+    const { data, timestamp, dateRange } = JSON.parse(cached);
+    const age = Date.now() - timestamp;
+    
+    // Only use cache if it's fresh and for the same date range
+    if (age < CACHE_DURATION_MS && dateRange === startDate.toISOString()) {
+      return data;
+    }
+    
+    // Clean up stale cache
+    localStorage.removeItem(cacheKey);
+    return null;
+  } catch (error) {
+    console.error('Cache read error:', error);
+    return null;
+  }
+}
+
+function setCachedMetrics(cartId: string, period: string, startDate: Date, data: ReturnType<typeof calculateMetricsFromOrders>) {
+  try {
+    const cacheKey = getCacheKey(cartId, period);
+    localStorage.setItem(cacheKey, JSON.stringify({
+      data,
+      timestamp: Date.now(),
+      dateRange: startDate.toISOString(),
+    }));
+  } catch (error) {
+    console.error('Cache write error:', error);
+  }
+}
+
+async function fetchOrderMetricsOptimized(cartId: string, startDate: Date, now: Date, period: string) {
+  // Check cache first for historical data (not today)
+  const isHistorical = startDate < new Date(new Date().setHours(0, 0, 0, 0));
+  if (isHistorical) {
+    const cached = getCachedMetrics(cartId, period, startDate);
+    if (cached) {
+      return cached;
+    }
+  }
+  
   // For large datasets, use aggregation queries or multiple targeted queries
   
   // 1. Get basic counts with minimal data
@@ -59,12 +114,20 @@ async function fetchOrderMetricsOptimized(cartId: string, startDate: Date, now: 
   }
   
   // 2. For very large datasets (>5000 orders), use sampling or aggregation
+  let metrics;
   if (totalOrders > 5000) {
-    return await fetchMetricsWithSampling(cartId, startDate, now, totalOrders);
+    metrics = await fetchMetricsWithSampling(cartId, startDate, now, totalOrders);
+  } else {
+    // 3. For medium datasets, fetch only essential fields
+    metrics = await fetchMetricsEssentialFields(cartId, startDate, now);
   }
   
-  // 3. For medium datasets, fetch only essential fields
-  return await fetchMetricsEssentialFields(cartId, startDate, now);
+  // Cache historical data
+  if (isHistorical) {
+    setCachedMetrics(cartId, period, startDate, metrics);
+  }
+  
+  return metrics;
 }
 
 async function fetchMetricsWithSampling(cartId: string, startDate: Date, now: Date, totalOrders: number) {
@@ -292,13 +355,18 @@ export function useAnalyticsOrders({
 }: UseAnalyticsOrdersOptions) {
   const startDate = getStartDateForPeriod(selectedPeriod);
   const now = new Date();
+  
+  // Determine if this is historical data (not including today)
+  const isHistorical = startDate < new Date(new Date().setHours(0, 0, 0, 0));
+  const metricsStaleTime = isHistorical ? 1000 * 60 * 60 : 1000 * 60 * 5; // 1 hour for historical, 5 min for current
+  const ordersStaleTime = isHistorical ? 1000 * 60 * 30 : 1000 * 60 * 2; // 30 min for historical, 2 min for current
 
-  // Fetch pre-calculated metrics for the period (optimized)
+  // Fetch pre-calculated metrics for the period (optimized with localStorage cache)
   const metricsQuery = useQuery({
     queryKey: ['analytics-metrics', cartId, selectedPeriod],
-    queryFn: () => fetchOrderMetricsOptimized(cartId, startDate, now),
+    queryFn: () => fetchOrderMetricsOptimized(cartId, startDate, now, selectedPeriod),
     enabled: !!cartId,
-    staleTime: 1000 * 60 * 2, // 2 min cache
+    staleTime: metricsStaleTime,
   });
 
   // Fetch paginated orders for display (only when not fetching all)
@@ -307,7 +375,7 @@ export function useAnalyticsOrders({
     queryFn: () => fetchOrders(cartId, startDate, now, ordersPerPage, page, fetchAll),
     enabled: !!cartId && !fetchAll,
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 2,
+    staleTime: ordersStaleTime,
   });
 
   // Fetch all orders when "Show All" is clicked
@@ -315,7 +383,7 @@ export function useAnalyticsOrders({
     queryKey: ['analytics-orders-all', cartId, selectedPeriod],
     queryFn: () => fetchOrders(cartId, startDate, now, undefined, undefined, true),
     enabled: !!cartId && fetchAll,
-    staleTime: 1000 * 60 * 2,
+    staleTime: ordersStaleTime,
   });
 
   const metrics = metricsQuery.data;

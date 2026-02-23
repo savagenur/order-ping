@@ -3,6 +3,11 @@ import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore
 import { db } from '../lib/firebase';
 import type { Order } from '../types/order';
 
+// Cache configuration
+const WORKER_STATS_CACHE_KEY = 'worker_stats_cache';
+const CACHE_VERSION = 'v1';
+const CACHE_DURATION_MS = 1000 * 60 * 60 * 24; // 24 hours for historical monthly data
+
 type DateKey = string;
 
 export type WorkerStatsMap = {
@@ -80,16 +85,26 @@ async function fetchWorkerStats(
   workers: WorkerDoc[],
   cartId?: string,
 ): Promise<{ stats: WorkerStatsMap; analytics: TeamAnalytics }> {
-  // const [year, month] = selectedMonth.split('-').map(Number);
+  // Check cache first for historical months (not current month)
+  if (isHistoricalMonth(selectedMonth)) {
+    const cached = getCachedStats(selectedMonth, cartId);
+    if (cached) {
+      return cached;
+    }
+  }
+  
+  const [year, month] = selectedMonth.split('-').map(Number);
+  
+  // Calculate start and end dates for the selected month
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
   const ordersRef = collection(db, 'orders');
   const queryConstraints = [
     where('status', '==', 'completed'),
+    where('completedAt', '>=', Timestamp.fromDate(startDate)),
+    where('completedAt', '<=', Timestamp.fromDate(endDate)),
   ];
-  
-  // Temporarily remove date filtering to see if any orders exist
-  // where('completedAt', '>=', Timestamp.fromDate(startDate)),
-  // where('completedAt', '<=', Timestamp.fromDate(endDate)),
   
   // Add cartId filter if provided
   if (cartId) {
@@ -299,11 +314,69 @@ async function fetchWorkerStats(
     hourlyDistribution: hourlyData,
   };
   
-  return { stats: newStats, analytics };
+  const result = { stats: newStats, analytics };
+  
+  // Cache historical months
+  if (isHistoricalMonth(selectedMonth)) {
+    setCachedStats(selectedMonth, cartId, result);
+  }
+  
+  return result;
 }
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
+}
+
+// Cache helpers
+function getCacheKey(selectedMonth: string, cartId?: string): string {
+  const cartPart = cartId ? `_${cartId}` : '_all';
+  return `${WORKER_STATS_CACHE_KEY}_${CACHE_VERSION}_${selectedMonth}${cartPart}`;
+}
+
+function getCachedStats(selectedMonth: string, cartId?: string) {
+  try {
+    const cacheKey = getCacheKey(selectedMonth, cartId);
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    const age = Date.now() - timestamp;
+    
+    // Only use cache if it's fresh
+    if (age < CACHE_DURATION_MS) {
+      return data;
+    }
+    
+    // Clean up stale cache
+    localStorage.removeItem(cacheKey);
+    return null;
+  } catch (error) {
+    console.error('WorkerStats cache read error:', error);
+    return null;
+  }
+}
+
+function setCachedStats(selectedMonth: string, cartId: string | undefined, data: { stats: WorkerStatsMap; analytics: TeamAnalytics }) {
+  try {
+    const cacheKey = getCacheKey(selectedMonth, cartId);
+    localStorage.setItem(cacheKey, JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    }));
+  } catch (error) {
+    console.error('WorkerStats cache write error:', error);
+  }
+}
+
+function isHistoricalMonth(selectedMonth: string): boolean {
+  const [year, month] = selectedMonth.split('-').map(Number);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  
+  // Historical if it's a past month
+  return year < currentYear || (year === currentYear && month < currentMonth);
 }
 
 export function useWorkersQuery(cartId?: string) {
@@ -315,15 +388,25 @@ export function useWorkersQuery(cartId?: string) {
 }
 
 export function useWorkerStatsQuery(selectedMonth: string, workers: WorkerDoc[], cartId?: string) {
+  // Use longer cache for historical months (24 hours), shorter for current month (5 min)
+  const staleTime = isHistoricalMonth(selectedMonth) 
+    ? 1000 * 60 * 60 * 24 // 24 hours for historical data
+    : 1000 * 60 * 5; // 5 min for current month
+  
   return useQuery({
     queryKey: ['worker-stats', selectedMonth, workers.map((w) => w.id), cartId],
     queryFn: () => fetchWorkerStats(selectedMonth, workers, cartId),
     enabled: workers.length > 0,
-    staleTime: 1000 * 60 * 5,
+    staleTime,
   });
 }
 
 export function useTeamAnalyticsQuery(selectedMonth: string, workers: WorkerDoc[], cartId?: string) {
+  // Use longer cache for historical months (24 hours), shorter for current month (5 min)
+  const staleTime = isHistoricalMonth(selectedMonth)
+    ? 1000 * 60 * 60 * 24 // 24 hours for historical data
+    : 1000 * 60 * 5; // 5 min for current month
+  
   return useQuery({
     queryKey: ['team-analytics', selectedMonth, workers.map((w) => w.id), cartId],
     queryFn: async () => {
@@ -331,6 +414,6 @@ export function useTeamAnalyticsQuery(selectedMonth: string, workers: WorkerDoc[
       return result.analytics;
     },
     enabled: workers.length > 0,
-    staleTime: 1000 * 60 * 5,
+    staleTime,
   });
 }
