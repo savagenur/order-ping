@@ -67,13 +67,13 @@ export default function Dashboard() {
         }
       }
       
-      // Only update if this is a new number or if we don't have a last known value
-      if (!lastKnownOrderNumber.current || nextOrderNumber > lastKnownOrderNumber.current) {
+      // Always set the input on initial load or if it's a new number
+      if (!lastKnownOrderNumber.current || nextOrderNumber >= lastKnownOrderNumber.current) {
         setInput(nextOrderNumber.toString());
         lastKnownOrderNumber.current = nextOrderNumber;
       }
     }
-  }, [nextOrderNumber, setInput, cartId, currentInput]);
+  }, [nextOrderNumber, setInput, cartId]);
 
   const handleAddOrder = async () => {
     if (!cartId || !cartName || !currentInput) return;
