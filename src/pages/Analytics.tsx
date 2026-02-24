@@ -12,10 +12,10 @@ import Pagination from "../components/Pagination";
 
 export default function Analytics() {
   const { cartId, cartName, loading: cartLoading } = useAuthStore();
-  const [selectedPeriod, setSelectedPeriod] = useState("30days");
+  const [selectedPeriod, setSelectedPeriod] = useState("7days");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAllOrders, setShowAllOrders] = useState(false);
-  const ORDERS_PER_PAGE = 50; // Increased from 10 for better analytics experience
+  const ORDERS_PER_PAGE = 10; // Show 10 orders per page as requested
 
   const {
     orders,
