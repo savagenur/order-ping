@@ -5,7 +5,7 @@ import { memo, useState, useEffect } from "react";
 interface NumpadInputProps {
   onSubmit: () => void;
   loading: boolean;
-  initialOrderNumber?: number;
+  initialOrderNumber?: number; // Optional for double-click reset
 }
 
 const NUMPAD_KEYS = [

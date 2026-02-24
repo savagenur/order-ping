@@ -5,7 +5,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useDashboardOrders } from "../hooks/useDashboardOrders";
 import { useAddNumpadOrder, useMarkReady, useMarkCompleted } from "../hooks/useOrderMutations";
-import { useNextOrderNumber } from "../hooks/useNextOrderNumber";
+import { useNextOrderNumber, updateLocalNextOrderNumber } from "../hooks/useNextOrderNumber";
 import { useOrderFilters } from "../hooks/useOrderFilters";
 import { useBulkActionLoading } from "../hooks/useBulkActionLoading";
 import { useToast } from "../hooks/useToast";
@@ -28,12 +28,15 @@ export default function Dashboard() {
   });
   const [layoutMode, setLayoutMode] = useState<'2-panel' | '3-panel'>('3-panel');
   const navigate = useNavigate();
-  const hasSetInitialInput = useRef(false);
+  const lastKnownOrderNumber = useRef<number | null>(null);
 
   // Zustand stores
   const { cartId, cartName, loading: cartLoading, logout } = useAuthStore();
   const { activeTab, setActiveTab, currentInput, selectedColor, setInput, showSuccess } =
     useDashboardStore();
+
+  // Toast notifications
+  const { showToast } = useToast();
 
   // Consume orders from global centralized store
   const { data: orders = [] } = useDashboardOrders();
@@ -54,33 +57,51 @@ export default function Dashboard() {
     markCompleted,
   });
 
-  // Toast notifications
-  const { showToast } = useToast();
   useEffect(() => {
-    if (nextOrderNumber && !hasSetInitialInput.current) {
-      setInput(nextOrderNumber.toString());
-      hasSetInitialInput.current = true;
+    if (nextOrderNumber) {
+      // Initialize ref from localStorage if not set, then compare
+      if (!lastKnownOrderNumber.current) {
+        const localNextOrder = localStorage.getItem(`nextOrderNumber_${cartId}`);
+        if (localNextOrder) {
+          lastKnownOrderNumber.current = parseInt(localNextOrder, 10);
+        }
+      }
+      
+      // Only update if this is a new number or if we don't have a last known value
+      if (!lastKnownOrderNumber.current || nextOrderNumber > lastKnownOrderNumber.current) {
+        setInput(nextOrderNumber.toString());
+        lastKnownOrderNumber.current = nextOrderNumber;
+      }
     }
-  }, [nextOrderNumber, setInput]);
+  }, [nextOrderNumber, setInput, cartId, currentInput]);
 
   const handleAddOrder = async () => {
     if (!cartId || !cartName || !currentInput) return;
 
     try {
+      const enteredNumber = parseInt(currentInput, 10);
+      
+      // Update local next order number immediately (show local first)
+      updateLocalNextOrderNumber(cartId, enteredNumber);
+      
+      // Use the entered order number + 1 for the next input immediately
+      showSuccess(enteredNumber);
+      const nextNumber = enteredNumber + 1;
+      setInput(nextNumber.toString());
+      lastKnownOrderNumber.current = nextNumber;
+      
+      // Then add order to server
       await addNumpadOrder.mutateAsync({
-        orderNumber: parseInt(currentInput, 10),
+        orderNumber: enteredNumber,
         color: selectedColor,
         cartId,
         cartName,
       });
-      
-      // Use the entered order number + 1 for the next input
-      const enteredNumber = parseInt(currentInput, 10);
-      showSuccess(enteredNumber);
-      setInput((enteredNumber + 1).toString());
     } catch (error) {
       console.error("Error adding order:", error);
       showToast("Failed to add order", "error");
+      // Optionally: Revert local update if server fails
+      // But for now, keep local optimistic update
     }
   };
 

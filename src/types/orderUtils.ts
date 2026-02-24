@@ -1,10 +1,10 @@
-import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase'; 
 
 /**
- * Get the last created order's number (most recent order, not highest number)
+ * Get the highest order number for today (most recent in sequence)
  * @param cartId - The cart ID to get order number for
- * @returns The last created order's number (0 if no orders exist)
+ * @returns The highest order number (0 if no orders exist)
  */
 export async function getLastCreatedOrderNumber(cartId: string): Promise<number> {
   try {
@@ -13,13 +13,14 @@ export async function getLastCreatedOrderNumber(cartId: string): Promise<number>
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-    // Query orders created today for this cart, ordered by creation time (newest first)
+    // Query orders created today for this cart, ordered by order number (highest first), limit to 1
     const q = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
       where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
       where('createdAt', '<=', Timestamp.fromDate(endOfDay)),
-      orderBy('createdAt', 'desc')
+      orderBy('orderNumber', 'desc'),
+      limit(1)
     );
 
     const snapshot = await getDocs(q);
