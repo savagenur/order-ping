@@ -8,18 +8,16 @@ import { db } from '../lib/firebase';
  */
 export async function getLastCreatedOrderNumber(cartId: string): Promise<number> {
   try {
-    // Get start and end of today
+    // Get start of today
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-    // Query orders created today for this cart, ordered by order number (highest first), limit to 1
+    // Query orders created today for this cart, ordered by creation time (most recent first), limit to 1
     const q = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
       where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
-      where('createdAt', '<=', Timestamp.fromDate(endOfDay)),
-      orderBy('orderNumber', 'desc'),
+      orderBy('createdAt', 'desc'),
       limit(1)
     );
 

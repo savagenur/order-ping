@@ -43,5 +43,23 @@ export function useNextOrderNumber() {
 export function updateLocalNextOrderNumber(cartId: string, orderNumber: number) {
   const nextOrder = orderNumber + 1;
   localStorage.setItem(`${LOCAL_NEXT_ORDER_KEY}_${cartId}`, nextOrder.toString());
-  console.log('Updated local next order number to:', nextOrder);
+}
+
+// Function to fetch current next order number from server and save locally
+export async function fetchAndSaveCurrentNextOrderNumber(cartId: string): Promise<number> {
+  if (!cartId) throw new Error('No cart ID');
+  
+  try {
+    // Get actual last order number from server
+    const lastCreatedOrderNumber = await getLastCreatedOrderNumber(cartId);
+    const actualNextOrder = lastCreatedOrderNumber + 1;
+    
+    // Save to local storage
+    localStorage.setItem(`${LOCAL_NEXT_ORDER_KEY}_${cartId}`, actualNextOrder.toString());
+    
+    return actualNextOrder;
+  } catch (error) {
+    console.error('Error fetching current next order number:', error);
+    throw error;
+  }
 }

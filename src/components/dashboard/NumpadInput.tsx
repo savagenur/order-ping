@@ -6,6 +6,7 @@ interface NumpadInputProps {
   onSubmit: () => void;
   loading: boolean;
   initialOrderNumber?: number; // Optional for double-click reset
+  onDoubleClick?: () => Promise<number>; // Optional custom double-click handler
 }
 
 const NUMPAD_KEYS = [
@@ -27,6 +28,7 @@ const NumpadInput = memo(function NumpadInput({
   onSubmit,
   loading,
   initialOrderNumber,
+  onDoubleClick,
 }: NumpadInputProps) {
   const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
 
@@ -52,13 +54,22 @@ const NumpadInput = memo(function NumpadInput({
     }
   };
 
-  const handleDoubleClick = () => {
-    if (initialOrderNumber) {
+  const handleDoubleClick = async () => {
+  if (onDoubleClick) {
+    try {
+      const orderNumber = await onDoubleClick();
       useDashboardStore.setState({
-        currentInput: initialOrderNumber.toString(),
+        currentInput: orderNumber.toString(),
       });
+    } catch (error) {
+      console.error('Error fetching order number on double-click:', error);
     }
-  };
+  } else if (initialOrderNumber) {
+    useDashboardStore.setState({
+      currentInput: initialOrderNumber.toString(),
+    });
+  }
+};
 
   const canSubmit = currentInput.length > 0 && !loading && !isButtonDisabled;
 

@@ -5,7 +5,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useDashboardOrders } from "../hooks/useDashboardOrders";
 import { useAddNumpadOrder, useMarkReady, useMarkCompleted } from "../hooks/useOrderMutations";
-import { useNextOrderNumber, updateLocalNextOrderNumber } from "../hooks/useNextOrderNumber";
+import { useNextOrderNumber, updateLocalNextOrderNumber, fetchAndSaveCurrentNextOrderNumber } from "../hooks/useNextOrderNumber";
 import { useOrderFilters } from "../hooks/useOrderFilters";
 import { useBulkActionLoading } from "../hooks/useBulkActionLoading";
 import { useToast } from "../hooks/useToast";
@@ -74,6 +74,11 @@ export default function Dashboard() {
       }
     }
   }, [nextOrderNumber, setInput, cartId]);
+
+  const handleDoubleClickOrderNumber = async () => {
+  if (!cartId) throw new Error('No cart ID');
+  return await fetchAndSaveCurrentNextOrderNumber(cartId);
+};
 
   const handleAddOrder = async () => {
     if (!cartId || !cartName || !currentInput) return;
@@ -259,6 +264,7 @@ export default function Dashboard() {
                 onSubmit={handleAddOrder}
                 loading={addNumpadOrder.isPending}
                 initialOrderNumber={nextOrderNumber}
+                onDoubleClick={handleDoubleClickOrderNumber}
               />
             </div>
           ) : (
@@ -292,6 +298,7 @@ export default function Dashboard() {
                   onSubmit={handleAddOrder}
                   loading={addNumpadOrder.isPending}
                   initialOrderNumber={nextOrderNumber}
+                  onDoubleClick={handleDoubleClickOrderNumber}
                 />
               </div>
               
@@ -444,6 +451,7 @@ export default function Dashboard() {
                   onSubmit={handleAddOrder}
                   loading={addNumpadOrder.isPending}
                   initialOrderNumber={nextOrderNumber}
+                  onDoubleClick={handleDoubleClickOrderNumber}
                 />
               </div>
               
