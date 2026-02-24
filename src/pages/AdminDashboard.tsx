@@ -1,19 +1,15 @@
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useRoleBasedStats } from '../hooks/useAdminQueries';
 import StatsCard from '../components/admin/StatsCard';
 import QuickActions from '../components/admin/QuickActions';
 import RecentActivity from '../components/admin/RecentActivity';
 import { ORDER_COLOR_OPTIONS } from '../lib/orderColors';
-import { useState, useMemo } from 'react';
-import LogoutModal from '../components/dashboard/LogoutModal';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Users, Package, Clock, Activity, RefreshCw } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-  const { logout, cartId, isSuperAdmin, loading: authLoading } = useAuthStore();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { cartId, isSuperAdmin, loading: authLoading } = useAuthStore();
 
   // TanStack Query - role-based stats (cached 5 min with localStorage)
   const { data: stats, isLoading, error, refetch, isFetching } = useRoleBasedStats(cartId, isSuperAdmin);
@@ -28,28 +24,6 @@ export default function AdminDashboard() {
       today: { value: 15, isPositive: true },
     };
   }, [stats]);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/admin/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-  };
-
-  const confirmLogout = async () => {
-    setShowLogoutModal(false);
-    await handleLogout();
-  };
-
-  const cancelLogout = () => {
-    setShowLogoutModal(false);
-  };
 
   if (authLoading || isLoading) {
     return (
@@ -104,9 +78,6 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-                  <p className="text-sm text-zinc-400">
-                    {isSuperAdmin ? 'Super Admin' : 'Admin'} • OrderPing Management
-                  </p>
                 </div>
               </div>
             </div>
@@ -118,12 +89,6 @@ export default function AdminDashboard() {
                 title="Refresh data"
               >
                 <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-              </button>
-              <button
-                onClick={handleLogoutClick}
-                className="px-4 py-2 text-sm border border-red-600 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition"
-              >
-                Logout
               </button>
             </div>
           </div>
@@ -242,14 +207,6 @@ export default function AdminDashboard() {
         {/* Recent Activity */}
         <RecentActivity cartId={cartId} isSuperAdmin={isSuperAdmin} />
       </div>
-
-      {/* Logout Confirmation Modal */}
-      <LogoutModal
-        show={showLogoutModal}
-        cartName="Admin Dashboard"
-        onConfirm={confirmLogout}
-        onCancel={cancelLogout}
-      />
 
       {/* Cache indicator */}
       {!isFetching && stats && (
