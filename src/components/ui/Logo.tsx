@@ -45,7 +45,7 @@ const Logo = () => {
       onClick={handleClick}
     >
       <img 
-        src="/logox.svg?v=2" 
+        src="/logox.svg?v=3" 
         alt="OrderPing Logo"
         width="48"
         height="48"
