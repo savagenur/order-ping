@@ -211,10 +211,10 @@ export const sendOrderReadyNotificationDirect = onCall(
 
     try {
       // Build enhanced notification message with rich content
-      const color = orderData.color || '';
+
       const message = {
         notification: {
-          title: `Order #${orderData.orderNumber} ${color} is Ready! 🎉 `,
+          title: `Order #${orderData.orderNumber} is Ready! 🎉 `,
           body: orderData.customerName 
             ? `${orderData.customerName}, your order is ready for pickup!` 
             : `Your order is ready! Please come to the counter for pickup. ✨`,
@@ -294,10 +294,10 @@ export const sendOrderReadyNotification = onDocumentUpdated(
 
     try {
       // Build notification message template
-      const color = orderData.color || '';
+
       const notificationData = {
         // Notification content
-        title: `Order #${orderData.orderNumber} ${color} is Ready! 🎉 `,
+        title: `Order #${orderData.orderNumber} is Ready! 🎉 `,
         body: orderData.customerName 
           ? `${orderData.customerName}, your order is ready for pickup!` 
           : `Your order is ready! Please come to the counter for pickup. ✨`,
