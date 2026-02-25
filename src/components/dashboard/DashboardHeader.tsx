@@ -1,4 +1,4 @@
-import { QrCode, LogOut, ListOrdered, PlusCircle, User, Settings } from "lucide-react";
+import { QrCode, ListOrdered, PlusCircle, User, Settings } from "lucide-react";
 import { auth } from "../../lib/firebase";
 import { useAuthStore } from "../../stores/authStore";
 import MenuButton from "./MenuButton";
@@ -13,7 +13,6 @@ interface DashboardHeaderProps {
   onProfile: () => void;
   onAdminDashboard: () => void;
   onLayoutToggle: () => void;
-  onLogout: () => void;
 }
 
 export default function DashboardHeader({
@@ -26,7 +25,6 @@ export default function DashboardHeader({
   onProfile,
   onAdminDashboard,
   onLayoutToggle,
-  onLogout,
 }: DashboardHeaderProps) {
   const { isAdmin } = useAuthStore();
   return (
@@ -82,7 +80,6 @@ export default function DashboardHeader({
                     label={layoutMode === '3-panel' ? '2 Panel Layout' : '3 Panel Layout'} 
                     onClick={onLayoutToggle} 
                   />
-                  <MenuButton icon={<LogOut className="w-4 h-4" />} label="Logout" onClick={onLogout} danger />
                 </div>
               </div>
             </>

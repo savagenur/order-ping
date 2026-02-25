@@ -11,48 +11,28 @@ export interface OrderColor {
 
 const ORDER_COLORS: OrderColor[] = [
   {
-    name: "BLUE",
-    hex: "#3b82f6",
-    bg: "bg-blue-500/20",
-    text: "text-blue-400",
-    border: "border-blue-500",
-    glow: "shadow-blue-500/40",
-    badge: "bg-blue-500",
+    name: "Normal",
+    hex: "#9CA3AF",
+    bg: "bg-gray-400/20",
+    text: "text-gray-300",
+    border: "border-gray-500",
+    glow: "shadow-gray-500/40",
+    badge: "bg-gray-500",
     badgeText: "text-white",
   },
   {
-    name: "ORANGE",
-    hex: "#ea580c",
-    bg: "bg-orange-600/20",
-    text: "text-orange-400",
-    border: "border-orange-600",
-    glow: "shadow-orange-600/40",
-    badge: "bg-orange-600",
+    name: "Online",
+    hex: "#F59E0B",
+    bg: "bg-amber-500/20",
+    text: "text-amber-400",
+    border: "border-amber-500",
+    glow: "shadow-amber-500/40",
+    badge: "bg-amber-500",
     badgeText: "text-white",
   },
   {
-    name: "PINK",
-    hex: "#d946ef",
-    bg: "bg-pink-500/20",
-    text: "text-pink-400",
-    border: "border-pink-500",
-    glow: "shadow-pink-500/40",
-    badge: "bg-pink-500",
-    badgeText: "text-white",
-  },
-  {
-    name: "PURPLE",
-    hex: "#a855f7",
-    bg: "bg-purple-500/20",
-    text: "text-purple-400",
-    border: "border-purple-500",
-    glow: "shadow-purple-500/40",
-    badge: "bg-purple-500",
-    badgeText: "text-white",
-  },
-  {
-    name: "GREEN",
-    hex: "#10b981",
+    name: "Special",
+    hex: "#10B981",
     bg: "bg-emerald-500/10",
     text: "text-emerald-400",
     border: "border-emerald-500",
@@ -60,13 +40,23 @@ const ORDER_COLORS: OrderColor[] = [
     badge: "bg-emerald-500",
     badgeText: "text-white",
   },
+  {
+    name: "Priority",
+    hex: "#DC2626",
+    bg: "bg-red-600/20",
+    text: "text-red-400",
+    border: "border-red-600",
+    glow: "shadow-red-600/40",
+    badge: "bg-red-600",
+    badgeText: "text-white",
+  },
 ];
 
 export const ORDER_COLOR_OPTIONS: OrderColor[] = [
-  ORDER_COLORS[0], // BLUE
-  ORDER_COLORS[1], // ORANGE
-  ORDER_COLORS[2], // PINK
-  ORDER_COLORS[3], // PURPLE
+  ORDER_COLORS[0], // Normal
+  ORDER_COLORS[1], // Online
+  ORDER_COLORS[2], // Special
+  ORDER_COLORS[3], // Priority
 ];
 
 export function getOrderColor(orderNumber: number): OrderColor {
@@ -74,9 +64,18 @@ export function getOrderColor(orderNumber: number): OrderColor {
 }
 
 export function getOrderColorByName(name: string): OrderColor {
-  // Backward compatibility: map RED to PURPLE
-  if (name === "RED") {
-    return ORDER_COLORS.find((c) => c.name === "PURPLE") ?? ORDER_COLORS[0];
+  // Backward compatibility: map old color names to new order types
+  if (name === "RED" || name === "PURPLE") {
+    return ORDER_COLORS.find((c) => c.name === "Priority") ?? ORDER_COLORS[0];
+  }
+  if (name === "BLUE") {
+    return ORDER_COLORS.find((c) => c.name === "Normal") ?? ORDER_COLORS[0];
+  }
+  if (name === "ORANGE") {
+    return ORDER_COLORS.find((c) => c.name === "Online") ?? ORDER_COLORS[0];
+  }
+  if (name === "PINK") {
+    return ORDER_COLORS.find((c) => c.name === "Special") ?? ORDER_COLORS[0];
   }
   return ORDER_COLORS.find((c) => c.name === name) ?? ORDER_COLORS[0];
 }

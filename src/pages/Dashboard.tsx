@@ -32,7 +32,7 @@ export default function Dashboard() {
 
   // Zustand stores
   const { cartId, cartName, loading: cartLoading, logout } = useAuthStore();
-  const { activeTab, setActiveTab, currentInput, selectedColor, setInput, showSuccess } =
+  const { activeTab, setActiveTab, currentInput, selectedColor, setInput, setSelectedColor, showSuccess } =
     useDashboardStore();
 
   // Toast notifications
@@ -90,10 +90,13 @@ export default function Dashboard() {
       updateLocalNextOrderNumber(cartId, enteredNumber);
       
       // Use the entered order number + 1 for the next input immediately
-      showSuccess(enteredNumber);
+      showSuccess(enteredNumber, selectedColor);
       const nextNumber = enteredNumber + 1;
       setInput(nextNumber.toString());
       lastKnownOrderNumber.current = nextNumber;
+      
+      // Reset color back to Normal after creating order
+      setSelectedColor('Normal');
       
       // Then add order to server
       await addNumpadOrder.mutateAsync({
@@ -248,7 +251,6 @@ export default function Dashboard() {
           setLayoutMode(prev => prev === '3-panel' ? '2-panel' : '3-panel'); 
           setShowMenu(false); 
         }}
-        onLogout={() => { setShowLogoutModal(true); setShowMenu(false); }}
       />
 
       {/* Tab Content */}

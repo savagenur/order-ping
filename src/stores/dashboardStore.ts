@@ -8,20 +8,22 @@ interface DashboardState {
   selectedColor: string;
   successFlash: boolean;
   lastAddedOrder: number | null;
+  lastAddedOrderColor: string | null;
   setActiveTab: (tab: Tab) => void;
   appendDigit: (digit: string) => void;
   clearInput: () => void;
   setInput: (input: string) => void;
   setSelectedColor: (color: string) => void;
-  showSuccess: (orderNumber?: number) => void;
+  showSuccess: (orderNumber?: number, color?: string) => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set) => ({
   activeTab: 'create',
   currentInput: '',
-  selectedColor: 'BLUE',
+  selectedColor: 'Normal',
   successFlash: false,
   lastAddedOrder: null,
+  lastAddedOrderColor: null,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -37,8 +39,16 @@ export const useDashboardStore = create<DashboardState>((set) => ({
 
   setSelectedColor: (color) => set({ selectedColor: color }),
 
-  showSuccess: (orderNumber) => {
-    set({ successFlash: true, lastAddedOrder: orderNumber || null });
-    setTimeout(() => set({ successFlash: false, lastAddedOrder: null }), 1200);
+  showSuccess: (orderNumber, color) => {
+    set({ 
+      successFlash: true, 
+      lastAddedOrder: orderNumber || null,
+      lastAddedOrderColor: color || null
+    });
+    setTimeout(() => set({ 
+      successFlash: false, 
+      lastAddedOrder: null,
+      lastAddedOrderColor: null
+    }), 1200);
   },
 }));

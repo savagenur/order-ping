@@ -37,6 +37,7 @@ const NumpadInput = memo(function NumpadInput({
     selectedColor,
     successFlash,
     lastAddedOrder,
+    lastAddedOrderColor,
     appendDigit,
     clearInput,
     setSelectedColor,
@@ -101,7 +102,7 @@ const NumpadInput = memo(function NumpadInput({
             {lastAddedOrder && (
               <div className="flex flex-col items-center gap-1">
                 <span className="text-emerald-300 text-4xl font-bold">
-                  #{lastAddedOrder} {selectedColor}
+                  #{lastAddedOrder} {lastAddedOrderColor?.toUpperCase()}
                 </span>
               </div>
             )}
@@ -143,7 +144,7 @@ const NumpadInput = memo(function NumpadInput({
           ))}
         </div>
         <p className="text-center text-sm text-zinc-300 mt-2 font-semibold">
-          {selectedColor}
+          {selectedColor.toUpperCase()}
         </p>
       </div>
 

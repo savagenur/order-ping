@@ -3,13 +3,12 @@ import { auth } from "../../lib/firebase";
 
 interface UserMenuProps {
   cartName: string;
-  onLogout: () => void;
   onShowQR: () => void;
   onWorkerStats?: () => void;
   onAnalytics?: () => void;
 }
 
-export default function UserMenu({ cartName, onLogout, onShowQR, onWorkerStats, onAnalytics }: UserMenuProps) {
+export default function UserMenu({ cartName, onShowQR, onWorkerStats, onAnalytics }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -141,28 +140,6 @@ export default function UserMenu({ cartName, onLogout, onShowQR, onWorkerStats, 
                 Analytics
               </button>
             )}
-            <button
-              onClick={() => {
-                onLogout();
-                setIsOpen(false);
-              }}
-              className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              Logout
-            </button>
           </div>
         </div>
       )}
