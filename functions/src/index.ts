@@ -139,8 +139,7 @@ export const registerDeviceToken = onCall(
       { merge: true },
     );
 
-    console.log(`[registerDeviceToken] Registered token for userId: ${userId}`);
-    return { success: true };
+        return { success: true };
   },
 );
 

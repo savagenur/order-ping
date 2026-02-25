@@ -109,7 +109,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
   loadFromCache: () => {
     const cached = loadCachedOrders();
     if (cached) {
-      console.log('📦 [TRACKED_ORDERS] Loaded from cache:', cached.orders.length, 'orders');
       set({ 
         trackedOrders: cached.orders,
         trackedOrderIds: cached.orderIds,
@@ -127,13 +126,11 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
     
     // Only update if the array has changed
     if (JSON.stringify(state.trackedOrderIds) !== JSON.stringify(orderIds)) {
-      console.log('📦 [TRACKED_ORDERS] Setting tracked order IDs:', orderIds);
       set({ trackedOrderIds: orderIds });
       
       // Try to load from cache first for instant UI
       const cached = loadCachedOrders();
       if (cached && JSON.stringify(cached.orderIds) === JSON.stringify(orderIds)) {
-        console.log('📦 [TRACKED_ORDERS] Using cached data for instant display');
         set({ 
           trackedOrders: cached.orders,
           lastFetchTime: cached.timestamp,
@@ -150,14 +147,12 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
     
     // Unsubscribe from previous listener
     if (state.unsubscribe) {
-      console.log('📦 [TRACKED_ORDERS] Unsubscribing from previous listener');
       state.unsubscribe();
       set({ unsubscribe: null });
     }
 
     // Handle empty array case - Firestore throws error if 'in' array is empty
     if (orderIds.length === 0) {
-      console.log('📦 [TRACKED_ORDERS] No orders to track, clearing state');
       localStorage.removeItem(CACHE_KEY);
       set({ 
         trackedOrders: [], 
@@ -167,7 +162,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
       return;
     }
 
-    console.log('📦 [TRACKED_ORDERS] Subscribing to orders:', orderIds);
     
     // Only show loading if we don't have cached data
     const cached = loadCachedOrders();
@@ -194,14 +188,12 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
         (snapshot) => {
           // Skip if this is from cache and we already have the data
           if (snapshot.metadata.fromCache && snapshot.metadata.hasPendingWrites) {
-            console.log('📦 [TRACKED_ORDERS] Skipping local cache snapshot');
             return;
           }
           
           const orders: Order[] = snapshot.docs.map((doc) => mapDoc(doc));
           const isFromCache = snapshot.metadata.fromCache;
           
-          console.log('📦 [TRACKED_ORDERS] Received', orders.length, 'tracked orders', isFromCache ? '(from cache)' : '(from server)');
           
           // Auto-cleanup: Remove completed orders from tracking (only on server data)
           if (!isFromCache) {
@@ -212,7 +204,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
             if (completedOrderIds.length > 0) {
               const userId = localStorage.getItem(USER_ID_KEY);
               if (userId) {
-                console.log('📦 [TRACKED_ORDERS] Auto-removing completed orders:', completedOrderIds);
                 completedOrderIds.forEach(orderId => {
                   removeTrackedOrder(userId, orderId).catch(error => {
                     console.error('📦 [TRACKED_ORDERS] Failed to remove completed order:', error);
@@ -276,7 +267,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
               if (completedOrderIds.length > 0) {
                 const userId = localStorage.getItem(USER_ID_KEY);
                 if (userId) {
-                  console.log(`📦 [TRACKED_ORDERS] Batch ${index + 1}: Auto-removing completed orders:`, completedOrderIds);
                   completedOrderIds.forEach(orderId => {
                     removeTrackedOrder(userId, orderId).catch(error => {
                       console.error('📦 [TRACKED_ORDERS] Failed to remove completed order:', error);
@@ -298,7 +288,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
             
             completedBatches++;
             
-            console.log(`📦 [TRACKED_ORDERS] Batch ${index + 1}/${batches.length} received ${activeBatchOrders.length} active orders`, isFromCache ? '(from cache)' : '(from server)');
             
             // Save to cache when all batches complete (only on server data)
             if (!isFromCache && completedBatches >= batches.length) {
@@ -336,7 +325,6 @@ export const useTrackedOrdersStore = create<TrackedOrdersState>((set, get) => ({
     const state = get();
     
     if (state.unsubscribe) {
-      console.log('📦 [TRACKED_ORDERS] Unsubscribing from tracked orders');
       state.unsubscribe();
       
       // Keep cache for faster reload

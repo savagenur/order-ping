@@ -70,17 +70,14 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     
     // Singleton pattern: If already subscribed to the same cart, do nothing
     if (state.isSubscribed && state.currentCartId === cartId) {
-      console.log('📦 [ORDER_STORE] Already subscribed to cart:', cartId);
       return;
     }
 
     // If subscribed to a different cart, unsubscribe first
     if (state.isSubscribed && state.currentCartId !== cartId) {
-      console.log('📦 [ORDER_STORE] Switching carts, unsubscribing from:', state.currentCartId);
       state.unsubscribeFromOrders();
     }
 
-    console.log('📦 [ORDER_STORE] Subscribing to cart:', cartId);
     set({ isLoading: true, currentCartId: cartId });
 
     // Filter orders from last 24 hours only
@@ -144,7 +141,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     const state = get();
     
     if (state.unsubscribe) {
-      console.log('📦 [ORDER_STORE] Unsubscribing from cart:', state.currentCartId);
       state.unsubscribe();
       set({ 
         unsubscribe: null, 
@@ -186,7 +182,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const querySnapshot = await getDocs(completedOrdersQuery);
       
       if (querySnapshot.empty) {
-        console.log('No completed orders found to undo');
         return;
       }
       
@@ -215,7 +210,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         set({ restoredOrderIds: updatedRestoredOrderIds });
       }, GHOST_EFFECT_DURATION);
       
-      console.log(`Successfully restored order ${orderId} to ready status`);
       
     } catch (error) {
       console.error('Failed to undo order:', error);

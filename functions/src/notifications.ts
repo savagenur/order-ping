@@ -283,7 +283,6 @@ export const sendOrderReadyNotification = onDocumentUpdated(
       return;
     }
 
-    console.log(`[NOTIFY] Order ${orderId} is now ready, finding users tracking this order...`);
 
     // OPTIMIZATION: Query users with select() to fetch only fcmToken field
     // This reduces read quota by only fetching the field we need instead of entire documents
@@ -294,7 +293,6 @@ export const sendOrderReadyNotification = onDocumentUpdated(
       .get();
     
     if (usersSnapshot.empty) {
-      console.log(`[NOTIFY] No users tracking order ${orderId}`);
       return;
     }
 
@@ -306,7 +304,6 @@ export const sendOrderReadyNotification = onDocumentUpdated(
       }))
       .filter(user => user.fcmToken); // Filter out users without FCM tokens
     
-    console.log(`[NOTIFY] Found ${trackingUsers.length} users with FCM tokens tracking order ${orderId}`);
 
 
     try {
@@ -356,17 +353,15 @@ export const sendOrderReadyNotification = onDocumentUpdated(
 
           // Send notification to PWA
           await admin.messaging().send(message);
-          console.log(`[NOTIFY] ✅ Sent notification to user ${userId}`);
           
         } catch (error) {
           // Check for specific Firebase Messaging errors
           const messagingError = error as any;
           if (messagingError.code === 'messaging/registration-token-not-registered') {
-            console.log(`[NOTIFY] Stale token for user ${userId}, will be cleaned up by client`);
             // Note: We don't cleanup here to avoid extra write quota
             // The client will handle token refresh on next app load
           } else {
-            console.error(`[NOTIFY] Error sending to user ${userId}:`, error);
+            console.error(`[NOTIFY] Error sending to user:`, error);
           }
         }
       });
@@ -387,7 +382,6 @@ export const cleanupUserOrderReference = onDocumentUpdated(
     region: "us-west1",
   },
   async (event) => {
-    const orderId = event.params.orderId;
     const beforeData = event.data?.before?.data();
     const orderData = event.data?.after?.data();
 
@@ -402,7 +396,6 @@ export const cleanupUserOrderReference = onDocumentUpdated(
 
     const selectedUserIds = orderData.selectedUserIds || [];
     if (selectedUserIds.length === 0) {
-      console.log(`🧹 [CLEANUP] No users selected order ${orderId}`);
       return;
     }
 
@@ -419,7 +412,6 @@ export const cleanupUserOrderReference = onDocumentUpdated(
       
       await batch.commit();
       
-      console.log(`✅ [CLEANUP] Removed orderId ${orderId} from ${selectedUserIds.length} users:`, selectedUserIds);
     } catch (error) {
       console.error(`❌ [CLEANUP] Failed to cleanup user order references:`, error);
     }

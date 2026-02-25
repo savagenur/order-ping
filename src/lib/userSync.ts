@@ -37,7 +37,6 @@ export async function writeUserDoc(
   userId: string,
   cartId: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Writing user doc:', userId, 'cartId:', cartId);
   const ref = doc(db, 'users', userId);
   await setDoc(
     ref,
@@ -47,7 +46,6 @@ export async function writeUserDoc(
     },
     { merge: true },
   );
-  console.log('👤 [USER_SYNC] Write completed');
 }
 
 /**
@@ -55,7 +53,6 @@ export async function writeUserDoc(
  * Returns the currentCartId or null if missing/not found.
  */
 export async function readUserDoc(userId: string): Promise<string | null> {
-  console.log('👤 [USER_SYNC] Reading user doc:', userId);
   try {
     const ref = doc(db, 'users', userId);
     const snap = await getDoc(ref);
@@ -64,7 +61,6 @@ export async function readUserDoc(userId: string): Promise<string | null> {
       return null;
     }
     const data = snap.data() as UserDoc;
-    console.log('👤 [USER_SYNC] Got currentCartId:', data.currentCartId);
     return data.currentCartId ?? null;
   } catch (error) {
     console.error('👤 [USER_SYNC] Read failed:', error);
@@ -80,7 +76,6 @@ export async function writeUserFcmToken(
   userId: string,
   fcmToken: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Writing FCM token for userId:', userId);
   const ref = doc(db, 'users', userId);
   await setDoc(
     ref,
@@ -90,7 +85,6 @@ export async function writeUserFcmToken(
     },
     { merge: true },
   );
-  console.log('👤 [USER_SYNC] FCM token written');
 }
 
 /**
@@ -101,14 +95,12 @@ export async function removeUserFromOrder(
   userId: string,
   orderId: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Removing userId from order:', userId, 'orderId:', orderId);
   
   const orderRef = doc(db, 'orders', orderId);
   await updateDoc(orderRef, {
     selectedUserIds: arrayRemove(userId),
   });
-  console.log('👤 [USER_SYNC] Removed userId from order selectedUserIds:', orderId);
-}
+  }
 
 /**
  * Handle order selection transition: remove userId from previous order and add to new order.
@@ -163,7 +155,6 @@ export async function writeSelectedOrder(
   userId: string,
   orderId: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Writing selected order:', userId, 'orderId:', orderId);
   
   // Update user document with selected order
   const userRef = doc(db, 'users', userId);
@@ -182,10 +173,8 @@ export async function writeSelectedOrder(
     await updateDoc(orderRef, {
       selectedUserIds: arrayUnion(userId),
     });
-    console.log('👤 [USER_SYNC] Added userId to order selectedUserIds:', orderId);
-  }
+      }
   
-  console.log('👤 [USER_SYNC] Selected order written');
 }
 
 /**
@@ -193,20 +182,16 @@ export async function writeSelectedOrder(
  * Returns the selectedOrderId or null if missing/not found.
  */
 export async function readSelectedOrder(userId: string): Promise<string | null> {
-  console.log('👤 [USER_SYNC] Reading selected order for userId:', userId);
   try {
     const ref = doc(db, 'users', userId);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
-      console.log('👤 [USER_SYNC] No user doc found');
       return null;
     }
     const data = snap.data() as UserDoc;
     const selectedOrderId = data.selectedOrderId ?? null;
-    console.log('👤 [USER_SYNC] Got selectedOrderId:', selectedOrderId);
     return selectedOrderId;
   } catch (error) {
-    console.error('👤 [USER_SYNC] Read selected order failed:', error);
     return null;
   }
 }
@@ -218,13 +203,11 @@ export async function addTrackedOrder(
   userId: string,
   orderId: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Adding tracked order:', userId, 'orderId:', orderId);
   const ref = doc(db, 'users', userId);
   await updateDoc(ref, {
     trackedOrderIds: arrayUnion(orderId),
     lastActive: serverTimestamp(),
   });
-  console.log('👤 [USER_SYNC] Tracked order added');
 }
 
 /**
@@ -234,13 +217,11 @@ export async function removeTrackedOrder(
   userId: string,
   orderId: string,
 ): Promise<void> {
-  console.log('👤 [USER_SYNC] Removing tracked order:', userId, 'orderId:', orderId);
   const ref = doc(db, 'users', userId);
   await updateDoc(ref, {
     trackedOrderIds: arrayRemove(orderId),
     lastActive: serverTimestamp(),
   });
-  console.log('👤 [USER_SYNC] Tracked order removed');
 }
 
 /**
@@ -256,7 +237,6 @@ export function subscribeUserDoc(
   onOrderChanged?: (orderId: string | null) => void,
   onTrackedOrdersChanged?: (orderIds: string[]) => void,
 ): Unsubscribe {
-  console.log('👤 [USER_SYNC] Subscribing to user doc:', userId);
   const ref = doc(db, 'users', userId);
   let lastKnownCartId: string | null = null;
   let lastKnownOrderId: string | null = null;
@@ -271,14 +251,12 @@ export function subscribeUserDoc(
       }
 
       if (!snap.exists()) {
-        console.log('👤 [USER_SYNC] User doc does not exist yet');
         return;
       }
       const data = snap.data() as UserDoc;
       const cartId = data.currentCartId ?? null;
       const orderId = data.selectedOrderId ?? null;
       const trackedOrderIds = data.trackedOrderIds ?? [];
-      console.log('👤 [USER_SYNC] Snapshot received, currentCartId:', cartId, 'selectedOrderId:', orderId, 'trackedOrderIds:', trackedOrderIds);
 
       if (cartId && cartId !== lastKnownCartId) {
         lastKnownCartId = cartId;

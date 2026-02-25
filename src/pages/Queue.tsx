@@ -130,7 +130,6 @@ export default function Queue() {
     if (currentUserId) {
       try {
         await removeTrackedOrder(currentUserId, orderId);
-        console.log('🗑️ [QUEUE] Removed order from tracking:', orderId);
       } catch (error) {
         console.error('🗑️ [QUEUE] Failed to remove tracked order:', error);
       }
@@ -155,7 +154,6 @@ export default function Queue() {
     if (currentUserId) {
       try {
         await addTrackedOrder(currentUserId, orderId);
-        console.log('🎯 [QUEUE] Added order to tracked list:', orderId);
       } catch (error) {
         console.error('🎯 [QUEUE] Failed to add tracked order:', error);
       }

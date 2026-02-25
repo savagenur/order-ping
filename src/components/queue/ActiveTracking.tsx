@@ -185,7 +185,7 @@ export default function ActiveTracking({ trackedOrders, onOrderClick, onRemoveOr
                                   {color.name}
                                 </span>
                                 {cartIds.length === 1 && (
-                                  <span className="text-[10px] text-zinc-600">
+                                  <span className="text-[10px] text-zinc-600 line-clamp-2 leading-tight max-w-25">
                                     {order.cartName}
                                   </span>
                                 )}
