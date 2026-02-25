@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, BellRing, Loader2, CheckCheck } from "lucide-react";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
 
@@ -76,10 +76,10 @@ const OrderList = memo(function OrderList({
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {bulkActionLoading.markingAllReady
-                  ? "Marking..."
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
                   : buttonState.readyConfirm
-                  ? "Tap Again to Confirm!"
-                  : "Mark All Ready"}
+                  ? <CheckCheck className="w-4 h-4" />
+                  : <BellRing className="w-4 h-4" />}
               </button>
             )}
             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
@@ -144,10 +144,10 @@ const OrderList = memo(function OrderList({
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {bulkActionLoading.markingAllCompleted
-                  ? "Completing..."
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
                   : buttonState.completedConfirm
-                  ? "Tap Again to Confirm!"
-                  : "Mark All Picked Up"}
+                  ? <CheckCheck className="w-4 h-4" />
+                  : <CheckCheck className="w-4 h-4" />}
               </button>
             )}
             <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">

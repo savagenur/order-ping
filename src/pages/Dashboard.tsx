@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, ListOrdered, RotateCcw } from "lucide-react";
+import { PlusCircle, ListOrdered, RotateCcw, Loader2, BellRing, CheckCheck } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useOrderStore } from "../stores/orderStore";
@@ -350,10 +350,10 @@ export default function Dashboard() {
                             style={{ WebkitTapHighlightColor: "transparent" }}
                           >
                             {bulkActionLoading.markingAllReady
-                              ? "Marking..."
-                              : buttonState.readyConfirm
-                              ? "Tap Again to Confirm!"
-                              : "Mark All Ready"}
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : buttonState.readyConfirm
+                  ? <BellRing className="w-4 h-4" />
+                  : <BellRing className="w-4 h-4" />}
                           </button>
                         )}
                         <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
@@ -428,11 +428,11 @@ export default function Dashboard() {
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ WebkitTapHighlightColor: "transparent" }}
                           >
-                            {bulkActionLoading.markingAllCompleted
-                              ? "Completing..."
-                              : buttonState.completedConfirm
-                              ? "Tap Again to Confirm!"
-                              : "Mark All Picked Up"}
+                           {bulkActionLoading.markingAllCompleted
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : buttonState.completedConfirm
+                  ? <CheckCheck className="w-4 h-4" />
+                  : <CheckCheck className="w-4 h-4" />}
                           </button>
                         )}
                         <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
