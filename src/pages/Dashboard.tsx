@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, ListOrdered } from "lucide-react";
+import { PlusCircle, ListOrdered, RotateCcw } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
+import { useOrderStore } from "../stores/orderStore";
 import { useDashboardOrders } from "../hooks/useDashboardOrders";
 import { useAddNumpadOrder, useMarkReady, useMarkCompleted } from "../hooks/useOrderMutations";
 import { useNextOrderNumber, updateLocalNextOrderNumber, fetchAndSaveCurrentNextOrderNumber } from "../hooks/useNextOrderNumber";
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const { cartId, cartName, loading: cartLoading, logout } = useAuthStore();
   const { activeTab, setActiveTab, currentInput, selectedColor, setInput, setSelectedColor, showSuccess } =
     useDashboardStore();
+  const { undoLastOrder, restoredOrderIds } = useOrderStore();
 
   // Toast notifications
   const { showToast } = useToast();
@@ -152,6 +154,16 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error completing all orders:", error);
       showToast("Failed to complete some orders", "error");
+    }
+  };
+
+  const handleUndo = async () => {
+    try {
+      await undoLastOrder();
+      showToast("Order restored successfully", "success");
+    } catch (error) {
+      console.error("Error undoing order:", error);
+      showToast("Failed to restore order", "error");
     }
   };
 
@@ -280,6 +292,8 @@ export default function Dashboard() {
                 onMarkCompleted={handleMarkCompleted}
                 onMarkAllReady={handleMarkAllReady}
                 onMarkAllCompleted={handleMarkAllCompleted}
+                onUndo={handleUndo}
+                restoredOrderIds={restoredOrderIds}
                 bulkActionLoading={{
                   markingAllReady: preparingCount > 0 && preparingCount === orders.filter(o => o.status === "pending" && markReady.isPending).length,
                   markingAllCompleted: readyCount > 0 && readyCount === orders.filter(o => o.status === "ready" && markCompleted.isPending).length,
@@ -366,6 +380,7 @@ export default function Dashboard() {
                             actionLabel="Set Ready"
                             actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
                             onAction={async () => await markReady.mutateAsync(order.id)}
+                            isGhost={restoredOrderIds.has(order.id)}
                           />
                         ))}
                       </div>
@@ -384,6 +399,14 @@ export default function Dashboard() {
                         Ready for Pickup
                       </h2>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleUndo}
+                          className="p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center bg-[#1D2B44] text-white hover:bg-[#2A3A5A] active:bg-[#0F1A2A]"
+                          style={{ WebkitTapHighlightColor: "transparent" }}
+                          title="Undo last completed order"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
                         {readyOrders.length > 0 && (
                           <button
                             onClick={() => {
@@ -436,6 +459,7 @@ export default function Dashboard() {
                             actionLabel="Complete"
                             actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
                             onAction={async () => await markCompleted.mutateAsync(order.id)}
+                            isGhost={restoredOrderIds.has(order.id)}
                           />
                         ))}
                       </div>
@@ -483,6 +507,8 @@ export default function Dashboard() {
                     onMarkCompleted={handleMarkCompleted}
                     onMarkAllReady={handleMarkAllReady}
                     onMarkAllCompleted={handleMarkAllCompleted}
+                    onUndo={handleUndo}
+                    restoredOrderIds={restoredOrderIds}
                     bulkActionLoading={bulkActionLoading}
                   />
                 </div>

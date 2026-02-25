@@ -1,4 +1,5 @@
 import { useState, memo } from "react";
+import { RotateCcw } from "lucide-react";
 import type { Order } from "../../types/order";
 import { getOrderColorByName } from "../../lib/orderColors";
 
@@ -8,6 +9,8 @@ interface OrderListProps {
   onMarkCompleted: (orderId: string) => void;
   onMarkAllReady: () => void;
   onMarkAllCompleted: () => void;
+  onUndo?: () => void;
+  restoredOrderIds?: Set<string>;
   bulkActionLoading?: {
     markingAllReady?: boolean;
     markingAllCompleted?: boolean;
@@ -25,6 +28,8 @@ const OrderList = memo(function OrderList({
   onMarkCompleted,
   onMarkAllReady,
   onMarkAllCompleted,
+  onUndo,
+  restoredOrderIds = new Set(),
   bulkActionLoading = {},
 }: OrderListProps) {
   const [buttonState, setButtonState] = useState<BulkButtonState>({
@@ -96,6 +101,7 @@ const OrderList = memo(function OrderList({
                 actionLabel="Set Ready"
                 actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
                 onAction={() => onMarkReady(order.id)}
+                isGhost={restoredOrderIds.has(order.id)}
               />
             ))}
           </div>
@@ -109,6 +115,14 @@ const OrderList = memo(function OrderList({
             Ready for Pickup
           </h2>
           <div className="flex items-center gap-2">
+            <button
+              onClick={onUndo}
+              className="p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center bg-[#1D2B44] text-white hover:bg-[#2A3A5A] active:bg-[#0F1A2A]"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+              title="Undo last completed order"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
             {readyOrders.length > 0 && (
               <button
                 onClick={() => {
@@ -155,6 +169,7 @@ const OrderList = memo(function OrderList({
                 actionLabel="Complete"
                 actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
                 onAction={() => onMarkCompleted(order.id)}
+                isGhost={restoredOrderIds.has(order.id)}
               />
             ))}
           </div>
@@ -171,17 +186,21 @@ function OrderCard({
   actionLabel,
   actionColor,
   onAction,
+  isGhost = false,
 }: {
   order: Order;
   actionLabel: string;
   actionColor: string;
   onAction: () => void;
+  isGhost?: boolean;
 }) {
   const color = getOrderColorByName(order.color || "BLUE");
 
   return (
     <div
-      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 transition-opacity duration-1000 ${
+        isGhost ? 'opacity-50' : 'opacity-100'
+      }`}
       style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
     >
       {/* Order Number + Color Badge */}

@@ -6,6 +6,7 @@ interface DashboardOrderCardProps {
   actionLabel: string;
   actionColor: string;
   onAction: () => void;
+  isGhost?: boolean;
 }
 
 export default function DashboardOrderCard({
@@ -13,12 +14,15 @@ export default function DashboardOrderCard({
   actionLabel,
   actionColor,
   onAction,
+  isGhost = false,
 }: DashboardOrderCardProps) {
   const color = getOrderColorByName(order.color || "BLUE");
 
   return (
     <div
-      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 transition-opacity duration-1000 ${
+        isGhost ? 'opacity-50' : 'opacity-100'
+      }`}
       style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
     >
       {/* Order Number + Color Badge */}

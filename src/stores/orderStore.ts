@@ -7,10 +7,17 @@ import {
   orderBy,
   limit,
   Timestamp,
+  updateDoc,
+  doc,
+  deleteField,
+  getDocs,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Order } from '../types/order';
+
+// Constants
+const GHOST_EFFECT_DURATION = 3000; // 3 seconds
 
 interface OrderState {
   orders: Order[];
@@ -19,12 +26,15 @@ interface OrderState {
   isSubscribed: boolean;
   currentCartId: string | null;
   unsubscribe: Unsubscribe | null;
+  restoredOrderIds: Set<string>; // Track recently restored orders for ghost effect
   
   // Actions
   subscribeToOrders: (cartId: string) => void;
   unsubscribeFromOrders: () => void;
   setOrders: (orders: Order[], cartName: string) => void;
   setLoading: (loading: boolean) => void;
+  undoLastOrder: () => Promise<void>;
+  clearRestoredOrder: (orderId: string) => void;
 }
 
 function mapDoc(doc: { id: string; data: () => Record<string, unknown> }): Order {
@@ -53,6 +63,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   isSubscribed: false,
   currentCartId: null,
   unsubscribe: null,
+  restoredOrderIds: new Set(),
 
   subscribeToOrders: (cartId: string) => {
     const state = get();
@@ -141,7 +152,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         currentCartId: null,
         orders: [],
         cartName: '',
-        isLoading: false
+        isLoading: false,
+        restoredOrderIds: new Set(),
       });
     }
   },
@@ -152,5 +164,69 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   setLoading: (loading: boolean) => {
     set({ isLoading: loading });
+  },
+
+  undoLastOrder: async () => {
+    const state = get();
+    if (!state.currentCartId) {
+      console.warn('No cart ID available for undo');
+      return;
+    }
+    
+    try {
+      // Query for the most recently completed order
+      const completedOrdersQuery = query(
+        collection(db, 'orders'),
+        where('cartId', '==', state.currentCartId),
+        where('status', '==', 'completed'),
+        orderBy('completedAt', 'desc'),
+        limit(1)
+      );
+      
+      const querySnapshot = await getDocs(completedOrdersQuery);
+      
+      if (querySnapshot.empty) {
+        console.log('No completed orders found to undo');
+        return;
+      }
+      
+      const orderDoc = querySnapshot.docs[0];
+      const orderId = orderDoc.id;
+      
+      // Update order back to ready status
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        status: 'ready',
+        completedAt: deleteField(),
+        completedBy: null,
+        readyAt: Timestamp.now(),
+      });
+      
+      // Apply ghost effect
+      const newRestoredOrderIds = new Set(state.restoredOrderIds);
+      newRestoredOrderIds.add(orderId);
+      set({ restoredOrderIds: newRestoredOrderIds });
+      
+      // Remove ghost effect after delay
+      setTimeout(() => {
+        const currentState = get();
+        const updatedRestoredOrderIds = new Set(currentState.restoredOrderIds);
+        updatedRestoredOrderIds.delete(orderId);
+        set({ restoredOrderIds: updatedRestoredOrderIds });
+      }, GHOST_EFFECT_DURATION);
+      
+      console.log(`Successfully restored order ${orderId} to ready status`);
+      
+    } catch (error) {
+      console.error('Failed to undo order:', error);
+      throw error; // Re-throw to allow caller to handle
+    }
+  },
+
+  clearRestoredOrder: (orderId: string) => {
+    const state = get();
+    const newRestoredOrderIds = new Set(state.restoredOrderIds);
+    newRestoredOrderIds.delete(orderId);
+    set({ restoredOrderIds: newRestoredOrderIds });
   },
 }));
