@@ -283,29 +283,48 @@ export const sendOrderReadyNotification = onDocumentUpdated(
       return;
     }
 
-    // Add timestamp to track when notifications are actually sent
+    console.log(`[NOTIFY] Order ${orderId} is now ready, finding users tracking this order...`);
 
-    const selectedUserIds = orderData.selectedUserIds || [];
+    // OPTIMIZATION: Query users with select() to fetch only fcmToken field
+    // This reduces read quota by only fetching the field we need instead of entire documents
+    const usersSnapshot = await admin.firestore()
+      .collection('users')
+      .where('trackedOrderIds', 'array-contains', orderId)
+      .select('fcmToken') // Only fetch fcmToken field to reduce quota usage
+      .get();
     
-    if (selectedUserIds.length === 0) {
+    if (usersSnapshot.empty) {
+      console.log(`[NOTIFY] No users tracking order ${orderId}`);
       return;
     }
 
+    // Extract user data from query result (no additional reads needed)
+    const trackingUsers = usersSnapshot.docs
+      .map(doc => ({
+        userId: doc.id,
+        fcmToken: doc.data()?.fcmToken
+      }))
+      .filter(user => user.fcmToken); // Filter out users without FCM tokens
+    
+    console.log(`[NOTIFY] Found ${trackingUsers.length} users with FCM tokens tracking order ${orderId}`);
+
 
     try {
-      // Build notification message template
-
+      // Build notification message template with cart/location name
+      const cartName = orderData.cartName || 'Restaurant';
+      
       const notificationData = {
-        // Notification content
-        title: `Order #${orderData.orderNumber} is Ready! 🎉 `,
+        // Notification content - includes cart/location name
+        title: `${cartName} - Order #${orderData.orderNumber} is Ready! 🎉`,
         body: orderData.customerName 
-          ? `${orderData.customerName}, your order is ready for pickup!` 
-          : `Your order is ready! Please come to the counter for pickup. ✨`,
+          ? `${orderData.customerName}, your order at ${cartName} is ready for pickup!` 
+          : `Your order at ${cartName} is ready! Please come to the counter for pickup. ✨`,
         // Order data
         orderId: String(orderId),
         orderNumber: String(orderData.orderNumber || ''),
         customerName: String(orderData.customerName || ''),
-        cartName: String(orderData.cartName || ''),
+        cartName: String(cartName),
+        cartId: String(orderData.cartId || ''),
         type: 'order_ready',
         // Rich notification data for service worker
         icon: '/logox-small.png',
@@ -320,32 +339,22 @@ export const sendOrderReadyNotification = onDocumentUpdated(
         ])
       };
 
-      // Send notifications to all selected users
-      const notificationPromises = selectedUserIds.map(async (userId: string) => {
+      // Send notifications to all users tracking this order
+      // OPTIMIZATION: No additional Firestore reads - we already have fcmToken from initial query
+      const notificationPromises = trackingUsers.map(async ({ userId, fcmToken }) => {
         try {
-          // 1. Get user document to find PWA FCM token
-          const userDoc = await admin.firestore().collection('users').doc(userId).get();
-          
-          if (!userDoc.exists) {
-            console.log(`[NOTIFY] User ${userId} not found`);
-            return;
-          }
-
-          const userData = userDoc.data();
-          const targetToken = userData?.fcmToken;
-
-          if (!targetToken) {
-            console.log(`[NOTIFY] No FCM token for user ${userId}`);
-            return;
-          }
-
-          // 2. Build message for this user
+          // Build message for this user with deep link to queue page
           const message = {
-            token: targetToken,
-            data: notificationData
+            token: fcmToken,
+            data: {
+              ...notificationData,
+              // Deep link: clicking notification opens /queue?cart={cartId}
+              clickAction: `/queue?cart=${orderData.cartId || ''}`,
+              url: `/queue?cart=${orderData.cartId || ''}`
+            }
           };
 
-          // 3. Send notification to PWA
+          // Send notification to PWA
           await admin.messaging().send(message);
           console.log(`[NOTIFY] ✅ Sent notification to user ${userId}`);
           
@@ -353,16 +362,9 @@ export const sendOrderReadyNotification = onDocumentUpdated(
           // Check for specific Firebase Messaging errors
           const messagingError = error as any;
           if (messagingError.code === 'messaging/registration-token-not-registered') {
-            console.log(`[NOTIFY] Stale token for user ${userId}, cleaning up`);
-            
-            // Remove stale token from user document
-            try {
-              await admin.firestore().collection('users').doc(userId).update({
-                fcmToken: admin.firestore.FieldValue.delete()
-              });
-            } catch (cleanupError) {
-              console.error(`[NOTIFY] Failed to cleanup token for user ${userId}:`, cleanupError);
-            }
+            console.log(`[NOTIFY] Stale token for user ${userId}, will be cleaned up by client`);
+            // Note: We don't cleanup here to avoid extra write quota
+            // The client will handle token refresh on next app load
           } else {
             console.error(`[NOTIFY] Error sending to user ${userId}:`, error);
           }

@@ -58,8 +58,10 @@ try {
           orderNumber: payload.data?.orderNumber,
           customerName: payload.data?.customerName,
           cartName: payload.data?.cartName,
+          cartId: payload.data?.cartId, // Use cartId for navigation
           type: payload.data?.type || 'order_ready',
-          cartId: payload.data?.cartName // Use cartName for navigation
+          clickAction: payload.data?.clickAction,
+          url: payload.data?.url
         }
       };
 
@@ -93,21 +95,18 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   // Handle different actions
-  if (event.action === 'view-order') {
+  if (event.action === 'view-order' || !event.action) {
     // Open the app to the cart queue
+    const clickAction = event.notification.data?.clickAction || event.notification.data?.url;
     const cartId = event.notification.data?.cartId;
     const orderId = event.notification.data?.orderId;
     
-    console.log('🎯 Opening app with cartId:', cartId, 'orderId:', orderId);
+    console.log('🎯 Opening app with clickAction:', clickAction, 'cartId:', cartId, 'orderId:', orderId);
     
-    // Build URL with cart parameter
-    let urlToOpen = '/';
-    if (cartId) {
-      urlToOpen = `/?cart=${cartId}`;
-      // If we have an orderId, we could also scroll to that order
-      if (orderId) {
-        urlToOpen += `#order-${orderId}`;
-      }
+    // Use clickAction/url if provided, otherwise build URL with cart parameter
+    let urlToOpen = clickAction || '/queue';
+    if (!clickAction && cartId) {
+      urlToOpen = `/queue?cart=${cartId}`;
     }
     
     console.log('🚀 Opening URL:', urlToOpen);
@@ -133,24 +132,6 @@ self.addEventListener('notificationclick', (event) => {
     // Just close the notification
     console.log('🚫 Dismissed notification');
     return;
-  } else {
-    // Default action - open the app
-    console.log('🏠 Default action - opening app');
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true })
-        .then((clientList) => {
-          for (const client of clientList) {
-            if ('focus' in client) {
-              console.log('📱 Focusing existing client for default action');
-              return client.focus();
-            }
-          }
-          if (clients.openWindow) {
-            console.log('🪟 Opening new window for default action');
-            return clients.openWindow('/');
-          }
-        })
-    );
   }
 });
 

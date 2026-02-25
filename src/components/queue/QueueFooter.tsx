@@ -10,8 +10,8 @@ interface QueueFooterProps {
   pinnedOrderStatus?: string;
 }
 
-export default function QueueFooter({ settings, pinnedOrderStatus }: QueueFooterProps) {
-  const isReady = pinnedOrderStatus === 'ready';
+export default function QueueFooter({ settings }: QueueFooterProps) {
+  const isReady = false; // No longer using pinned order status
 
   if (!settings || !settings.instagramHandle || !settings.placeId || !settings.websiteUrl) {
     return (

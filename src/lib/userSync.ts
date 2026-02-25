@@ -25,6 +25,7 @@ export interface UserDoc {
   currentCartId: string;
   fcmToken?: string;
   selectedOrderId?: string;
+  trackedOrderIds?: string[];
   lastActive: { toMillis: () => number } | null;
 }
 
@@ -211,20 +212,55 @@ export async function readSelectedOrder(userId: string): Promise<string | null> 
 }
 
 /**
+ * Add an order to the user's tracked orders list.
+ */
+export async function addTrackedOrder(
+  userId: string,
+  orderId: string,
+): Promise<void> {
+  console.log('👤 [USER_SYNC] Adding tracked order:', userId, 'orderId:', orderId);
+  const ref = doc(db, 'users', userId);
+  await updateDoc(ref, {
+    trackedOrderIds: arrayUnion(orderId),
+    lastActive: serverTimestamp(),
+  });
+  console.log('👤 [USER_SYNC] Tracked order added');
+}
+
+/**
+ * Remove an order from the user's tracked orders list.
+ */
+export async function removeTrackedOrder(
+  userId: string,
+  orderId: string,
+): Promise<void> {
+  console.log('👤 [USER_SYNC] Removing tracked order:', userId, 'orderId:', orderId);
+  const ref = doc(db, 'users', userId);
+  await updateDoc(ref, {
+    trackedOrderIds: arrayRemove(orderId),
+    lastActive: serverTimestamp(),
+  });
+  console.log('👤 [USER_SYNC] Tracked order removed');
+}
+
+/**
  * Subscribe to real-time changes on /users/{userId}.
  * Calls onCartChanged whenever currentCartId changes.
  * Calls onOrderChanged whenever selectedOrderId changes.
+ * Calls onTrackedOrdersChanged whenever trackedOrderIds changes.
  * Returns the unsubscribe function.
  */
 export function subscribeUserDoc(
   userId: string,
   onCartChanged: (cartId: string) => void,
   onOrderChanged?: (orderId: string | null) => void,
+  onTrackedOrdersChanged?: (orderIds: string[]) => void,
 ): Unsubscribe {
   console.log('👤 [USER_SYNC] Subscribing to user doc:', userId);
   const ref = doc(db, 'users', userId);
   let lastKnownCartId: string | null = null;
   let lastKnownOrderId: string | null = null;
+  let lastKnownTrackedOrderIds: string[] = [];
 
   return onSnapshot(
     ref,
@@ -241,7 +277,8 @@ export function subscribeUserDoc(
       const data = snap.data() as UserDoc;
       const cartId = data.currentCartId ?? null;
       const orderId = data.selectedOrderId ?? null;
-      console.log('👤 [USER_SYNC] Snapshot received, currentCartId:', cartId, 'selectedOrderId:', orderId);
+      const trackedOrderIds = data.trackedOrderIds ?? [];
+      console.log('👤 [USER_SYNC] Snapshot received, currentCartId:', cartId, 'selectedOrderId:', orderId, 'trackedOrderIds:', trackedOrderIds);
 
       if (cartId && cartId !== lastKnownCartId) {
         lastKnownCartId = cartId;
@@ -251,6 +288,11 @@ export function subscribeUserDoc(
       if (onOrderChanged && orderId !== lastKnownOrderId) {
         lastKnownOrderId = orderId;
         onOrderChanged(orderId);
+      }
+
+      if (onTrackedOrdersChanged && JSON.stringify(trackedOrderIds) !== JSON.stringify(lastKnownTrackedOrderIds)) {
+        lastKnownTrackedOrderIds = trackedOrderIds;
+        onTrackedOrdersChanged(trackedOrderIds);
       }
     },
     (error) => {

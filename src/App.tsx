@@ -1,11 +1,14 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import { useOrderStore } from './stores/orderStore';
+import { useTrackedOrdersStore } from './stores/trackedOrdersStore';
 import { useUserSync } from './hooks/useUserSync';
 import { getOrCreateUserId, ACTIVE_CART_KEY } from './lib/pwaUtils';
+import { removeTrackedOrder } from './lib/userSync';
 import QRHandler from './components/QRHandler';
+import MiniTracker from './components/MiniTracker';
 import Dashboard from './pages/Dashboard';
 import Queue from './pages/Queue';
 import About from './pages/About';
@@ -39,11 +42,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function App() {
+function AppContent() {
+  const location = useLocation();
   const initialize = useAuthStore((s) => s.initialize);
   const queryClient = useQueryClient();
   const subscribeToOrders = useOrderStore((s) => s.subscribeToOrders);
   const unsubscribeFromOrders = useOrderStore((s) => s.unsubscribeFromOrders);
+
+  // Tracked orders store
+  const { trackedOrders, setTrackedOrderIds } = useTrackedOrdersStore();
 
   // Track active cartId for global subscription
   const [activeCartId, setActiveCartId] = useState<string | null>(
@@ -115,16 +122,51 @@ function App() {
   // Resolve the persistent anonymous userId (URL → localStorage → new UUID)
   const userId = getOrCreateUserId();
 
+  // Handle tracked orders changes from Firestore
+  const handleTrackedOrdersChanged = useCallback(
+    (orderIds: string[]) => {
+      console.log(' [APP] Tracked orders changed:', orderIds);
+      setTrackedOrderIds(orderIds);
+    },
+    [setTrackedOrderIds],
+  );
+
+  // Handle removing a tracked order
+  const handleRemoveTrackedOrder = useCallback(
+    async (orderId: string) => {
+      if (!userId) return;
+      try {
+        await removeTrackedOrder(userId, orderId);
+        console.log(' [APP] Removed tracked order:', orderId);
+      } catch (error) {
+        console.error(' [APP] Failed to remove tracked order:', error);
+      }
+    },
+    [userId],
+  );
+
   // Real-time listener on /users/{userId}: fires whenever Safari writes a new
-  // currentCartId (QR scan) or selectedOrderId changes, instantly updating the PWA.
+  // currentCartId (QR scan), selectedOrderId, or trackedOrderIds changes.
   useUserSync({ 
     userId, 
-    onCartChanged: handleCartChanged
+    onCartChanged: handleCartChanged,
+    onTrackedOrdersChanged: handleTrackedOrdersChanged,
     // onOrderChanged is handled by Queue component directly
   });
 
+  // Determine if MiniTracker should be shown (hide on dashboard pages and queue page)
+  // Queue page has its own Active Tracking header, so MiniTracker is redundant there
+  const shouldShowMiniTracker = !location.pathname.startsWith('/dashboard') && 
+                                !location.pathname.startsWith('/admin') && 
+                                !location.pathname.startsWith('/login') && 
+                                !location.pathname.startsWith('/register') &&
+                                !location.pathname.startsWith('/profile') &&
+                                !location.pathname.startsWith('/worker-stats') &&
+                                !location.pathname.startsWith('/analytics') &&
+                                !location.pathname.startsWith('/queue');
+
   return (
-    <Router>
+    <>
       {/* Intercepts ?cart=<id> on any URL, saves to localStorage, redirects to /queue */}
       <QRHandler />
       <Routes>
@@ -196,6 +238,22 @@ function App() {
           }
         />
       </Routes>
+      
+      {/* MiniTracker - visible on queue and public pages */}
+      {shouldShowMiniTracker && (
+        <MiniTracker
+          trackedOrders={trackedOrders}
+          onRemoveOrder={handleRemoveTrackedOrder}
+        />
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }

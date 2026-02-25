@@ -16,14 +16,17 @@ interface UseUserSyncOptions {
   userId: string | null;
   onCartChanged: (cartId: string) => void;
   onOrderChanged?: (orderId: string | null) => void;
+  onTrackedOrdersChanged?: (orderIds: string[]) => void;
 }
 
-export function useUserSync({ userId, onCartChanged, onOrderChanged }: UseUserSyncOptions) {
+export function useUserSync({ userId, onCartChanged, onOrderChanged, onTrackedOrdersChanged }: UseUserSyncOptions) {
   const onCartChangedRef = useRef(onCartChanged);
   const onOrderChangedRef = useRef(onOrderChanged);
+  const onTrackedOrdersChangedRef = useRef(onTrackedOrdersChanged);
   useLayoutEffect(() => {
     onCartChangedRef.current = onCartChanged;
     onOrderChangedRef.current = onOrderChanged;
+    onTrackedOrdersChangedRef.current = onTrackedOrdersChanged;
   });
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export function useUserSync({ userId, onCartChanged, onOrderChanged }: UseUserSy
       });
     }
 
-    // Real-time listener: fires on every currentCartId or selectedOrderId change.
+    // Real-time listener: fires on every currentCartId, selectedOrderId, or trackedOrderIds change.
     const unsubscribe = subscribeUserDoc(
       userId,
       (cartId) => {
@@ -55,6 +58,10 @@ export function useUserSync({ userId, onCartChanged, onOrderChanged }: UseUserSy
       (orderId) => {
         console.log('👤 [USER_SYNC] Real-time: selectedOrderId changed to', orderId);
         onOrderChangedRef.current?.(orderId);
+      },
+      (orderIds) => {
+        console.log('👤 [USER_SYNC] Real-time: trackedOrderIds changed to', orderIds);
+        onTrackedOrdersChangedRef.current?.(orderIds);
       },
     );
 

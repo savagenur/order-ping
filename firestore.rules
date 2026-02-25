@@ -30,12 +30,12 @@ service cloud.firestore {
     }
     
     // Users — primary cross-app sync document keyed by anonymous userId (UUID).
-    // Stores: currentCartId, fcmToken, selectedOrderId, lastActive.
+    // Stores: currentCartId, fcmToken, selectedOrderId, trackedOrderIds, lastActive.
     // Anyone can write their own doc (validated: userId field must match doc ID).
     // Reads are open so the PWA can bootstrap cartId on cold-start.
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasAny(['currentCartId', 'fcmToken', 'selectedOrderId', 'lastActive']);
+      allow write: if request.resource.data.keys().hasAny(['currentCartId', 'fcmToken', 'selectedOrderId', 'trackedOrderIds', 'lastActive']);
     }
   }
 }

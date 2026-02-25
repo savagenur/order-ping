@@ -8,15 +8,16 @@ import { Zap } from "lucide-react";
 import WelcomePage from "../components/WelcomePage";
 import LoadingSpinner from "../components/LoadingSpinner";
 import QueueHeader from "../components/queue/QueueHeader";
-import PinnedOrder from "../components/queue/PinnedOrder";
+import ActiveTracking from "../components/queue/ActiveTracking";
 import ReadyOrders from "../components/queue/ReadyOrders";
 import PendingOrders from "../components/queue/PendingOrders";
 import QueueFooter from "../components/queue/QueueFooter";
 import NotificationModal from "../components/queue/NotificationModal";
 import { getNotificationPermission, requestNotificationPermission, subscribeToOrderNotifications, unsubscribeFromOrderNotifications } from "../lib/notifications";
 import { ACTIVE_CART_KEY, USER_ID_KEY } from "../lib/pwaUtils";
-import { writeSelectedOrder, readSelectedOrder, writeSelectedOrderWithTransition } from "../lib/userSync";
-import { useUserSync } from "../hooks/useUserSync";
+import { writeSelectedOrder, addTrackedOrder, removeTrackedOrder } from "../lib/userSync";
+import { useTrackedOrdersStore } from "../stores/trackedOrdersStore";
+import type { Order } from "../types/order";
 
 const NOTIFICATION_SHOWN_KEY = "orderping_notification_shown";
 const SESSION_NOTIFICATION_SHOWN_KEY = "orderping_session_notification_shown";
@@ -33,8 +34,6 @@ export default function Queue() {
   const initialCartId = localStorage.getItem(ACTIVE_CART_KEY);
   const [cartId, setCartId] = useState<string | null>(initialCartId);
 
-  const [pinnedOrderId, setPinnedOrderId] = useState<string | null>(null); // This will be controlled by cloud sync
-
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [lastSubscribedOrder, setLastSubscribedOrder] = useState<string | null>(() => {
@@ -45,26 +44,8 @@ export default function Queue() {
   const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [clickingOrderId, setClickingOrderId] = useState<string | null>(null);
 
-  // Bootstrap and sync selected order from cloud - this is the single source of truth
-  useEffect(() => {
-    if (currentUserId) {
-      readSelectedOrder(currentUserId).then((cloudOrderId) => {
-        setPinnedOrderId(cloudOrderId); // pinned order always reflects cloud selection
-      });
-    }
-  }, []); // currentUserId is a ref-like value, not a dependency
-
-  // Handle real-time selected order changes from Safari/PWA sync
-  const handleOrderChanged = useCallback((orderId: string | null) => {
-    setPinnedOrderId(orderId); // Update UI to match cloud state
-  }, []);
-
-  // Subscribe to order changes from cloud
-  useUserSync({ 
-    userId: currentUserId || null, 
-    onCartChanged: () => {}, // Cart changes handled by App-level useUserSync
-    onOrderChanged: handleOrderChanged 
-  });
+  // Get tracked orders from global store
+  const { trackedOrders } = useTrackedOrdersStore();
 
 
   // Keep cartId in sync if localStorage changes in another tab or after a
@@ -82,10 +63,6 @@ export default function Queue() {
             queryClient.invalidateQueries({ queryKey: ['cart-settings', prev] });
           }
           
-          // Clear selection in cloud when switching carts
-          if (currentUserId) {
-            writeSelectedOrder(currentUserId, '').catch(console.error);
-          }
           setShowAuthModal(false);
           setSelectedOrder(null);
           
@@ -114,24 +91,6 @@ export default function Queue() {
 
   const allOrders = useMemo(() => [...pendingOrders, ...readyOrders], [pendingOrders, readyOrders]);
 
-  // Find the pinned order from the live data
-  const pinnedOrder = pinnedOrderId
-    ? allOrders.find((o) => o.id === pinnedOrderId) ?? null
-    : null;
-
-  // Calculate queue position for pinned order (only if it's pending)
-  const queuePosition = pinnedOrder && pinnedOrder.status === 'pending' 
-    ? pendingOrders.findIndex((o) => o.id === pinnedOrderId) + 1 
-    : undefined;
-
-  // Clear loading state when order gets pinned and add fallback timeout
-  useEffect(() => {
-    if (clickingOrderId && pinnedOrderId === clickingOrderId) {
-      // Order successfully pinned, clear loading state
-      setClickingOrderId(null);
-    }
-  }, [clickingOrderId, pinnedOrderId]);
-
   // Fallback timeout to clear loading state if something goes wrong
   useEffect(() => {
     if (clickingOrderId) {
@@ -142,20 +101,41 @@ export default function Queue() {
     }
   }, [clickingOrderId]);
 
-  // Auto-clear pinned order if it's been completed (no longer in active lists)
-  useEffect(() => {
-    if (pinnedOrderId && !isLoading && allOrders.length > 0 && !pinnedOrder) {
-      // Order was completed or removed — keep pinned for a grace period
-      // so the user sees it disappear naturally
+  // Handle clicking a tracked order - navigate to its cart
+  const handleTrackedOrderClick = useCallback((order: Order) => {
+    if (order.cartId !== cartId) {
+      // Switch to the order's cart
+      localStorage.setItem(ACTIVE_CART_KEY, order.cartId);
+      setCartId(order.cartId);
+      
+      // Update user doc with new cart
+      if (currentUserId) {
+        writeSelectedOrder(currentUserId, order.cartId).catch(console.error);
+      }
+      
+      // Invalidate queries for smooth transition
+      queryClient.invalidateQueries({ queryKey: ['queue-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['cart-settings'] });
+      
+      // Fire synthetic focus event
+      window.dispatchEvent(new Event('focus'));
     }
-  }, [pinnedOrderId, pinnedOrder, isLoading, allOrders.length]);
+    
+    // Scroll to top to see the order in the queue
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [cartId, currentUserId, queryClient]);
 
-  const handleClearPinned = useCallback(() => {
-    // Clear selection with transition to remove userId from current order
+  // Handle removing a tracked order
+  const handleRemoveTrackedOrder = useCallback(async (orderId: string) => {
     if (currentUserId) {
-      writeSelectedOrderWithTransition(currentUserId, '', pinnedOrderId).catch(console.error);
+      try {
+        await removeTrackedOrder(currentUserId, orderId);
+        console.log('🗑️ [QUEUE] Removed order from tracking:', orderId);
+      } catch (error) {
+        console.error('🗑️ [QUEUE] Failed to remove tracked order:', error);
+      }
     }
-  }, [pinnedOrderId]); // currentUserId is ref-like, pinnedOrderId is needed for transition
+  }, [currentUserId]);
 
   const handleCardClick = useCallback(async (orderId: string) => {
     const order = allOrders.find(o => o.id === orderId);
@@ -171,15 +151,20 @@ export default function Queue() {
     // Show loading state immediately
     setClickingOrderId(orderId);
     
-    // Track previous order before making the transition
-    const currentPreviousOrderId = pinnedOrderId;
-    
-    // Always write selection to cloud with transition - UI will update via real-time sync
+    // Add order to tracked orders list for multi-cart tracking
     if (currentUserId) {
-      writeSelectedOrderWithTransition(currentUserId, orderId, currentPreviousOrderId).catch(console.error);
+      try {
+        await addTrackedOrder(currentUserId, orderId);
+        console.log('🎯 [QUEUE] Added order to tracked list:', orderId);
+      } catch (error) {
+        console.error('🎯 [QUEUE] Failed to add tracked order:', error);
+      }
     }
     
-    // Clear loading state when order gets pinned (monitored via useEffect below)
+    // Clear loading state after a short delay
+    setTimeout(() => {
+      setClickingOrderId(null);
+    }, 500);
     
     // Check if order status is "preparing" (pending in current codebase)
     if (order.status === 'pending') {
@@ -249,13 +234,12 @@ export default function Queue() {
     
     // Scroll to top after selection
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime, currentUserId, pinnedOrderId]);
+  }, [allOrders, lastSubscribedOrder, isSubscribing, lastClickTime, currentUserId]);
 
-  // Filter pinned order out of the section lists to avoid duplication
-  const filteredReadyOrders = readyOrders.filter(
-    (o) => o.id !== pinnedOrderId,
-  );
-  // Keep pinned order in pending list so it remains visible
+  // Filter tracked orders out of the section lists to avoid duplication
+  const trackedOrderIds = new Set(trackedOrders.map(o => o.id));
+  const filteredReadyOrders = readyOrders.filter((o) => !trackedOrderIds.has(o.id));
+  const filteredPendingOrders = pendingOrders.filter((o) => !trackedOrderIds.has(o.id));
 
   // Cleanup: unsubscribe from notifications when cart changes or component unmounts
   useEffect(() => {
@@ -290,8 +274,16 @@ export default function Queue() {
     <div className="min-h-screen min-w-screen bg-zinc-950 pt-16 pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <QueueHeader cartName={cartName} />
 
-      {/* Contextual hint - shows only when no order is selected */}
-      {!pinnedOrderId && (
+      {/* Active Tracking - Global header showing all tracked orders */}
+      <ActiveTracking 
+        trackedOrders={trackedOrders}
+        onOrderClick={handleTrackedOrderClick}
+        onRemoveOrder={handleRemoveTrackedOrder}
+        currentCartId={cartId}
+      />
+
+      {/* Contextual hint - shows only when no order is tracked */}
+      {trackedOrders.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -324,8 +316,6 @@ export default function Queue() {
         </motion.div>
       )}
 
-      <PinnedOrder order={pinnedOrder} onClear={handleClearPinned} queuePosition={queuePosition} />
-
       <ReadyOrders
         readyOrders={filteredReadyOrders}
         onSelectOrder={handleCardClick}
@@ -333,7 +323,7 @@ export default function Queue() {
       />
 
       <PendingOrders
-        pendingOrders={pendingOrders}
+        pendingOrders={filteredPendingOrders}
         onSelectOrder={handleCardClick}
         isLoading={isLoading}
         clickingOrderId={clickingOrderId}
@@ -351,8 +341,7 @@ export default function Queue() {
       </div>
 
       <QueueFooter 
-        settings={cartSettings || {}} 
-        pinnedOrderStatus={pinnedOrder?.status}
+        settings={cartSettings || {}}
       />
 
       {/* Notification Modal */}
