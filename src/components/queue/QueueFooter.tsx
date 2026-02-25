@@ -1,5 +1,6 @@
 import { Instagram, Star, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { Order } from "../../types/order";
 
 interface QueueFooterProps {
   settings: {
@@ -8,10 +9,15 @@ interface QueueFooterProps {
     websiteUrl?: string;
   };
   pinnedOrderStatus?: string;
+  trackedOrders?: Order[];
+  currentCartId?: string | null;
 }
 
-export default function QueueFooter({ settings }: QueueFooterProps) {
-  const isReady = false; // No longer using pinned order status
+export default function QueueFooter({ settings, trackedOrders = [], currentCartId }: QueueFooterProps) {
+  // Check if current cart has at least one ready order in tracked orders
+  const isReady = trackedOrders.some(order => 
+    order.cartId === currentCartId && order.status === "ready"
+  );
 
   if (!settings || !settings.instagramHandle || !settings.placeId || !settings.websiteUrl) {
     return (

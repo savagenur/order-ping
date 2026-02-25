@@ -340,6 +340,8 @@ export default function Queue() {
 
       <QueueFooter 
         settings={cartSettings || {}}
+        trackedOrders={trackedOrders}
+        currentCartId={cartId}
       />
 
       {/* Notification Modal */}
