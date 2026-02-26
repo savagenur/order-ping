@@ -1,7 +1,7 @@
 import { useState, memo } from "react";
 import { RotateCcw, BellRing, Loader2, CheckCheck } from "lucide-react";
 import type { Order } from "../../types/order";
-import { getOrderColorByName } from "../../lib/orderColors";
+import { OrderCard } from "../admin/OrderCard";
 
 interface OrderListProps {
   orders: Order[];
@@ -10,6 +10,7 @@ interface OrderListProps {
   onMarkAllReady: () => void;
   onMarkAllCompleted: () => void;
   onUndo?: () => void;
+  onRetryDeclined?: (orderId: string) => void;
   restoredOrderIds?: Set<string>;
   bulkActionLoading?: {
     markingAllReady?: boolean;
@@ -29,6 +30,7 @@ const OrderList = memo(function OrderList({
   onMarkAllReady,
   onMarkAllCompleted,
   onUndo,
+  onRetryDeclined,
   restoredOrderIds = new Set(),
   bulkActionLoading = {},
 }: OrderListProps) {
@@ -37,6 +39,7 @@ const OrderList = memo(function OrderList({
     completedConfirm: false,
   });
   const preparingOrders = orders.filter((o) => o.status === "pending");
+  const declinedOrders = orders.filter((o) => o.status === "declined");
   const readyOrders = orders
     .filter((o) => o.status === "ready")
     .sort((a, b) => {
@@ -83,23 +86,33 @@ const OrderList = memo(function OrderList({
               </button>
             )}
             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
-              {preparingOrders.length}
+              {preparingOrders.length + declinedOrders.length}
             </span>
           </div>
         </div>
 
-        {preparingOrders.length === 0 ? (
+        {preparingOrders.length === 0 && declinedOrders.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-zinc-600 text-sm">No orders being prepared</p>
           </div>
         ) : (
           <div className="space-y-2">
+            {/* Show declined orders first (for attention) */}
+            {declinedOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                variant="preparing"
+                onAction={() => onRetryDeclined?.(order.id)}
+                isGhost={restoredOrderIds.has(order.id)}
+              />
+            ))}
+            {/* Then show pending orders */}
             {preparingOrders.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
-                actionLabel="Set Ready"
-                actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
+                variant="preparing"
                 onAction={() => onMarkReady(order.id)}
                 isGhost={restoredOrderIds.has(order.id)}
               />
@@ -166,8 +179,7 @@ const OrderList = memo(function OrderList({
               <OrderCard
                 key={order.id}
                 order={order}
-                actionLabel="Complete"
-                actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
+                variant="ready"
                 onAction={() => onMarkCompleted(order.id)}
                 isGhost={restoredOrderIds.has(order.id)}
               />
@@ -180,59 +192,3 @@ const OrderList = memo(function OrderList({
 });
 
 export default OrderList;
-
-function OrderCard({
-  order,
-  actionLabel,
-  actionColor,
-  onAction,
-  isGhost = false,
-}: {
-  order: Order;
-  actionLabel: string;
-  actionColor: string;
-  onAction: () => void;
-  isGhost?: boolean;
-}) {
-  const color = getOrderColorByName(order.color || "BLUE");
-
-  return (
-    <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4 transition-opacity duration-1000 ${
-        isGhost ? 'opacity-50' : 'opacity-100'
-      }`}
-      style={{ borderLeftWidth: 4, borderLeftColor: color.hex }}
-    >
-      {/* Order Number + Color Badge */}
-      <div className="shrink-0 flex flex-col items-start gap-1">
-        <span className="font-mono font-extrabold text-4xl text-white leading-none">
-          #{order.orderNumber}
-        </span>
-        <span
-          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${color.badge} ${color.badgeText}`}
-        >
-          {color.name}
-        </span>
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        {order.customerName && (
-          <p className="text-zinc-300 text-sm truncate font-medium">{order.customerName}</p>
-        )}
-        {order.orderDetails && (
-          <p className="text-zinc-500 text-xs truncate mt-0.5">{order.orderDetails}</p>
-        )}
-      </div>
-
-      {/* Action Button */}
-      <button
-        onClick={onAction}
-        className={`shrink-0 px-6 py-4 rounded-xl text-white text-sm font-bold uppercase tracking-wider cursor-pointer ${actionColor}`}
-        style={{ WebkitTapHighlightColor: "transparent" }}
-      >
-        {actionLabel}
-      </button>
-    </div>
-  );
-}

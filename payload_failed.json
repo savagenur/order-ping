@@ -1,14 +1,14 @@
 {
   "merchant_id": "6SSW7HV8K2ST5",
   "type": "payment.updated",
-  "event_id": "45def89a-1234-5678-9abc-def123456xsa",
+  "event_id": "45def89a-1234-5678-9abc-def123456000",
   "created_at": "2026-02-26T08:42:00Z",
   "data": {
     "type": "payment",
-    "id": "NewPayment789X33",
+    "id": "NewPayment789X00",
     "object": {
       "payment": {
-        "id": "NewPayment789X33",
+        "id": "NewPayment789X00",
         "amount_money": {
           "amount": 1250,
           "currency": "USD"

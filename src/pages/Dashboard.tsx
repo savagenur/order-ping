@@ -5,14 +5,14 @@ import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useOrderStore } from "../stores/orderStore";
 import { useDashboardOrders } from "../hooks/useDashboardOrders";
-import { useAddNumpadOrder, useMarkReady, useMarkCompleted } from "../hooks/useOrderMutations";
+import { useAddNumpadOrder, useMarkReady, useMarkCompleted, useRetryDeclinedOrder } from "../hooks/useOrderMutations";
 import { useNextOrderNumber, updateLocalNextOrderNumber, fetchAndSaveCurrentNextOrderNumber } from "../hooks/useNextOrderNumber";
 import { useOrderFilters } from "../hooks/useOrderFilters";
 import { useBulkActionLoading } from "../hooks/useBulkActionLoading";
 import { useToast } from "../hooks/useToast";
 import NumpadInput from "../components/dashboard/NumpadInput";
 import OrderList from "../components/dashboard/OrderList";
-import DashboardOrderCard from "../components/dashboard/DashboardOrderCard";
+import { OrderCard } from "../components/admin/OrderCard";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import TabButton from "../components/dashboard/TabButton";
 import ToastContainer from "../components/ui/ToastContainer";
@@ -36,9 +36,8 @@ export default function Dashboard() {
   const { activeTab, setActiveTab, currentInput, selectedColor, setInput, setSelectedColor, showSuccess } =
     useDashboardStore();
   const { undoLastOrder, restoredOrderIds } = useOrderStore();
-
   // Toast notifications
-  const { showToast } = useToast();
+  const toast = useToast();
 
   // Consume orders from global centralized store
   const { data: orders = [] } = useDashboardOrders();
@@ -50,6 +49,7 @@ export default function Dashboard() {
   const addNumpadOrder = useAddNumpadOrder();
   const markReady = useMarkReady();
   const markCompleted = useMarkCompleted();
+  const retryDeclinedOrder = useRetryDeclinedOrder();
 
   // Custom hooks for filtering and bulk actions
   const { preparingOrders, readyOrders, declinedOrders, preparingCount, readyCount, declinedCount, listCount } = useOrderFilters(orders);
@@ -109,7 +109,7 @@ export default function Dashboard() {
       });
     } catch (error) {
       console.error("Error adding order:", error);
-      showToast("Failed to add order", "error");
+      toast.showToast("Failed to add order", "error");
       // Optionally: Revert local update if server fails
       // But for now, keep local optimistic update
     }
@@ -120,7 +120,7 @@ export default function Dashboard() {
       await markReady.mutateAsync(orderId);
     } catch (error) {
       console.error("Error updating order:", error);
-      showToast("Failed to update order", "error");
+      toast.showToast("Failed to update order", "error");
     }
   };
 
@@ -129,7 +129,7 @@ export default function Dashboard() {
       await markCompleted.mutateAsync(orderId);
     } catch (error) {
       console.error("Error completing order:", error);
-      showToast("Failed to complete order", "error");
+      toast.showToast("Failed to complete order", "error");
     }
   };
 
@@ -141,7 +141,7 @@ export default function Dashboard() {
       await Promise.all(preparingOrders.map(order => markReady.mutateAsync(order.id)));
     } catch (error) {
       console.error("Error marking all orders ready:", error);
-      showToast("Failed to mark some orders ready", "error");
+      toast.showToast("Failed to mark some orders ready", "error");
     }
   };
 
@@ -153,27 +153,23 @@ export default function Dashboard() {
       await Promise.all(readyOrders.map(order => markCompleted.mutateAsync(order.id)));
     } catch (error) {
       console.error("Error completing all orders:", error);
-      showToast("Failed to complete some orders", "error");
+      toast.showToast("Failed to complete some orders", "error");
     }
   };
 
   const handleUndo = async () => {
     try {
       await undoLastOrder();
-      showToast("Order restored successfully", "success");
+      toast.showToast("Order restored successfully", "success");
     } catch (error) {
       console.error("Error undoing order:", error);
-      showToast("Failed to restore order", "error");
+      toast.showToast("Failed to restore order", "error");
     }
   };
 
 
-  const handleSwipe = (direction: "left" | "right") => {
-    if (direction === "left" && activeTab === "create") {
-      setActiveTab("list");
-    } else if (direction === "right" && activeTab === "list") {
-      setActiveTab("create");
-    }
+  const handleSwipe = () => {
+    setActiveTab(activeTab === "create" ? "list" : "create");
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -190,11 +186,7 @@ export default function Dashboard() {
       
       // Only handle horizontal swipes
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-        if (deltaX > 0) {
-          handleSwipe("right");
-        } else {
-          handleSwipe("left");
-        }
+        handleSwipe();
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
       }
@@ -293,6 +285,15 @@ export default function Dashboard() {
                 onMarkAllReady={handleMarkAllReady}
                 onMarkAllCompleted={handleMarkAllCompleted}
                 onUndo={handleUndo}
+                onRetryDeclined={async (orderId: string) => {
+                  try {
+                    const result = await retryDeclinedOrder.mutateAsync(orderId);
+                    toast.showToast(result.message, 'success');
+                  } catch (error) {
+                    console.error('Failed to verify order:', error);
+                    toast.showToast(error instanceof Error ? error.message : 'Failed to verify order', 'error');
+                  }
+                }}
                 restoredOrderIds={restoredOrderIds}
                 bulkActionLoading={{
                   markingAllReady: preparingCount > 0 && preparingCount === orders.filter(o => o.status === "pending" && markReady.isPending).length,
@@ -376,25 +377,28 @@ export default function Dashboard() {
                       <div className="space-y-2">
                         {/* Show declined orders first (for attention) */}
                         {declinedOrders.map((order) => (
-                          <DashboardOrderCard
+                          <OrderCard
                             key={order.id}
                             order={order}
-                            actionLabel="Retry"
-                            actionColor="bg-red-800/50 hover:bg-red-800/70 active:bg-red-900/50"
-                            onAction={() => {
-                              // TODO: Implement retry logic (e.g., mark as pending)
-                              console.log("Retry payment for order:", order.id);
+                            variant="preparing"
+                            onAction={async () => {
+                              try {
+                                const result = await retryDeclinedOrder.mutateAsync(order.id);
+                                toast.showToast(result.message, 'success');
+                              } catch (error) {
+                                console.error('Failed to verify order:', error);
+                                toast.showToast(error instanceof Error ? error.message : 'Failed to verify order', 'error');
+                              }
                             }}
                             isGhost={restoredOrderIds.has(order.id)}
                           />
                         ))}
                         {/* Then show pending orders */}
                         {preparingOrders.map((order) => (
-                          <DashboardOrderCard
+                          <OrderCard
                             key={order.id}
                             order={order}
-                            actionLabel="Set Ready"
-                            actionColor="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700"
+                            variant="preparing"
                             onAction={async () => await markReady.mutateAsync(order.id)}
                             isGhost={restoredOrderIds.has(order.id)}
                           />
@@ -469,11 +473,10 @@ export default function Dashboard() {
                     ) : (
                       <div className="space-y-2">
                         {readyOrders.map((order) => (
-                          <DashboardOrderCard
+                          <OrderCard
                             key={order.id}
                             order={order}
-                            actionLabel="Complete"
-                            actionColor="bg-zinc-600 hover:bg-zinc-500 active:bg-zinc-700"
+                            variant="ready"
                             onAction={async () => await markCompleted.mutateAsync(order.id)}
                             isGhost={restoredOrderIds.has(order.id)}
                           />
@@ -524,6 +527,15 @@ export default function Dashboard() {
                     onMarkAllReady={handleMarkAllReady}
                     onMarkAllCompleted={handleMarkAllCompleted}
                     onUndo={handleUndo}
+                    onRetryDeclined={async (orderId: string) => {
+                      try {
+                        const result = await retryDeclinedOrder.mutateAsync(orderId);
+                        toast.showToast(result.message, 'success');
+                      } catch (error) {
+                        console.error('Failed to verify order:', error);
+                        toast.showToast(error instanceof Error ? error.message : 'Failed to verify order', 'error');
+                      }
+                    }}
                     restoredOrderIds={restoredOrderIds}
                     bulkActionLoading={bulkActionLoading}
                   />

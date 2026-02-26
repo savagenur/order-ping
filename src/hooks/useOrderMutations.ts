@@ -4,6 +4,7 @@ import {
   addDoc,
   updateDoc,
   doc,
+  getDoc,
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
@@ -98,6 +99,64 @@ export function useMarkAllReady() {
       });
 
       await batch.commit();
+    },
+  });
+}
+
+export function useRetryDeclinedOrder() {
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const orderRef = doc(db, 'orders', orderId);
+      
+      try {
+        // Fetch the order document to verify it exists
+        const orderDoc = await getDoc(orderRef);
+        
+        if (!orderDoc.exists()) {
+          throw new Error('Order not found - may have been deleted');
+        }
+        
+        const orderData = orderDoc.data();
+        
+        // Check if order is still declined
+        if (orderData.status === 'declined') {
+          return {
+            id: orderDoc.id,
+            orderNumber: orderData.orderNumber,
+            status: orderData.status,
+            expireAt: orderData.expireAt,
+            message: 'Order is still declined - deletion may be in progress'
+          };
+        } else if (orderData.status === 'expired') {
+          return {
+            id: orderDoc.id,
+            orderNumber: orderData.orderNumber,
+            status: orderData.status,
+            message: 'Order has expired and been removed'
+          };
+        } else {
+          return {
+            id: orderDoc.id,
+            orderNumber: orderData.orderNumber,
+            status: orderData.status,
+            message: `Order status changed to: ${orderData.status}`
+          };
+        }
+      } catch (error) {
+        // Check for network errors
+        if (error instanceof Error && (
+          error.message.includes('network') ||
+          error.message.includes('connection') ||
+          error.message.includes('offline') ||
+          error.message.includes('UNAVAILABLE') ||
+          error.message.includes('timeout')
+        )) {
+          throw new Error('No internet connection - please check your network and try again');
+        }
+        
+        // Re-throw other errors
+        throw error;
+      }
     },
   });
 }
