@@ -42,3 +42,4 @@ service-account-key.json
 setup-admin.cjs
 setup-cart.cjs
 draft.txt
+/emulator_backup

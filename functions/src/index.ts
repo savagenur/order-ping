@@ -7,9 +7,13 @@ import * as admin from "firebase-admin";
 
 // Import notification functions
 import { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications, cleanupUserOrderReference } from "./notifications";
+// Import Square webhook handler
+import { handleSquareWebhook } from "./squareWebhook";
 
 // Initialize Firebase Admin
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 // Define secrets (Required for v2 to handle API keys securely)
 // const twilioAccountSid = defineSecret("TWILIO_ACCOUNT_SID");
@@ -145,3 +149,6 @@ export const registerDeviceToken = onCall(
 
 // Re-export notification functions
 export { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNotifications, cleanupUserOrderReference };
+
+// Export Square webhook handler
+export { handleSquareWebhook };

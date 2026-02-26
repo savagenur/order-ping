@@ -59,7 +59,13 @@ export const ORDER_COLOR_OPTIONS: OrderColor[] = [
   ORDER_COLORS[3], // Priority
 ];
 
-export function getOrderColor(orderNumber: number): OrderColor {
+export function getOrderColor(orderNumber: number | string): OrderColor {
+  // For alphanumeric order numbers (Square), always return Online (amber) color
+  if (typeof orderNumber === 'string') {
+    return ORDER_COLORS[1]; // Online (amber)
+  }
+  
+  // For numeric order numbers, use the original logic
   return ORDER_COLOR_OPTIONS[(orderNumber - 1) % ORDER_COLOR_OPTIONS.length];
 }
 

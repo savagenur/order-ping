@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface Order {
   id: string;
-  orderNumber: number;
+  orderNumber: number | string; // Support both numeric and alphanumeric (Square payments)
   customerName: string;
   phoneNumber: string;
   orderDetails?: string;
@@ -10,6 +10,7 @@ export interface Order {
   status: 'pending' | 'ready' | 'completed';
   cartId: string;
   cartName: string;
+  source?: 'manual' | 'square'; // Track order source
   userId?: string;
   selectedUserIds?: string[]; // Track all users who selected/pinned this order
   createdAt: Date | Timestamp;

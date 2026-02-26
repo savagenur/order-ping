@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ngrok": "npx ngrok http 5001",
+    "emulate": "npx firebase emulators:start --import=./emulator_backup --export-on-exit"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

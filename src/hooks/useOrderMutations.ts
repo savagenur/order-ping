@@ -26,6 +26,7 @@ export function useAddOrder() {
         phoneNumber: input.formData.phoneNumber,
         orderDetails: input.formData.orderDetails || '',
         status: 'pending',
+        source: 'manual',
         cartId: input.cartId,
         cartName: input.cartName,
         // Don't set userId initially - only add when customer selects/pins the order
@@ -50,6 +51,7 @@ export function useAddNumpadOrder() {
         orderDetails: '',
         color: input.color,
         status: 'pending',
+        source: 'manual',
         cartId: input.cartId,
         cartName: input.cartName,
         // Don't set userId initially - only add when customer selects/pins the order
