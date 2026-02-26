@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getLastCreatedOrderNumber } from '../types/orderUtils';
+import { getCurrentOrderNumber } from './useOrderCounter';
 import { useAuthStore } from '../stores/authStore';
 
 const LOCAL_NEXT_ORDER_KEY = 'nextOrderNumber';
@@ -16,9 +16,9 @@ export function useNextOrderNumber() {
       const localNextOrder = localStorage.getItem(`${LOCAL_NEXT_ORDER_KEY}_${cartId}`);
       const localNextOrderNum = localNextOrder ? parseInt(localNextOrder, 10) : null;
       
-      // Get actual last order number from server
-      const lastCreatedOrderNumber = await getLastCreatedOrderNumber(cartId);
-      const actualNextOrder = lastCreatedOrderNumber + 1;
+      // Get current numeric order from counter (single document read)
+      const currentNumericOrder = await getCurrentOrderNumber(cartId);
+      const actualNextOrder = currentNumericOrder + 1;
       
       // If local number exists, check if it's behind server
       if (localNextOrderNum) {
@@ -50,9 +50,9 @@ export async function fetchAndSaveCurrentNextOrderNumber(cartId: string): Promis
   if (!cartId) throw new Error('No cart ID');
   
   try {
-    // Get actual last order number from server
-    const lastCreatedOrderNumber = await getLastCreatedOrderNumber(cartId);
-    const actualNextOrder = lastCreatedOrderNumber + 1;
+    // Get current numeric order from counter (single document read)
+    const currentNumericOrder = await getCurrentOrderNumber(cartId);
+    const actualNextOrder = currentNumericOrder + 1;
     
     // Save to local storage
     localStorage.setItem(`${LOCAL_NEXT_ORDER_KEY}_${cartId}`, actualNextOrder.toString());

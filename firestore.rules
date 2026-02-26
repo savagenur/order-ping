@@ -22,12 +22,35 @@ service cloud.firestore {
       allow read: if request.auth != null; // Allow authenticated users to read
     }
     
-    // Orders - Admin or cart worker or Cloud Functions
+    // Orders - Admin or cart worker
+    // Cloud Functions use Admin SDK (bypasses rules)
     match /orders/{orderId} {
-      allow read, write: if isAdmin();
-      allow read, create, update: if hasCartAccess(request.resource.data.cartId);
       allow read: if true; // Public queue page
-      allow create: if request.auth == null && request.resource.data.source == 'square'; // Allow Cloud Functions (Square webhook)
+      
+      // Admins can do anything
+      allow write: if isAdmin();
+      
+      // Workers can create orders
+      allow create: if hasCartAccess(request.resource.data.cartId);
+      
+      // Workers can update orders with restrictions
+      allow update: if hasCartAccess(resource.data.cartId) && (
+        // Allow legitimate status transitions
+        (resource.data.status == "pending" && request.resource.data.status in ["ready", "declined"]) ||
+        (resource.data.status == "ready" && request.resource.data.status == "completed") ||
+        // Allow updating fields without changing status
+        (request.resource.data.status == resource.data.status)
+      ) && (
+        // CRITICAL: Prevent frontend from setting "expired" status
+        // Only backend (Cloud Functions with Admin SDK) can set "expired"
+        request.resource.data.status != "expired"
+      );
+    }
+    
+    // Webhook events - Cloud Functions only (Admin SDK bypasses rules)
+    match /webhookEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
     }
     
     // Users — primary cross-app sync document keyed by anonymous userId (UUID).
@@ -37,6 +60,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow write: if request.resource.data.keys().hasAny(['currentCartId', 'fcmToken', 'selectedOrderId', 'trackedOrderIds', 'lastActive']);
+    }
+    
+    // Order Counters - Admin write, cart worker read
+    match /orderCounters/{cartId} {
+      allow read: if hasCartAccess(cartId) || isAdmin();
+      allow write: if isAdmin();
     }
   }
 }

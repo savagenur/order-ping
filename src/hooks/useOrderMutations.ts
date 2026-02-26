@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { getNextOrderNumber } from '../types/orderUtils';
+import { incrementOrderCounter } from './useOrderCounter';
 import type { Order, OrderInput } from '../types/order';
 
 export function useAddOrder() {
@@ -44,19 +45,26 @@ export function useAddNumpadOrder() {
       cartId: string;
       cartName: string;
     }) => {
-      await addDoc(collection(db, 'orders'), {
-        orderNumber: input.orderNumber,
-        customerName: '',
-        phoneNumber: '',
-        orderDetails: '',
-        color: input.color,
-        status: 'pending',
-        source: 'manual',
-        cartId: input.cartId,
-        cartName: input.cartName,
-        // Don't set userId initially - only add when customer selects/pins the order
-        createdAt: Timestamp.now(),
-      });
+      // Create order and increment counter in parallel
+      const [orderDoc] = await Promise.all([
+        addDoc(collection(db, 'orders'), {
+          orderNumber: input.orderNumber,
+          customerName: '',
+          phoneNumber: '',
+          orderDetails: '',
+          color: input.color,
+          status: 'pending',
+          source: 'manual',
+          cartId: input.cartId,
+          cartName: input.cartName,
+          // Don't set userId initially - only add when customer selects/pins the order
+          createdAt: Timestamp.now(),
+        }),
+        // Increment the counter for next numeric order
+        incrementOrderCounter(input.cartId),
+      ]);
+
+      return orderDoc.id;
     },
   });
 }

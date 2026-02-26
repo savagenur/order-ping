@@ -152,3 +152,6 @@ export { subscribeToNotifications, sendOrderReadyNotification, unsubscribeFromNo
 
 // Export Square webhook handler
 export { handleSquareWebhook };
+
+// Export order expiration processor
+export { processOrderExpirations } from "./orderExpiration";

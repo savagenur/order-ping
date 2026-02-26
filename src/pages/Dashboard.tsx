@@ -52,7 +52,7 @@ export default function Dashboard() {
   const markCompleted = useMarkCompleted();
 
   // Custom hooks for filtering and bulk actions
-  const { preparingOrders, readyOrders, preparingCount, readyCount, listCount } = useOrderFilters(orders);
+  const { preparingOrders, readyOrders, declinedOrders, preparingCount, readyCount, declinedCount, listCount } = useOrderFilters(orders);
   const bulkActionLoading = useBulkActionLoading({
     orders,
     markReady,
@@ -357,7 +357,7 @@ export default function Dashboard() {
                           </button>
                         )}
                         <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
-                          {preparingOrders.length}
+                          {preparingOrders.length + declinedOrders.length}
                         </span>
                       </div>
                     </div>
@@ -367,12 +367,28 @@ export default function Dashboard() {
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="max-w-lg mx-auto px-4 py-6">
-                    {preparingOrders.length === 0 ? (
+                    {/* Combine pending and declined orders */}
+                    {preparingOrders.length === 0 && declinedOrders.length === 0 ? (
                       <div className="text-center py-10">
                         <p className="text-zinc-600 text-sm">No orders being prepared</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
+                        {/* Show declined orders first (for attention) */}
+                        {declinedOrders.map((order) => (
+                          <DashboardOrderCard
+                            key={order.id}
+                            order={order}
+                            actionLabel="Retry"
+                            actionColor="bg-red-800/50 hover:bg-red-800/70 active:bg-red-900/50"
+                            onAction={() => {
+                              // TODO: Implement retry logic (e.g., mark as pending)
+                              console.log("Retry payment for order:", order.id);
+                            }}
+                            isGhost={restoredOrderIds.has(order.id)}
+                          />
+                        ))}
+                        {/* Then show pending orders */}
                         {preparingOrders.map((order) => (
                           <DashboardOrderCard
                             key={order.id}

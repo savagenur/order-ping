@@ -41,7 +41,7 @@ function mapDoc(doc: { id: string; data: () => Record<string, unknown> }): Order
   const data = doc.data();
   return {
     id: doc.id,
-    orderNumber: (data.orderNumber as number) || 0,
+    orderNumber: (data.orderNumber as number | string) ?? '',
     customerName: (data.customerName as string) || '',
     phoneNumber: (data.phoneNumber as string) || '',
     orderDetails: data.orderDetails as string | undefined,
@@ -49,6 +49,11 @@ function mapDoc(doc: { id: string; data: () => Record<string, unknown> }): Order
     status: (data.status as Order['status']) || 'pending',
     cartId: (data.cartId as string) || '',
     cartName: (data.cartName as string) || '',
+    source: data.source as Order['source'],
+    paymentId: data.paymentId as string | undefined,
+    amount: data.amount as number | undefined,
+    paymentStatus: data.paymentStatus as string | undefined,
+    expireAt: (data.expireAt as { toDate: () => Date })?.toDate(),
     createdAt: (data.createdAt as { toDate: () => Date })?.toDate() || new Date(),
     readyAt: (data.readyAt as { toDate: () => Date })?.toDate(),
     completedAt: (data.completedAt as { toDate: () => Date })?.toDate(),
@@ -87,7 +92,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     const ordersQuery = query(
       collection(db, 'orders'),
       where('cartId', '==', cartId),
-      where('status', 'in', ['pending', 'ready']),
+      where('status', 'in', ['pending', 'ready', 'declined']),
       where('createdAt', '>=', Timestamp.fromDate(twentyFourHoursAgo)),
       orderBy('createdAt', 'asc'),
       limit(50)

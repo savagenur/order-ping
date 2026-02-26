@@ -7,10 +7,14 @@ export interface Order {
   phoneNumber: string;
   orderDetails?: string;
   color?: string;
-  status: 'pending' | 'ready' | 'completed';
+  status: 'pending' | 'ready' | 'completed' | 'declined' | 'expired';
   cartId: string;
   cartName: string;
   source?: 'manual' | 'square'; // Track order source
+  paymentId?: string; // Square payment ID
+  amount?: number; // Payment amount in cents
+  paymentStatus?: string; // Raw payment status from Square (UPPERCASE: FAILED, CANCELED, COMPLETED, etc.)
+  expireAt?: Date | Timestamp; // TTL field for auto-deletion of declined orders
   userId?: string;
   selectedUserIds?: string[]; // Track all users who selected/pinned this order
   createdAt: Date | Timestamp;

@@ -455,7 +455,7 @@ async function upsertOrder(
 // MAIN WEBHOOK HANDLER
 // ============================================================================
 
-export const handleSquareWebhook = onRequest(
+export const handleSquareWebhookV2 = onRequest(
   {
     region: "us-west1",
     cors: false,
@@ -467,7 +467,7 @@ export const handleSquareWebhook = onRequest(
   async (request, response) => {
     const startTime = Date.now();
     const logger = new Logger({
-      function: "handleSquareWebhook",
+      function: "handleSquareWebhookV2",
       requestId: crypto.randomUUID(),
     });
 
