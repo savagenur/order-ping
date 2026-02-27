@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, lazy, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import { useOrderStore } from './stores/orderStore';
@@ -9,20 +9,29 @@ import { getOrCreateUserId, ACTIVE_CART_KEY } from './lib/pwaUtils';
 import { removeTrackedOrder } from './lib/userSync';
 import QRHandler from './components/QRHandler';
 import MiniTracker from './components/MiniTracker';
-import Dashboard from './pages/Dashboard';
-import Queue from './pages/Queue';
-import About from './pages/About';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import WorkerStats from './pages/WorkerStats';
-import Analytics from './pages/Analytics';
-import Profile from './pages/Profile';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminCarts from './pages/AdminCarts';
-import AdminWorkers from './pages/AdminWorkers';
 import AdminRoute from './components/AdminRoute';
 import AdminOnlyRoute from './components/AdminOnlyRoute';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Queue = lazy(() => import('./pages/Queue'));
+const About = lazy(() => import('./pages/About'));
+const Register = lazy(() => import('./pages/Register'));
+const Login = lazy(() => import('./pages/Login'));
+const WorkerStats = lazy(() => import('./pages/WorkerStats'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminCarts = lazy(() => import('./pages/AdminCarts'));
+const AdminWorkers = lazy(() => import('./pages/AdminWorkers'));
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="animate-pulse text-lg text-zinc-500">Loading...</div>
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
@@ -169,14 +178,15 @@ function AppContent() {
     <>
       {/* Intercepts ?cart=<id> on any URL, saves to localStorage, redirects to /queue */}
       <QRHandler />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<About />} />
-        <Route path="/queue" element={<Queue />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<About />} />
+          <Route path="/queue" element={<Queue />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
         
         {/* Worker Routes - Protected */}
         <Route
@@ -238,6 +248,7 @@ function AppContent() {
           }
         />
       </Routes>
+      </Suspense>
       
       {/* MiniTracker - visible on queue and public pages */}
       {shouldShowMiniTracker && (

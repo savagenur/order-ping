@@ -6,8 +6,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load environment variables based on mode
   const env = loadEnv(mode, process.cwd(), '')
+  const isProduction = mode === 'production'
   
   return {
     plugins: [
@@ -17,7 +17,6 @@ export default defineConfig(({ mode }) => {
         },
       }),
       tailwindcss(),
-      // Custom plugin to process service worker
       {
         name: 'service-worker-env',
         writeBundle() {
@@ -25,7 +24,6 @@ export default defineConfig(({ mode }) => {
           if (fs.existsSync(swPath)) {
             let content = fs.readFileSync(swPath, 'utf-8')
             
-            // Replace environment variable placeholders
             content = content.replace(/__VITE_FIREBASE_API_KEY__/g, env.VITE_FIREBASE_API_KEY || '')
             content = content.replace(/__VITE_FIREBASE_AUTH_DOMAIN__/g, env.VITE_FIREBASE_AUTH_DOMAIN || '')
             content = content.replace(/__VITE_FIREBASE_PROJECT_ID__/g, env.VITE_FIREBASE_PROJECT_ID || '')
@@ -40,25 +38,51 @@ export default defineConfig(({ mode }) => {
       }
     ],
     build: {
+      target: 'es2020',
+      minify: isProduction ? 'esbuild' : false,
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Firebase chunk
-            firebase: ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/messaging'],
-            // UI libraries chunk
-            ui: ['framer-motion', '@headlessui/react', '@heroicons/react', 'lucide-react'],
-            // Charts chunk
-            charts: ['recharts'],
-            // React ecosystem
-            react: ['react', 'react-dom', 'react-router-dom'],
-            // Data fetching
-            query: ['@tanstack/react-query', 'zustand'],
-            // Utilities
-            utils: ['date-fns']
-          }
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('firebase')) {
+                return 'firebase';
+              }
+              if (id.includes('framer-motion') || id.includes('@headlessui') || 
+                  id.includes('@heroicons') || id.includes('lucide-react')) {
+                return 'ui';
+              }
+              if (id.includes('recharts')) {
+                return 'charts';
+              }
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'react-vendor';
+              }
+              if (id.includes('@tanstack/react-query') || id.includes('zustand')) {
+                return 'state';
+              }
+              if (id.includes('date-fns')) {
+                return 'utils';
+              }
+              return 'vendor';
+            }
+          },
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
         }
       },
-      chunkSizeWarningLimit: 1000 // Increase limit to 1MB since we're splitting chunks
-    }
+      chunkSizeWarningLimit: 1000,
+      sourcemap: !isProduction,
+      reportCompressedSize: isProduction,
+    },
+    server: {
+      port: 5173,
+      strictPort: false,
+      open: false,
+    },
+    preview: {
+      port: 4173,
+      strictPort: false,
+    },
   }
 })
