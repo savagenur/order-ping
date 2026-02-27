@@ -1,5 +1,5 @@
-import { useState, memo } from "react";
-import { RotateCcw, BellRing, Loader2, CheckCheck } from "lucide-react";
+import { memo } from "react";
+import { RotateCcw } from "lucide-react";
 import type { Order } from "../../types/order";
 import { OrderCard } from "../admin/OrderCard";
 
@@ -7,37 +7,19 @@ interface OrderListProps {
   orders: Order[];
   onMarkReady: (orderId: string) => void;
   onMarkCompleted: (orderId: string) => void;
-  onMarkAllReady: () => void;
-  onMarkAllCompleted: () => void;
   onUndo?: () => void;
   onRetryDeclined?: (orderId: string) => void;
   restoredOrderIds?: Set<string>;
-  bulkActionLoading?: {
-    markingAllReady?: boolean;
-    markingAllCompleted?: boolean;
-  };
-}
-
-interface BulkButtonState {
-  readyConfirm: boolean;
-  completedConfirm: boolean;
 }
 
 const OrderList = memo(function OrderList({
   orders,
   onMarkReady,
   onMarkCompleted,
-  onMarkAllReady,
-  onMarkAllCompleted,
   onUndo,
   onRetryDeclined,
   restoredOrderIds = new Set(),
-  bulkActionLoading = {},
 }: OrderListProps) {
-  const [buttonState, setButtonState] = useState<BulkButtonState>({
-    readyConfirm: false,
-    completedConfirm: false,
-  });
   const preparingOrders = orders.filter((o) => o.status === "pending");
   const declinedOrders = orders.filter((o) => o.status === "declined");
   const readyOrders = orders
@@ -57,34 +39,6 @@ const OrderList = memo(function OrderList({
             Preparing
           </h2>
           <div className="flex items-center gap-2">
-            {preparingOrders.length > 0 && (
-              <button
-                onClick={() => {
-                  if (buttonState.readyConfirm) {
-                    onMarkAllReady();
-                    setButtonState(prev => ({ ...prev, readyConfirm: false }));
-                  } else {
-                    setButtonState(prev => ({ ...prev, readyConfirm: true }));
-                    setTimeout(() => {
-                      setButtonState(prev => ({ ...prev, readyConfirm: false }));
-                    }, 3000);
-                  }
-                }}
-                disabled={bulkActionLoading.markingAllReady}
-                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
-                  buttonState.readyConfirm
-                    ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
-                    : "bg-transparent text-emerald-400 border-emerald-400 active:bg-emerald-500 active:text-white"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                style={{ WebkitTapHighlightColor: "transparent" }}
-              >
-                {bulkActionLoading.markingAllReady
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : buttonState.readyConfirm
-                  ? <CheckCheck className="w-4 h-4" />
-                  : <BellRing className="w-4 h-4" />}
-              </button>
-            )}
             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
               {preparingOrders.length + declinedOrders.length}
             </span>
@@ -136,33 +90,6 @@ const OrderList = memo(function OrderList({
             >
               <RotateCcw className="w-4 h-4" />
             </button>
-            {readyOrders.length > 0 && (
-              <button
-                onClick={() => {
-                  if (buttonState.completedConfirm) {
-                    onMarkAllCompleted();
-                    setButtonState(prev => ({ ...prev, completedConfirm: false }));
-                  } else {
-                    setButtonState(prev => ({ ...prev, completedConfirm: true }));
-                    setTimeout(() => {
-                      setButtonState(prev => ({ ...prev, completedConfirm: false }));
-                    }, 3000);
-                  }
-                }}
-                disabled={bulkActionLoading.markingAllCompleted}
-                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
-                  buttonState.completedConfirm
-                    ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
-                    : "bg-transparent text-zinc-400 border-zinc-400 active:bg-zinc-500 active:text-white"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {bulkActionLoading.markingAllCompleted
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : buttonState.completedConfirm
-                  ? <CheckCheck className="w-4 h-4" />
-                  : <CheckCheck className="w-4 h-4" />}
-              </button>
-            )}
             <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
               {readyOrders.length}
             </span>

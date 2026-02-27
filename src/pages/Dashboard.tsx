@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, ListOrdered, RotateCcw, Loader2, BellRing, CheckCheck } from "lucide-react";
+import { PlusCircle, ListOrdered, RotateCcw } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useOrderStore } from "../stores/orderStore";
@@ -8,7 +8,6 @@ import { useDashboardOrders } from "../hooks/useDashboardOrders";
 import { useAddNumpadOrder, useMarkReady, useMarkCompleted, useRetryDeclinedOrder } from "../hooks/useOrderMutations";
 import { useNextOrderNumber, updateLocalNextOrderNumber, fetchAndSaveCurrentNextOrderNumber } from "../hooks/useNextOrderNumber";
 import { useOrderFilters } from "../hooks/useOrderFilters";
-import { useBulkActionLoading } from "../hooks/useBulkActionLoading";
 import { useToast } from "../hooks/useToast";
 import NumpadInput from "../components/dashboard/NumpadInput";
 import OrderList from "../components/dashboard/OrderList";
@@ -23,10 +22,6 @@ export default function Dashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [buttonState, setButtonState] = useState({
-    readyConfirm: false,
-    completedConfirm: false,
-  });
   const [layoutMode, setLayoutMode] = useState<'2-panel' | '3-panel'>('3-panel');
   const navigate = useNavigate();
   const lastKnownOrderNumber = useRef<number | null>(null);
@@ -51,13 +46,8 @@ export default function Dashboard() {
   const markCompleted = useMarkCompleted();
   const retryDeclinedOrder = useRetryDeclinedOrder();
 
-  // Custom hooks for filtering and bulk actions
-  const { preparingOrders, readyOrders, declinedOrders, preparingCount, readyCount, listCount } = useOrderFilters(orders);
-  const bulkActionLoading = useBulkActionLoading({
-    orders,
-    markReady,
-    markCompleted,
-  });
+  // Custom hooks for filtering 
+  const { preparingOrders, readyOrders, declinedOrders, listCount } = useOrderFilters(orders);
 
   useEffect(() => {
     if (nextOrderNumber) {
@@ -130,30 +120,6 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error completing order:", error);
       toast.showToast("Failed to complete order", "error");
-    }
-  };
-
-  const handleMarkAllReady = async () => {
-    const preparingOrders = orders.filter((o) => o.status === "pending");
-    if (preparingOrders.length === 0) return;
-
-    try {
-      await Promise.all(preparingOrders.map(order => markReady.mutateAsync(order.id)));
-    } catch (error) {
-      console.error("Error marking all orders ready:", error);
-      toast.showToast("Failed to mark some orders ready", "error");
-    }
-  };
-
-  const handleMarkAllCompleted = async () => {
-    const readyOrders = orders.filter((o) => o.status === "ready");
-    if (readyOrders.length === 0) return;
-
-    try {
-      await Promise.all(readyOrders.map(order => markCompleted.mutateAsync(order.id)));
-    } catch (error) {
-      console.error("Error completing all orders:", error);
-      toast.showToast("Failed to complete some orders", "error");
     }
   };
 
@@ -282,23 +248,21 @@ export default function Dashboard() {
                 orders={orders}
                 onMarkReady={handleMarkReady}
                 onMarkCompleted={handleMarkCompleted}
-                onMarkAllReady={handleMarkAllReady}
-                onMarkAllCompleted={handleMarkAllCompleted}
                 onUndo={handleUndo}
                 onRetryDeclined={async (orderId: string) => {
                   try {
                     const result = await retryDeclinedOrder.mutateAsync(orderId);
-                    toast.showToast(result.message, 'success');
+                    if (result.status === 'declined') {
+                      toast.showToast('Order still declined - deletion may be in progress', 'error');
+                    } else {
+                      toast.showToast('Order status changed', 'success');
+                    }
                   } catch (error) {
-                    console.error('Failed to verify order:', error);
-                    toast.showToast(error instanceof Error ? error.message : 'Failed to verify order', 'error');
+                    console.error('Error retrying declined order:', error);
+                    toast.showToast('Failed to retry order', 'error');
                   }
                 }}
                 restoredOrderIds={restoredOrderIds}
-                bulkActionLoading={{
-                  markingAllReady: preparingCount > 0 && preparingCount === orders.filter(o => o.status === "pending" && markReady.isPending).length,
-                  markingAllCompleted: readyCount > 0 && readyCount === orders.filter(o => o.status === "ready" && markCompleted.isPending).length,
-                }}
               />
             </div>
           )}
@@ -329,34 +293,6 @@ export default function Dashboard() {
                         Preparing
                       </h2>
                       <div className="flex items-center gap-2">
-                        {preparingOrders.length > 0 && (
-                          <button
-                            onClick={() => {
-                              if (buttonState.readyConfirm) {
-                                handleMarkAllReady();
-                                setButtonState(prev => ({ ...prev, readyConfirm: false }));
-                              } else {
-                                setButtonState(prev => ({ ...prev, readyConfirm: true }));
-                                setTimeout(() => {
-                                  setButtonState(prev => ({ ...prev, readyConfirm: false }));
-                                }, 3000);
-                              }
-                            }}
-                            disabled={bulkActionLoading.markingAllReady}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
-                              buttonState.readyConfirm
-                                ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
-                                : "bg-transparent text-emerald-400 border-emerald-400 active:bg-emerald-500 active:text-white"
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            style={{ WebkitTapHighlightColor: "transparent" }}
-                          >
-                            {bulkActionLoading.markingAllReady
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : buttonState.readyConfirm
-                  ? <BellRing className="w-4 h-4" />
-                  : <BellRing className="w-4 h-4" />}
-                          </button>
-                        )}
                         <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-xs font-medium">
                           {preparingOrders.length + declinedOrders.length}
                         </span>
@@ -427,34 +363,6 @@ export default function Dashboard() {
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
-                        {readyOrders.length > 0 && (
-                          <button
-                            onClick={() => {
-                              if (buttonState.completedConfirm) {
-                                handleMarkAllCompleted();
-                                setButtonState(prev => ({ ...prev, completedConfirm: false }));
-                              } else {
-                                setButtonState(prev => ({ ...prev, completedConfirm: true }));
-                                setTimeout(() => {
-                                  setButtonState(prev => ({ ...prev, completedConfirm: false }));
-                                }, 3000);
-                              }
-                            }}
-                            disabled={bulkActionLoading.markingAllCompleted}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-2 ${
-                              buttonState.completedConfirm
-                                ? "bg-amber-500 text-white border-amber-400 active:bg-amber-600"
-                                : "bg-transparent text-zinc-400 border-zinc-400 active:bg-zinc-500 active:text-white"
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            style={{ WebkitTapHighlightColor: "transparent" }}
-                          >
-                           {bulkActionLoading.markingAllCompleted
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : buttonState.completedConfirm
-                  ? <CheckCheck className="w-4 h-4" />
-                  : <CheckCheck className="w-4 h-4" />}
-                          </button>
-                        )}
                         <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">
                           {readyOrders.length}
                         </span>
@@ -524,8 +432,6 @@ export default function Dashboard() {
                     orders={orders}
                     onMarkReady={handleMarkReady}
                     onMarkCompleted={handleMarkCompleted}
-                    onMarkAllReady={handleMarkAllReady}
-                    onMarkAllCompleted={handleMarkAllCompleted}
                     onUndo={handleUndo}
                     onRetryDeclined={async (orderId: string) => {
                       try {
@@ -537,7 +443,6 @@ export default function Dashboard() {
                       }
                     }}
                     restoredOrderIds={restoredOrderIds}
-                    bulkActionLoading={bulkActionLoading}
                   />
                 </div>
               </div>
