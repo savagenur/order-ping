@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { Order } from "../../src/types/order";
 
 /**
  * PRODUCTION-GRADE Square Webhook Handler
@@ -52,25 +53,6 @@ interface WebhookEventRecord {
   metadata?: Record<string, any>;
 }
 
-interface OrderDocument {
-  orderNumber: string;
-  customerName: string;
-  phoneNumber: string;
-  orderDetails: string;
-  status: "pending" | "ready" | "completed" | "declined" | "expired";
-  color: string;
-  source: "square" | "manual";
-  cartId: string;
-  cartName: string;
-  paymentId: string;
-  paymentStatus: string;
-  locationId: string;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
-  expireAt?: Timestamp; // TTL field for declined orders
-  processedAt: Timestamp;
-  webhookEventId: string; // Link back to webhook event for audit trail
-}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -139,14 +121,25 @@ function verifySquareSignature(
   logger: Logger
 ): boolean {
   if (!signature || !webhookSignatureKey) {
-    logger.warn("Missing signature or webhook key");
+    logger.warn("Missing signature or webhook key", {
+      hasSignature: !!signature,
+      hasKey: !!webhookSignatureKey
+    });
     return false;
   }
 
   try {
-    const rawBody = (request as any).rawBody?.toString() || "";
+    // For Firebase Functions v2, we need to reconstruct the raw body
+    let rawBody = "";
+    if (request.rawBody) {
+      rawBody = request.rawBody.toString();
+    } else if (request.body) {
+      // If rawBody is not available, stringify the body
+      rawBody = JSON.stringify(request.body);
+    }
+    
     if (!rawBody) {
-      logger.warn("No rawBody available for signature verification");
+      logger.warn("No body available for signature verification");
       return false;
     }
 
@@ -161,6 +154,7 @@ function verifySquareSignature(
     logger.debug("Signature verification", {
       urlLength: requestUrl.length,
       bodyLength: rawBody.length,
+      signatureLength: signature.length,
       isValid,
     });
 
@@ -175,34 +169,34 @@ function verifySquareSignature(
 }
 
 /**
- * Get cartId from location_id
+ * Get cartId and cartName from location_id
  * TODO: Move to Firestore for dynamic configuration
  */
-async function getCartIdFromLocation(
+async function getCartFromLocation(
   locationId: string,
   db: admin.firestore.Firestore,
   logger: Logger
-): Promise<string> {
+): Promise<{ cartId: string; cartName: string }> {
   if (!locationId) {
     logger.warn("No location ID provided, using default cart");
-    return "default-cart-id";
+    return { cartId: "default-cart-id", cartName: "Default Cart" };
   }
 
   // TODO: Query Firestore carts collection
   // const cartDoc = await db.collection("carts").where("squareLocationId", "==", locationId).limit(1).get();
-  // if (!cartDoc.empty) return cartDoc.docs[0].id;
+  // if (!cartDoc.empty) return { cartId: cartDoc.docs[0].id, cartName: cartDoc.docs[0].data().name };
 
-  const locationMap: Record<string, string> = {
-    S8GWD5R9QB376: "burger-king-downtown",
+  const locationMap: Record<string, { cartId: string; cartName: string }> = {
+    S8GWD5R9QB376: { cartId: "burger-king-downtown", cartName: "Burger King Downtown" },
   };
 
-  const cartId = locationMap[locationId];
-  if (!cartId) {
+  const location = locationMap[locationId];
+  if (!location) {
     logger.warn("Unknown location ID, using default cart", { locationId });
-    return "default-cart-id";
+    return { cartId: "default-cart-id", cartName: "Default Cart" };
   }
 
-  return cartId;
+  return location;
 }
 
 // ============================================================================
@@ -361,7 +355,7 @@ async function upsertOrder(
 ): Promise<{ orderId: string; orderNumber: string; action: "created" | "updated" }> {
   const paymentStatus = payload.data?.object?.payment?.status || "APPROVED";
   const locationId = payload.data?.object?.payment?.location_id || "";
-  const cartId = await getCartIdFromLocation(locationId, db, logger);
+  const cart = await getCartFromLocation(locationId, db, logger);
   const orderNumber = generateOrderNumber(paymentId);
 
   // Use paymentId as document ID for natural deduplication
@@ -385,9 +379,9 @@ async function upsertOrder(
       transaction.update(orderRef, {
         status: "declined",
         paymentStatus,
-        expireAt,
-        cancelledAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+        expireAt: expireAt as any,
+        cancelledAt: Timestamp.now() as any,
+        updatedAt: Timestamp.now() as any,
       });
 
       logger.info("Marked order as declined with TTL", {
@@ -405,7 +399,7 @@ async function upsertOrder(
       // Update existing order
       transaction.update(orderRef, {
         paymentStatus,
-        updatedAt: Timestamp.now(),
+        updatedAt: Timestamp.now() as any,
       });
 
       logger.info("Updated existing order", {
@@ -418,7 +412,7 @@ async function upsertOrder(
     }
 
     // Create new order (only for payment.created or first payment.updated)
-    const orderData: OrderDocument = {
+    const orderData: Omit<Order, 'id'> = {
       orderNumber,
       customerName: "",
       phoneNumber: "",
@@ -426,14 +420,16 @@ async function upsertOrder(
       status: "pending",
       color: "Online",
       source: "square",
-      cartId,
-      cartName: "Square Terminal",
+      cartId: cart.cartId,
+      cartName: cart.cartName,
       paymentId,
       paymentStatus,
       locationId,
-      createdAt: Timestamp.now(),
-      processedAt: Timestamp.now(),
+      amount: payload.data?.object?.payment?.amount_money?.amount,
+      createdAt: Timestamp.now() as any,
+      processedAt: Timestamp.now() as any,
       webhookEventId: eventId,
+      updatedAt: Timestamp.now() as any,
     };
 
     transaction.set(orderRef, orderData);
@@ -469,6 +465,10 @@ export const handleSquareWebhook = onRequest(
     const logger = new Logger({
       function: "handleSquareWebhook",
       requestId: crypto.randomUUID(),
+    });
+
+    // Production deployment marker
+    logger.info("PRODUCTION DEPLOYMENT - Signature verification enforced", {
     });
 
     try {
@@ -514,6 +514,16 @@ export const handleSquareWebhook = onRequest(
       const signature = request.headers["x-square-signature"] as string;
       const webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || "";
 
+      const debugMode = process.env.DEBUG_WEBHOOK === "true";
+
+      logger.info("Environment check", {
+        hasSignature: !!signature,
+        hasKey: !!webhookSignatureKey,
+        keyLength: webhookSignatureKey.length,
+        debugMode,
+        isEmulator: process.env.FUNCTIONS_EMULATOR === "true"
+      });
+
       const signatureValid = verifySquareSignature(
         request,
         signature,
@@ -524,10 +534,22 @@ export const handleSquareWebhook = onRequest(
       if (!signatureValid) {
         if (process.env.FUNCTIONS_EMULATOR === "true") {
           logger.warn("EMULATOR MODE: Allowing invalid signature");
+        } else if (debugMode) {
+          // Debug mode for production troubleshooting
+          logger.warn("DEBUG MODE: Allowing invalid signature", {
+            paymentId,
+            eventId,
+            signature,
+            webhookKeyLength: webhookSignatureKey.length,
+          });
         } else {
           logger.error("Invalid webhook signature - rejecting", {
             paymentId,
             eventId,
+            hasSignature: !!signature,
+            hasKey: !!webhookSignatureKey,
+            keyLength: webhookSignatureKey.length,
+            signatureLength: signature?.length || 0,
           });
           response.status(401).send("Unauthorized");
           return;

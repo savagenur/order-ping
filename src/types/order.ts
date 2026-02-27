@@ -14,6 +14,10 @@ export interface Order {
   paymentId?: string; // Square payment ID
   amount?: number; // Payment amount in cents
   paymentStatus?: string; // Raw payment status from Square (UPPERCASE: FAILED, CANCELED, COMPLETED, etc.)
+  locationId?: string; // Square location ID
+  webhookEventId?: string; // Link back to webhook event for audit trail
+  processedAt?: Date | Timestamp; // When the webhook processed this order
+  updatedAt?: Date | Timestamp; // Last update timestamp
   expireAt?: Date | Timestamp; // TTL field for auto-deletion of declined orders
   userId?: string;
   selectedUserIds?: string[]; // Track all users who selected/pinned this order

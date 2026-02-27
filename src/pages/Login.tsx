@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { useAuthStore } from "../stores/authStore";
@@ -180,9 +183,12 @@ export default function Login() {
               <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Mail className="w-8 h-8 text-amber-500" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Reset Password
+              </h2>
               <p className="text-zinc-400 text-sm">
-                Enter your email address and we'll send you a link to reset your password.
+                Enter your email address and we'll send you a link to reset your
+                password.
               </p>
             </div>
 
@@ -220,7 +226,8 @@ export default function Login() {
                     Success! Please check your email for the reset link.
                   </p>
                   <p className="text-xs text-green-300 mt-2">
-                    ⚠️ Check your spam/junk folder - the email may be filtered there.
+                    ⚠️ Check your spam/junk folder - the email may be filtered
+                    there.
                   </p>
                   <p className="text-xs text-green-300 mt-1">
                     Search for "OrderPing" if you can't find it.

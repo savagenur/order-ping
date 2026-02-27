@@ -12,9 +12,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react({
-        babel: {
-          plugins: [['babel-plugin-react-compiler']],
-        },
+        // React Compiler disabled due to React 19 compatibility issues
+        // Can be re-enabled in future versions when compatibility is resolved
       }),
       tailwindcss(),
       {
@@ -42,27 +41,18 @@ export default defineConfig(({ mode }) => {
       minify: isProduction ? 'esbuild' : false,
       rollupOptions: {
         output: {
+          // Conservative chunking strategy for React 19 compatibility
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
+              // Firebase is large and used throughout - keep separate
               if (id.includes('firebase')) {
                 return 'firebase';
               }
-              if (id.includes('framer-motion') || id.includes('@headlessui') || 
-                  id.includes('@heroicons') || id.includes('lucide-react')) {
-                return 'ui';
-              }
+              // Charts are only used on analytics pages - lazy load
               if (id.includes('recharts')) {
                 return 'charts';
               }
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-vendor';
-              }
-              if (id.includes('@tanstack/react-query') || id.includes('zustand')) {
-                return 'state';
-              }
-              if (id.includes('date-fns')) {
-                return 'utils';
-              }
+              // Keep everything else together to avoid module resolution issues
               return 'vendor';
             }
           },

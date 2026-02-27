@@ -52,7 +52,7 @@ export default function Dashboard() {
   const retryDeclinedOrder = useRetryDeclinedOrder();
 
   // Custom hooks for filtering and bulk actions
-  const { preparingOrders, readyOrders, declinedOrders, preparingCount, readyCount, declinedCount, listCount } = useOrderFilters(orders);
+  const { preparingOrders, readyOrders, declinedOrders, preparingCount, readyCount, listCount } = useOrderFilters(orders);
   const bulkActionLoading = useBulkActionLoading({
     orders,
     markReady,

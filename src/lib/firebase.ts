@@ -10,12 +10,15 @@ import { getFunctions } from "firebase/functions";
 import { connectAuthEmulator } from "firebase/auth";
 import { connectFirestoreEmulator } from "firebase/firestore";
 import { connectFunctionsEmulator } from "firebase/functions";
-import { validateEnv, isDevelopment } from "./envValidation";
+import { validateEnv } from "./envValidation";
 
+// Validate environment variables
 const env = validateEnv();
 
-const USE_EMULATOR = isDevelopment && import.meta.env.VITE_USE_EMULATOR !== 'false';
+// Emulator configuration for development
+const USE_EMULATOR = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATOR !== 'false';
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -25,8 +28,10 @@ const firebaseConfig = {
   appId: env.VITE_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
+// Initialize Firebase services
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
@@ -35,16 +40,21 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 export const functions = getFunctions(app, "us-west1");
-export const messaging = getMessaging(app);
 
-let emulatorsConnected = false;
+// Initialize messaging with error handling
+export let messaging: ReturnType<typeof getMessaging> | null = null;
+try {
+  messaging = getMessaging(app);
+} catch (error) {
+  console.warn('Firebase Messaging initialization failed:', error);
+}
 
-if (USE_EMULATOR && !emulatorsConnected) {
+// Connect to emulators in development
+if (USE_EMULATOR) {
   try {
     connectFirestoreEmulator(db, "127.0.0.1", 8080);
     connectFunctionsEmulator(functions, "127.0.0.1", 5001);
     connectAuthEmulator(auth, "http://127.0.0.1:9099");
-    emulatorsConnected = true;
     console.log("🔧 Connected to Firebase emulators");
   } catch (error) {
     console.warn("⚠️ Failed to connect to emulators:", error);
